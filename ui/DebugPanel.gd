@@ -63,6 +63,15 @@ func _build_ui() -> void:
 		gold_button.pressed.connect(_on_add_gold_pressed.bind(player_id))
 		gold_row.add_child(gold_button)
 
+	var spawn_grid: GridContainer = GridContainer.new()
+	spawn_grid.columns = 2
+	content.add_child(spawn_grid)
+	for unit: UnitData in GameManager.database.units:
+		for player_id: int in MatchTypes.PLAYER_COUNT:
+			var spawn_button: Button = _make_button("P%d: %s" % [player_id, unit.display_name])
+			spawn_button.pressed.connect(_on_spawn_pressed.bind(player_id, unit.id))
+			spawn_grid.add_child(spawn_button)
+
 
 func _make_button(text: String) -> Button:
 	var button: Button = Button.new()
@@ -100,6 +109,10 @@ func _on_sell_pressed() -> void:
 
 func _on_add_gold_pressed(player_id: int) -> void:
 	GameManager.submit_command(DebugAddGoldCommand.new(player_id, GOLD_GRANT))
+
+
+func _on_spawn_pressed(player_id: int, unit_id: StringName) -> void:
+	GameManager.submit_command(DebugSpawnUnitCommand.new(player_id, unit_id, 1))
 
 
 func _on_slot_seleccionado(player_id: int, slot_index: int) -> void:

@@ -10,12 +10,14 @@ extends Node
 @onready var _player_grid: GridManager = $World/PlayerGrid
 @onready var _enemy_grid: GridManager = $World/EnemyGrid
 @onready var _local_input: LocalInputController = $World/LocalInput
+@onready var _lane: LaneManager = $World/Lane
 
 
 func _ready() -> void:
 	for grid: GridManager in [_player_grid, _enemy_grid]:
 		_command_processor.register_grid(grid)
 		_local_input.register_grid(grid)
+	_command_processor.register_lane(_lane)
 	GameManager.register_command_processor(_command_processor)
 
 	var seed_value: int = match_seed

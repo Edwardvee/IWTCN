@@ -35,6 +35,12 @@ window/handheld/orientation=1
 
 pointing/emulate_touch_from_mouse=true
 
+[layer_names]
+
+2d_physics/layer_1="world"
+2d_physics/layer_2="team_0_units"
+2d_physics/layer_3="team_1_units"
+
 [physics]
 
 3d/physics_engine="Jolt Physics"

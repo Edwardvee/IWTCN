@@ -8,10 +8,19 @@ extends Node
 ## CommandProcessor del servidor quien lo ejecute con estas mismas reglas.
 
 var _grids: Dictionary[int, GridManager] = {}
+var _lane: LaneManager = null
 
 
 func register_grid(grid: GridManager) -> void:
 	_grids[grid.player_id] = grid
+
+
+func register_lane(lane: LaneManager) -> void:
+	_lane = lane
+
+
+func get_lane() -> LaneManager:
+	return _lane if _lane != null and is_instance_valid(_lane) else null
 
 
 func get_grid(player_id: int) -> GridManager:
