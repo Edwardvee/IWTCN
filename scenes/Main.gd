@@ -14,6 +14,7 @@ extends Node
 @onready var _lane: LaneManager = $World/Lane
 @onready var _camera: CameraDragController = $Camera2D
 @onready var _shop_panel: ShopPanel = $UI/HUD/BottomBar
+@onready var _ai: AIController = $Systems/AIController
 
 
 func _ready() -> void:
@@ -29,6 +30,11 @@ func _ready() -> void:
 	_shop_panel.card_drag_started.connect(func() -> void: _camera.input_enabled = false)
 	_shop_panel.card_drag_finished.connect(func() -> void: _camera.input_enabled = true)
 	GameManager.register_command_processor(_command_processor)
+	# En VS AI la IA controla el asiento rival con las mismas vías que el jugador.
+	var ai_player: int = MatchTypes.opponent_of(GameManager.local_player_id)
+	var ai_grid: GridManager = _enemy_grid if ai_player == _enemy_grid.player_id else _player_grid
+	_ai.setup(ai_player, _draft, ai_grid, _lane)
+	_ai.enabled = game_mode == MatchTypes.GameMode.VS_AI
 
 	var seed_value: int = match_seed
 	if seed_value == 0:

@@ -64,6 +64,11 @@ func _build_ui() -> void:
 		gold_button.pressed.connect(_on_add_gold_pressed.bind(player_id))
 		gold_row.add_child(gold_button)
 
+	var ai_button: Button = _make_button("IA: ON")
+	ai_button.toggle_mode = true
+	ai_button.toggled.connect(_on_ai_toggled.bind(ai_button))
+	content.add_child(ai_button)
+
 	var castle_row: HBoxContainer = HBoxContainer.new()
 	content.add_child(castle_row)
 	for player_id: int in MatchTypes.PLAYER_COUNT:
@@ -117,6 +122,15 @@ func _on_sell_pressed() -> void:
 
 func _on_add_gold_pressed(player_id: int) -> void:
 	GameManager.submit_command(DebugAddGoldCommand.new(player_id, GOLD_GRANT))
+
+
+## Pulsado = IA en pausa (para probar sistemas sin que el rival juegue).
+func _on_ai_toggled(paused: bool, button: Button) -> void:
+	var ai: AIController = get_tree().get_first_node_in_group(&"ai_controller") as AIController
+	if ai == null:
+		return
+	ai.enabled = not paused
+	button.text = "IA: OFF" if paused else "IA: ON"
 
 
 func _on_damage_castle_pressed(player_id: int) -> void:
