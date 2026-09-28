@@ -3,8 +3,8 @@ extends RefCounted
 ## Estado lógico de un jugador dentro de una partida.
 ##
 ## REGLA: solo EconomyManager escribe `gold` y `base_income_timer`;
-## solo GridManager modifica `grid`; solo LaneManager modifica `castle_hp`.
-## El resto lo lee.
+## solo GridManager modifica `grid`; solo LaneManager modifica `castle_hp`;
+## solo DraftManager modifica `shop`. El resto lo lee.
 
 var player_id: int = MatchTypes.NO_PLAYER
 var gold: int = 0
@@ -13,6 +13,7 @@ var base_income_timer: float = 0.0
 var grid: GridState
 var castle_max_hp: float = 1.0
 var castle_hp: float = 1.0
+var shop: ShopState
 
 
 func _init(p_player_id: int, rules: GameRules) -> void:
@@ -21,6 +22,7 @@ func _init(p_player_id: int, rules: GameRules) -> void:
 	grid = GridState.new(initial_plots)
 	castle_max_hp = rules.castle_max_hp if rules != null else 1.0
 	castle_hp = castle_max_hp
+	shop = ShopState.new(rules.reroll_base_cost if rules != null else 0)
 
 
 func is_castle_alive() -> bool:
@@ -35,4 +37,5 @@ func to_dict() -> Dictionary:
 		"castle_hp": castle_hp,
 		"castle_max_hp": castle_max_hp,
 		"grid": grid.to_dict(),
+		"shop": shop.to_dict(),
 	}

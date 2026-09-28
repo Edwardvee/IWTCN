@@ -36,7 +36,7 @@ func test_main_scene_structure() -> void:
 		"./World/PlayerCastle", "./World/EnemyCastle",
 		"./World/PlayerSpawn", "./World/EnemySpawn",
 		"./Entities/PlayerUnits", "./Entities/EnemyUnits",
-		"./Systems", "./Systems/CommandProcessor", "./World/LocalInput",
+		"./Systems", "./Systems/CommandProcessor", "./Systems/DraftManager", "./World/LocalInput",
 		"./Camera2D", "./UI/HUD", "./UI/HUD/DebugPanel",
 	]:
 		assert_true(paths.has(required), "Falta nodo %s en Main.tscn" % required)

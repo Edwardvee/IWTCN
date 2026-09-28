@@ -11,6 +11,8 @@
 [ext_resource type="Script" path="res://systems/combat/LaneManager.gd" id="9_lane"]
 [ext_resource type="Script" path="res://entities/castle/Castle.gd" id="10_castle"]
 [ext_resource type="Script" path="res://ui/CastleHealthDisplay.gd" id="11_castle_hp"]
+[ext_resource type="Script" path="res://ui/ShopPanel.gd" id="12_shop"]
+[ext_resource type="Script" path="res://systems/draft/DraftManager.gd" id="13_draft"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_bar"]
 bg_color = Color(0.1, 0.1, 0.12, 0.92)
@@ -110,6 +112,9 @@ script = ExtResource("7_input")
 [node name="CommandProcessor" type="Node" parent="Systems"]
 script = ExtResource("6_commands")
 
+[node name="DraftManager" type="Node" parent="Systems"]
+script = ExtResource("13_draft")
+
 [node name="Camera2D" type="Camera2D" parent="."]
 script = ExtResource("2_camera")
 
@@ -190,15 +195,33 @@ offset_top = -420.0
 grow_horizontal = 2
 grow_vertical = 0
 theme_override_styles/panel = SubResource("StyleBoxFlat_bar")
+script = ExtResource("12_shop")
 
 [node name="Layout" type="VBoxContainer" parent="UI/HUD/BottomBar"]
 layout_mode = 2
-alignment = 2
+theme_override_constants/separation = 12
+alignment = 1
+
+[node name="CardRow" type="HBoxContainer" parent="UI/HUD/BottomBar/Layout"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 250)
+layout_mode = 2
+theme_override_constants/separation = 16
+alignment = 1
 
 [node name="ActionRow" type="HBoxContainer" parent="UI/HUD/BottomBar/Layout"]
-custom_minimum_size = Vector2(0, 120)
+custom_minimum_size = Vector2(0, 110)
 layout_mode = 2
+theme_override_constants/separation = 24
 alignment = 1
+
+[node name="RerollButton" type="Button" parent="UI/HUD/BottomBar/Layout/ActionRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(260, 96)
+layout_mode = 2
+size_flags_vertical = 4
+theme_override_font_sizes/font_size = 34
+text = "Reroll"
 
 [node name="GoldDisplay" type="PanelContainer" parent="UI/HUD/BottomBar/Layout/ActionRow"]
 layout_mode = 2
@@ -224,3 +247,11 @@ layout_mode = 2
 theme_override_font_sizes/font_size = 56
 text = "0"
 vertical_alignment = 1
+
+[node name="HammerButton" type="Button" parent="UI/HUD/BottomBar/Layout/ActionRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(260, 96)
+layout_mode = 2
+size_flags_vertical = 4
+theme_override_font_sizes/font_size = 34
+text = "Martillo"

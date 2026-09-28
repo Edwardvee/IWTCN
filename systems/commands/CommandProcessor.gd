@@ -9,10 +9,19 @@ extends Node
 
 var _grids: Dictionary[int, GridManager] = {}
 var _lane: LaneManager = null
+var _draft: DraftManager = null
 
 
 func register_grid(grid: GridManager) -> void:
 	_grids[grid.player_id] = grid
+
+
+func register_draft(draft: DraftManager) -> void:
+	_draft = draft
+
+
+func get_draft() -> DraftManager:
+	return _draft if _draft != null and is_instance_valid(_draft) else null
 
 
 func register_lane(lane: LaneManager) -> void:

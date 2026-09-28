@@ -36,6 +36,7 @@ signal unidad_convertida(unidad: CharacterBody2D, team_anterior: int, team_nuevo
 ## Oferta actual de la tienda de un jugador (3 cartas distintas).
 signal draft_ofrecido(player_id: int, cartas: Array[CardData])
 signal carta_elegida(player_id: int, carta: CardData)
+signal coste_reroll_actualizado(player_id: int, coste: int)
 
 # --- Castillos ---
 signal castillo_danado(player_id: int, vida_actual: float, vida_maxima: float)

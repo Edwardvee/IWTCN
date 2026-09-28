@@ -7,10 +7,13 @@ extends Node
 @export var match_seed: int = 0
 
 @onready var _command_processor: CommandProcessor = $Systems/CommandProcessor
+@onready var _draft: DraftManager = $Systems/DraftManager
 @onready var _player_grid: GridManager = $World/PlayerGrid
 @onready var _enemy_grid: GridManager = $World/EnemyGrid
 @onready var _local_input: LocalInputController = $World/LocalInput
 @onready var _lane: LaneManager = $World/Lane
+@onready var _camera: CameraDragController = $Camera2D
+@onready var _shop_panel: ShopPanel = $UI/HUD/BottomBar
 
 
 func _ready() -> void:
@@ -19,6 +22,12 @@ func _ready() -> void:
 		_command_processor.register_grid(grid)
 		_local_input.register_grid(grid)
 	_command_processor.register_lane(_lane)
+	_command_processor.register_draft(_draft)
+	_local_input.lane = _lane
+	_shop_panel.connect_input(_local_input)
+	# Mientras se arrastra una carta, la cámara no se mueve.
+	_shop_panel.card_drag_started.connect(func() -> void: _camera.input_enabled = false)
+	_shop_panel.card_drag_finished.connect(func() -> void: _camera.input_enabled = true)
 	GameManager.register_command_processor(_command_processor)
 
 	var seed_value: int = match_seed

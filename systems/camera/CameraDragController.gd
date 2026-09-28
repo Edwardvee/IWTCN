@@ -14,6 +14,8 @@ extends Camera2D
 @export var bottom_padding: float = 440.0
 @export var wheel_step: float = 160.0
 @export var start_at_bottom: bool = true
+## Se desactiva mientras se arrastra una carta para no mover la cámara.
+var input_enabled: bool = true
 
 
 func _ready() -> void:
@@ -24,6 +26,8 @@ func _ready() -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
+	if not input_enabled:
+		return
 	if event is InputEventScreenDrag:
 		var drag: InputEventScreenDrag = event as InputEventScreenDrag
 		if drag.index != 0:

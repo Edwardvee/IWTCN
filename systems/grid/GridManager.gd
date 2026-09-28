@@ -102,14 +102,7 @@ func get_first_building_id(structure_id: StringName) -> int:
 
 func count_structures_with_tag(tag: StringName) -> int:
 	var state: GridState = get_state()
-	if state == null or GameManager.database == null:
-		return 0
-	var count: int = 0
-	for slot_index: int in state.get_occupied_slots():
-		var structure: StructureData = GameManager.database.get_structure(state.get_slot(slot_index).structure_id)
-		if structure != null and structure.has_tag(tag):
-			count += 1
-	return count
+	return state.count_structures_with_tag(tag, GameManager.database) if state != null else 0
 
 
 # --- Validación (devuelve "" si es válido o el motivo del rechazo) ---------

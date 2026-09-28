@@ -1,7 +1,8 @@
 class_name BuildCommand
 extends GameCommand
-## Jugar una carta de estructura en un slot: cobra el coste de la carta y construye.
-## (En la Fase 9 la tienda añadirá la comprobación "la carta está en tu oferta".)
+## SOLO DEBUG: construye cualquier carta de estructura sin pasar por la tienda
+## (cobra su coste). Jugador e IA construyen con PlayCardCommand, que exige
+## que la carta esté en su oferta.
 
 var card_id: StringName = &""
 var slot_index: int = -1
@@ -19,6 +20,8 @@ func get_type() -> StringName:
 
 
 func validate(processor: CommandProcessor) -> String:
+	if source != GameCommand.Source.DEBUG:
+		return "Construye arrastrando una carta de la tienda"
 	var card: CardData = processor.get_database().get_card(card_id)
 	if card == null:
 		return "Carta desconocida"

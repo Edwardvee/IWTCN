@@ -86,6 +86,20 @@ func count_structures(structure_id: StringName) -> int:
 	return count
 
 
+## Nº de estructuras cuyos datos tienen la etiqueta `tag` (p. ej. &"barracks").
+func count_structures_with_tag(tag: StringName, database: GameDatabase) -> int:
+	if database == null:
+		return 0
+	var count: int = 0
+	for slot_state: SlotState in _slots:
+		if slot_state.is_empty():
+			continue
+		var structure: StructureData = database.get_structure(slot_state.structure_id)
+		if structure != null and structure.has_tag(tag):
+			count += 1
+	return count
+
+
 func find_first_free_slot_in_plot(plot_index: int) -> int:
 	if not is_valid_plot(plot_index):
 		return -1

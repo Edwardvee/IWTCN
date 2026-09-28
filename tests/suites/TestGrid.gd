@@ -50,7 +50,8 @@ func _on_rejected(_player_id: int, _command_type: StringName, reason: String) ->
 	rejections.append(reason)
 
 
-func _build(player_id: int, card_id: StringName, slot_index: int, source: GameCommand.Source = LOCAL) -> bool:
+## BuildCommand es solo de debug desde la Fase 9 (el jugador compra en la tienda).
+func _build(player_id: int, card_id: StringName, slot_index: int, source: GameCommand.Source = DEBUG) -> bool:
 	return GameManager.submit_command(BuildCommand.new(player_id, card_id, slot_index, source))
 
 
