@@ -14,6 +14,8 @@ var grid: GridState
 var castle_max_hp: float = 1.0
 var castle_hp: float = 1.0
 var shop: ShopState
+## Ids de los buffs globales comprados (se acumulan). Solo BuffSystem escribe.
+var buffs: Array[StringName] = []
 
 
 func _init(p_player_id: int, rules: GameRules) -> void:
@@ -38,4 +40,5 @@ func to_dict() -> Dictionary:
 		"castle_max_hp": castle_max_hp,
 		"grid": grid.to_dict(),
 		"shop": shop.to_dict(),
+		"buffs": buffs.duplicate(),
 	}

@@ -13,6 +13,7 @@
 [ext_resource type="Script" path="res://ui/CastleHealthDisplay.gd" id="11_castle_hp"]
 [ext_resource type="Script" path="res://ui/ShopPanel.gd" id="12_shop"]
 [ext_resource type="Script" path="res://systems/draft/DraftManager.gd" id="13_draft"]
+[ext_resource type="Script" path="res://ui/BuffListLabel.gd" id="14_buffs"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_bar"]
 bg_color = Color(0.1, 0.1, 0.12, 0.92)
@@ -155,6 +156,13 @@ theme_override_font_sizes/font_size = 34
 horizontal_alignment = 1
 vertical_alignment = 1
 script = ExtResource("11_castle_hp")
+
+[node name="BuffList" type="Label" parent="UI/HUD/TopBar/Lines"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.8, 0.65, 1, 1)
+theme_override_font_sizes/font_size = 24
+horizontal_alignment = 1
+script = ExtResource("14_buffs")
 
 [node name="Toast" type="Label" parent="UI/HUD"]
 unique_name_in_owner = true

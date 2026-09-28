@@ -48,25 +48,21 @@ var state_machine: StateMachine = StateMachine.new()
 
 var _sprite: AnimatedSprite2D = null
 var _collision: CollisionShape2D = null
+## Bonus fijados al aparecer (cuarteles). Los buffs se suman en refresh_stats().
+var _spawn_modifiers: UnitStatModifiers = null
 
 
-func setup(p_unit_id: int, p_team: int, p_data: UnitData, p_lane: LaneManager, modifiers: UnitStatModifiers = null) -> void:
+func setup(p_unit_id: int, p_team: int, p_data: UnitData, p_lane: LaneManager, spawn_modifiers: UnitStatModifiers = null) -> void:
 	unit_id = p_unit_id
 	team = p_team
 	data = p_data
 	lane = p_lane
 	name = "Unit_%d" % unit_id
-	var bonus_hp: float = modifiers.bonus_max_hp if modifiers != null else 0.0
-	var bonus_damage: float = modifiers.bonus_damage if modifiers != null else 0.0
-	max_hp = data.max_hp + bonus_hp
-	current_hp = max_hp
-	move_speed = data.move_speed
-	# Una unidad sin daño base (Priest) no gana daño por bonus.
-	damage = data.damage + bonus_damage if data.damage > 0.0 else 0.0
+	_spawn_modifiers = spawn_modifiers if spawn_modifiers != null else UnitStatModifiers.new()
 	attack_range = data.attack_range
 	attack_cooldown = data.attack_cooldown
-	damage_mitigation = data.damage_mitigation
 	heal_amount = data.heal_amount
+	refresh_stats(false)
 	body_radius = data.body_radius
 	lane_end_y = lane.get_lane_end_y(team) if lane != null else global_position.y
 	set_physics_process(false)
@@ -81,6 +77,21 @@ func setup(p_unit_id: int, p_team: int, p_data: UnitData, p_lane: LaneManager, m
 		state_machine.add_state(STATE_ATTACK, AttackState.new(self))
 	state_machine.add_state(STATE_DEAD, DeadState.new(self))
 	state_machine.start(STATE_ADVANCE)
+
+
+## Recalcula estadísticas = base + bonus de aparición + buffs actuales del equipo.
+## keep_hp_ratio: al cambiar la vida máxima se conserva el % de vida.
+func refresh_stats(keep_hp_ratio: bool) -> void:
+	var ratio: float = get_hp_ratio() if keep_hp_ratio else 1.0
+	var modifiers: UnitStatModifiers = _spawn_modifiers.combined_with(UnitStatModifiers.from_buffs(team, data))
+	max_hp = maxf(1.0, (data.max_hp + modifiers.bonus_max_hp) * modifiers.max_hp_multiplier)
+	if not is_dead:
+		current_hp = max_hp * ratio
+	move_speed = maxf(0.0, (data.move_speed + modifiers.bonus_move_speed) * modifiers.move_speed_multiplier)
+	# Una unidad sin daño base (Priest) no gana daño por bonus.
+	damage = (data.damage + modifiers.bonus_damage) * modifiers.damage_multiplier if data.damage > 0.0 else 0.0
+	damage_mitigation = clampf(data.damage_mitigation + modifiers.bonus_mitigation, 0.0, 0.9)
+	queue_redraw()
 
 
 ## Un paso de simulación. Lo llama LaneManager (nunca el propio nodo).

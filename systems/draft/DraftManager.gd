@@ -14,8 +14,8 @@ extends Node
 ## Solo lo modifican los comandos (PlayCardCommand, RerollShopCommand) y su
 ## propio tick. La IA leerá la misma oferta que ve un jugador humano.
 
-## Tipos de carta que pueden salir en la tienda (GLOBAL_BUFF se activa en la Fase 10).
-@export var enabled_card_types: Array[CardData.CardType] = [CardData.CardType.STRUCTURE, CardData.CardType.DIRECT_UNIT]
+## Tipos de carta que pueden salir en la tienda.
+@export var enabled_card_types: Array[CardData.CardType] = [CardData.CardType.STRUCTURE, CardData.CardType.DIRECT_UNIT, CardData.CardType.GLOBAL_BUFF]
 
 
 func _ready() -> void:

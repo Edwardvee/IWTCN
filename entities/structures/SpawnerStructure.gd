@@ -6,8 +6,9 @@ extends StructureBase
 ## UnitStatModifiers al crear la unidad.
 
 
+## Intervalo del nivel con los buffs de producción del dueño aplicados.
 func get_production_interval() -> float:
-	return data.get_spawn_interval(level)
+	return BuffSystem.get_production_interval(owner_id, data.get_spawn_interval(level))
 
 
 func _on_production_cycle() -> void:

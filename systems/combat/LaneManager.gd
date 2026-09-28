@@ -110,7 +110,7 @@ func spawn_unit(unit_data: UnitData, team: int, world_position: Vector2) -> Unit
 		push_error("LaneManager.spawn_unit: parámetros inválidos")
 		return null
 	var unit: UnitBase = UnitBase.new()
-	unit.setup(GameManager.match_state.allocate_entity_id(), team, unit_data, self, UnitStatModifiers.for_player(team, unit_data))
+	unit.setup(GameManager.match_state.allocate_entity_id(), team, unit_data, self, UnitStatModifiers.from_barracks(team, unit_data))
 	_get_container(team).add_child(unit)
 	unit.global_position = world_position
 	_register(unit)
@@ -222,6 +222,14 @@ func get_unit(unit_id: int) -> UnitBase:
 
 func get_alive_units() -> Array[UnitBase]:
 	return _units.duplicate()
+
+
+## Recalcula las estadísticas de las unidades vivas del equipo (p. ej. tras
+## comprar un buff). Conserva el % de vida de cada unidad.
+func refresh_team_stats(team: int) -> void:
+	for unit: UnitBase in _units:
+		if unit.team == team:
+			unit.refresh_stats(true)
 
 
 func get_alive_count(team: int) -> int:

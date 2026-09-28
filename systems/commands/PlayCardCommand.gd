@@ -4,7 +4,7 @@ extends GameCommand
 ##   STRUCTURE   → se construye en slot_index (el cliente lo resuelve al soltar
 ##                 sobre un plot; la autoridad valida que el slot sea válido)
 ##   DIRECT_UNIT → aparecen unit_count unidades en deploy_position (mitad propia)
-##   GLOBAL_BUFF → Fase 10
+##   GLOBAL_BUFF → se aplica el buff (se puede soltar en cualquier sitio)
 ## card_id acompaña a offer_index para detectar ofertas obsoletas (la tienda
 ## cambió entre el arrastre y la llegada del comando).
 
@@ -54,7 +54,9 @@ func validate(processor: CommandProcessor) -> String:
 			if not lane.is_valid_deploy_position(player_id, deploy_position):
 				return "Suelta las unidades en tu mitad del carril"
 			return ""
-	return "Tipo de carta no disponible todavía"
+		CardData.CardType.GLOBAL_BUFF:
+			return "" if card.buff != null else "Mejora sin datos"
+	return "Tipo de carta desconocido"
 
 
 func apply(processor: CommandProcessor) -> bool:
@@ -76,4 +78,11 @@ func _apply_effect(processor: CommandProcessor, card: CardData) -> bool:
 		CardData.CardType.DIRECT_UNIT:
 			var spawned: Array[UnitBase] = processor.get_lane().spawn_group_at(card.unit, player_id, card.unit_count, deploy_position)
 			return spawned.size() == card.unit_count
+		CardData.CardType.GLOBAL_BUFF:
+			if not BuffSystem.apply_buff(player_id, card.buff):
+				return false
+			# Los buffs afectan también a las unidades que ya están en el carril.
+			if processor.get_lane() != null:
+				processor.get_lane().refresh_team_stats(player_id)
+			return true
 	return false

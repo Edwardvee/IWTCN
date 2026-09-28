@@ -35,6 +35,8 @@ const SLOTS_PER_PLOT: int = 4
 
 @export_group("Structures")
 @export_range(1, 10) var max_structure_level: int = 5
+## Límite inferior del intervalo de producción de unidades con buffs.
+@export var min_production_interval: float = 1.0
 
 
 func get_plot_cost(plot_index: int) -> int:

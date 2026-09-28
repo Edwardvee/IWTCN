@@ -87,11 +87,13 @@ func test_offer_is_deterministic_per_seed() -> void:
 	assert_eq(_offer_ids(1), first_rival, "también para el rival")
 
 
-func test_no_buff_cards_until_phase_10() -> void:
+func test_buff_cards_appear_in_shop() -> void:
+	var buff_seen: bool = false
 	for _roll: int in 100:
 		draft.refresh_offer(0)
 		for card: CardData in draft.get_offer(0):
-			assert_true(card.card_type != CardData.CardType.GLOBAL_BUFF, "sin mejoras globales todavía")
+			buff_seen = buff_seen or card.card_type == CardData.CardType.GLOBAL_BUFF
+	assert_true(buff_seen, "las mejoras globales salen en la tienda")
 
 
 func test_tank_only_with_three_barracks() -> void:

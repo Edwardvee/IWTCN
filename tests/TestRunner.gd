@@ -12,6 +12,7 @@ const SUITE_PATHS: PackedStringArray = [
 	"res://tests/suites/TestLane.gd",
 	"res://tests/suites/TestStructures.gd",
 	"res://tests/suites/TestShop.gd",
+	"res://tests/suites/TestBuffs.gd",
 ]
 
 

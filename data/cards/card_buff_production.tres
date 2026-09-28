@@ -7,7 +7,7 @@
 script = ExtResource("2_4edv0")
 id = &"card_buff_production"
 display_name = "-1.5 s Producción"
-description = "Tus edificios producen 1.5 s más rápido."
+description = "Tus cuarteles e iglesias producen 1.5 s más rápido."
 card_type = 1
 cost = 100
 shop_weight = 5
