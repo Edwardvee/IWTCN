@@ -1,7 +1,8 @@
 class_name TestSuite
 extends RefCounted
 ## Base de las suites de test. Cada método que empieza por "test_" es un caso.
-## Si la suite define before_each(), el runner lo llama antes de cada caso.
+## Si la suite define before_each(), el runner lo llama antes de cada caso;
+## si define after_all(), lo llama al terminar la suite (liberar nodos, señales).
 
 var failures: PackedStringArray = PackedStringArray()
 

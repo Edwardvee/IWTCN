@@ -36,7 +36,8 @@ func test_main_scene_structure() -> void:
 		"./World/PlayerCastle", "./World/EnemyCastle",
 		"./World/PlayerSpawn", "./World/EnemySpawn",
 		"./Entities/PlayerUnits", "./Entities/EnemyUnits",
-		"./Systems", "./Camera2D", "./UI/HUD",
+		"./Systems", "./Systems/CommandProcessor", "./World/LocalInput",
+		"./Camera2D", "./UI/HUD", "./UI/HUD/DebugPanel",
 	]:
 		assert_true(paths.has(required), "Falta nodo %s en Main.tscn" % required)
 
@@ -63,30 +64,35 @@ func test_forward_directions() -> void:
 	assert_eq(MatchTypes.opponent_of(1), 0, "oponente de 1")
 
 
-func test_spend_without_gold_rejected() -> void:
-	assert_false(EconomyManager.spend_gold(0, 10), "gastar sin oro debe fallar")
-	assert_eq(EconomyManager.get_gold(0), 0, "oro sigue en 0")
+func test_spend_more_than_available_rejected() -> void:
+	var start: int = EconomyManager.get_gold(0)
+	assert_false(EconomyManager.spend_gold(0, start + 1), "gastar más de lo que hay debe fallar")
+	assert_eq(EconomyManager.get_gold(0), start, "oro sin cambios")
 
 
 func test_add_and_spend() -> void:
+	var start: int = EconomyManager.get_gold(0)
+	var opponent_start: int = EconomyManager.get_gold(1)
 	assert_true(EconomyManager.add_gold(0, 30), "add_gold")
-	assert_eq(EconomyManager.get_gold(0), 30, "oro tras añadir")
-	assert_true(EconomyManager.has_gold(0, 30), "has_gold exacto")
-	assert_true(EconomyManager.spend_gold(0, 20), "spend_gold válido")
+	assert_eq(EconomyManager.get_gold(0), start + 30, "oro tras añadir")
+	assert_true(EconomyManager.has_gold(0, start + 30), "has_gold exacto")
+	assert_true(EconomyManager.spend_gold(0, start + 20), "spend_gold válido")
 	assert_eq(EconomyManager.get_gold(0), 10, "oro tras gastar")
 	assert_false(EconomyManager.spend_gold(0, 11), "gastar más de lo que hay debe fallar")
 	assert_eq(EconomyManager.get_gold(0), 10, "oro nunca negativo")
-	assert_eq(EconomyManager.get_gold(1), 0, "el oro del player 1 es independiente")
+	assert_eq(EconomyManager.get_gold(1), opponent_start, "el oro del player 1 es independiente")
 
 
 func test_negative_and_invalid_rejected() -> void:
+	var start: int = EconomyManager.get_gold(0)
 	assert_false(EconomyManager.add_gold(0, -5), "add negativo")
 	assert_false(EconomyManager.spend_gold(0, -5), "spend negativo")
 	assert_false(EconomyManager.add_gold(7, 5), "player inválido")
-	assert_eq(EconomyManager.get_gold(0), 0, "oro sin cambios")
+	assert_eq(EconomyManager.get_gold(0), start, "oro sin cambios")
 
 
 func test_gold_signal_carries_player_id() -> void:
+	var start: int = EconomyManager.get_gold(1)
 	var received: Array[int] = []
 	var listener: Callable = func(player_id: int, total: int) -> void:
 		received.append(player_id)
@@ -94,13 +100,14 @@ func test_gold_signal_carries_player_id() -> void:
 	EventBus.oro_actualizado.connect(listener)
 	EconomyManager.add_gold(1, 25)
 	EventBus.oro_actualizado.disconnect(listener)
-	assert_eq(received, [1, 25] as Array[int], "señal oro_actualizado(player_id, total)")
+	assert_eq(received, [1, start + 25] as Array[int], "señal oro_actualizado(player_id, total)")
 
 
 func test_no_gold_changes_after_match_end() -> void:
 	EconomyManager.add_gold(0, 50)
+	var frozen: int = EconomyManager.get_gold(0)
 	GameManager.end_match(0)
 	assert_false(GameManager.is_match_running(), "partida terminada")
 	assert_false(EconomyManager.add_gold(0, 10), "add tras fin de partida")
 	assert_false(EconomyManager.spend_gold(0, 10), "spend tras fin de partida")
-	assert_eq(EconomyManager.get_gold(0), 50, "oro congelado")
+	assert_eq(EconomyManager.get_gold(0), frozen, "oro congelado")

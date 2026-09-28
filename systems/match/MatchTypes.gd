@@ -37,6 +37,16 @@ static func forward_direction(player_id: int) -> Vector2:
 	return Vector2.ZERO
 
 
+## Color de equipo para la presentación (bordes, plots, unidades).
+static func team_color(player_id: int) -> Color:
+	match player_id:
+		PLAYER_BOTTOM:
+			return Color(0.3, 0.55, 1.0)
+		PLAYER_TOP:
+			return Color(1.0, 0.35, 0.3)
+	return Color.GRAY
+
+
 static func game_mode_name(mode: GameMode) -> String:
 	match mode:
 		GameMode.VS_AI:

@@ -5,6 +5,8 @@ extends Node
 const SUITE_PATHS: PackedStringArray = [
 	"res://tests/suites/TestFoundation.gd",
 	"res://tests/suites/TestDataModel.gd",
+	"res://tests/suites/TestEconomy.gd",
+	"res://tests/suites/TestGrid.gd",
 ]
 
 
@@ -39,5 +41,7 @@ func _run_all() -> void:
 					print("       - %s" % failure)
 			else:
 				print("  PASS %s" % method_name)
+		if suite.has_method("after_all"):
+			suite.call("after_all")
 	print("RESULTADO: %d/%d tests OK" % [total - failed, total])
 	get_tree().quit(1 if failed > 0 else 0)

@@ -15,6 +15,7 @@ var local_player_id: int = MatchTypes.PLAYER_BOTTOM
 var match_state: MatchState = null
 
 var _next_match_id: int = 1
+var _command_processor: CommandProcessor = null
 
 
 func _ready() -> void:
@@ -30,7 +31,7 @@ func _physics_process(delta: float) -> void:
 
 func start_match(mode: MatchTypes.GameMode, match_seed: int) -> void:
 	game_mode = mode
-	match_state = MatchState.new(_next_match_id, match_seed, MatchTypes.PLAYER_COUNT)
+	match_state = MatchState.new(_next_match_id, match_seed, MatchTypes.PLAYER_COUNT, get_rules())
 	_next_match_id += 1
 	match_phase = MatchTypes.MatchPhase.RUNNING
 	set_physics_process(true)
@@ -62,6 +63,20 @@ func get_player_state(player_id: int) -> PlayerState:
 	if match_state == null:
 		return null
 	return match_state.get_player(player_id)
+
+
+## La escena de partida registra aquí su CommandProcessor (null para quitarlo).
+func register_command_processor(processor: CommandProcessor) -> void:
+	_command_processor = processor
+
+
+## Entrada única de acciones para jugador local, IA y debug.
+## En online, aquí se enviará el comando al servidor en lugar de ejecutarlo.
+func submit_command(command: GameCommand) -> bool:
+	if _command_processor == null or not is_instance_valid(_command_processor):
+		push_error("GameManager.submit_command: no hay CommandProcessor registrado")
+		return false
+	return _command_processor.submit(command)
 
 
 func get_rules() -> GameRules:

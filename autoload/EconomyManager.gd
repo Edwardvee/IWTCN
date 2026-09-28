@@ -4,7 +4,36 @@ extends Node
 ## Operaciones transaccionales: nunca deja el oro en negativo, rechaza
 ## cantidades negativas, jugadores inválidos, partidas no activas y
 ## llamadas sin autoridad (un cliente online no puede tocar el oro).
-## Los ingresos periódicos se añaden en la Fase 2.
+##
+## Ingreso base: rules.base_income_amount cada rules.base_income_interval
+## segundos para cada jugador. El temporizador vive en PlayerState para que
+## forme parte del estado serializable de la partida.
+##
+## Se conecta a partida_iniciada en su _ready (antes que cualquier nodo de
+## escena), así el oro inicial ya está puesto cuando reaccionan los demás.
+
+
+func _ready() -> void:
+	EventBus.partida_iniciada.connect(_on_partida_iniciada)
+
+
+func _physics_process(delta: float) -> void:
+	simulate_step(delta)
+
+
+## Avanza la economía `delta` segundos. Lo llama _physics_process;
+## los tests lo llaman directamente para simular tiempo sin esperar.
+func simulate_step(delta: float) -> void:
+	if delta <= 0.0 or not GameManager.is_authority() or not GameManager.is_match_running():
+		return
+	var rules: GameRules = GameManager.get_rules()
+	if rules == null or rules.base_income_interval <= 0.0:
+		return
+	for player_state: PlayerState in GameManager.match_state.players:
+		player_state.base_income_timer += delta
+		while player_state.base_income_timer >= rules.base_income_interval:
+			player_state.base_income_timer -= rules.base_income_interval
+			add_gold(player_state.player_id, rules.base_income_amount)
 
 
 func get_gold(player_id: int) -> int:
@@ -49,3 +78,14 @@ func _can_mutate(player_id: int, amount: int) -> bool:
 	if not GameManager.is_match_running():
 		return false
 	return GameManager.get_player_state(player_id) != null
+
+
+func _on_partida_iniciada(_modo: int, _semilla: int) -> void:
+	if not GameManager.is_authority() or GameManager.match_state == null:
+		return
+	var rules: GameRules = GameManager.get_rules()
+	var starting_gold: int = maxi(0, rules.starting_gold) if rules != null else 0
+	for player_state: PlayerState in GameManager.match_state.players:
+		player_state.gold = starting_gold
+		player_state.base_income_timer = 0.0
+		EventBus.oro_actualizado.emit(player_state.player_id, player_state.gold)

@@ -7,19 +7,28 @@ var match_id: int = 0
 var match_seed: int = 0
 var match_time: float = 0.0
 var players: Array[PlayerState] = []
+## Contador de ids lógicos de entidad (edificios, unidades). Estable entre
+## máquinas, a diferencia del instance_id de Godot.
+var next_entity_id: int = 1
 
 
-func _init(p_match_id: int, p_match_seed: int, player_count: int) -> void:
+func _init(p_match_id: int, p_match_seed: int, player_count: int, rules: GameRules) -> void:
 	match_id = p_match_id
 	match_seed = p_match_seed
 	for player_id: int in player_count:
-		players.append(PlayerState.new(player_id))
+		players.append(PlayerState.new(player_id, rules))
 
 
 func get_player(player_id: int) -> PlayerState:
 	if player_id < 0 or player_id >= players.size():
 		return null
 	return players[player_id]
+
+
+func allocate_entity_id() -> int:
+	var entity_id: int = next_entity_id
+	next_entity_id += 1
+	return entity_id
 
 
 func to_dict() -> Dictionary:
@@ -30,5 +39,6 @@ func to_dict() -> Dictionary:
 		"match_id": match_id,
 		"match_seed": match_seed,
 		"match_time": match_time,
+		"next_entity_id": next_entity_id,
 		"players": player_dicts,
 	}
