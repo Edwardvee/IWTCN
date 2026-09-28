@@ -156,6 +156,22 @@ func perform_attack(target: UnitBase) -> void:
 	play_animation(data.anim_attack, true)
 
 
+## El castillo rival está vivo y en rango. Las unidades enemigas tienen
+## prioridad: los estados solo atacan el castillo si no hay unidad en rango.
+func can_attack_enemy_castle() -> bool:
+	return lane != null and not data.is_healer() and lane.can_unit_attack_castle(self)
+
+
+func perform_castle_attack() -> void:
+	target_id = 0
+	if data.uses_projectile:
+		lane.spawn_castle_projectile(unit_id, team, global_position, damage, data.projectile_speed)
+	else:
+		lane.queue_castle_hit(self, MatchTypes.opponent_of(team), damage)
+	attack_cooldown_left = attack_cooldown
+	play_animation(data.anim_attack, true)
+
+
 # --- Apoyo (HEALER) ----------------------------------------------------------
 
 ## Aliado herido en rango con menor % de vida (nunca uno a vida completa).

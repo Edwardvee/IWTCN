@@ -1,10 +1,13 @@
 class_name Projectile
 extends Node2D
-## Proyectil teledirigido. El daño se decide al disparar y se aplica al llegar.
-## Si el objetivo muere antes de la llegada, el proyectil se pierde.
+## Proyectil. El daño se decide al disparar y se aplica al llegar.
 ## Lo simula LaneManager (orden determinista); no tiene _physics_process propio.
-## Sirve tanto para unidades (Archer) como para estructuras (Tower, Fase 8):
-## source_id es el id lógico de quien dispara.
+## Sirve para unidades (Archer) y estructuras (Tower, Fase 8): source_id es
+## el id lógico de quien dispara.
+##
+## Dos modos de objetivo:
+## - unidad (target_id): teledirigido; se pierde si el objetivo muere antes.
+## - castillo (target_castle_owner): vuela a un punto fijo del frente del castillo.
 
 const RADIUS: float = 8.0
 const TRAIL_LENGTH: float = 40.0
@@ -13,6 +16,8 @@ var projectile_id: int = 0
 var source_id: int = 0
 var team: int = MatchTypes.NO_PLAYER
 var target_id: int = 0
+var target_castle_owner: int = MatchTypes.NO_PLAYER
+var target_point: Vector2 = Vector2.ZERO
 var damage: float = 0.0
 var speed: float = 900.0
 
@@ -30,12 +35,22 @@ func setup(p_projectile_id: int, p_source_id: int, p_team: int, p_target_id: int
 	set_physics_process(false)
 
 
-## Avanza hacia `target_position`. Devuelve true si llega en este paso.
-func simulate_towards(target_position: Vector2, delta: float) -> bool:
-	var to_target: Vector2 = target_position - global_position
+func setup_castle_target(castle_owner: int, point: Vector2) -> void:
+	target_id = 0
+	target_castle_owner = castle_owner
+	target_point = point
+
+
+func targets_castle() -> bool:
+	return target_castle_owner != MatchTypes.NO_PLAYER
+
+
+## Avanza hacia `destination`. Devuelve true si llega en este paso.
+func simulate_towards(destination: Vector2, delta: float) -> bool:
+	var to_target: Vector2 = destination - global_position
 	var step: float = speed * delta
 	if to_target.length() <= step:
-		global_position = target_position
+		global_position = destination
 		return true
 	_direction = to_target.normalized()
 	global_position += _direction * step

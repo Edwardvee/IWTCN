@@ -3,19 +3,28 @@ extends RefCounted
 ## Estado lógico de un jugador dentro de una partida.
 ##
 ## REGLA: solo EconomyManager escribe `gold` y `base_income_timer`;
-## solo GridManager modifica `grid`. El resto lo lee.
+## solo GridManager modifica `grid`; solo LaneManager modifica `castle_hp`.
+## El resto lo lee.
 
 var player_id: int = MatchTypes.NO_PLAYER
 var gold: int = 0
 ## Segundos acumulados hacia el próximo ingreso base.
 var base_income_timer: float = 0.0
 var grid: GridState
+var castle_max_hp: float = 1.0
+var castle_hp: float = 1.0
 
 
 func _init(p_player_id: int, rules: GameRules) -> void:
 	player_id = p_player_id
 	var initial_plots: PackedInt32Array = rules.initial_unlocked_plots if rules != null else PackedInt32Array()
 	grid = GridState.new(initial_plots)
+	castle_max_hp = rules.castle_max_hp if rules != null else 1.0
+	castle_hp = castle_max_hp
+
+
+func is_castle_alive() -> bool:
+	return castle_hp > 0.0
 
 
 func to_dict() -> Dictionary:
@@ -23,5 +32,7 @@ func to_dict() -> Dictionary:
 		"player_id": player_id,
 		"gold": gold,
 		"base_income_timer": base_income_timer,
+		"castle_hp": castle_hp,
+		"castle_max_hp": castle_max_hp,
 		"grid": grid.to_dict(),
 	}

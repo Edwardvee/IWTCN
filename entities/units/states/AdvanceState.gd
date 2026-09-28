@@ -1,7 +1,8 @@
 class_name AdvanceState
 extends UnitState
 ## ADVANCE: avanza por el carril.
-## - Combate (MELEE/RANGED): pasa a ATTACK al detectar un enemigo en rango.
+## - Combate (MELEE/RANGED): pasa a ATTACK al detectar un enemigo en rango
+##   o, si no hay, al tener el castillo rival en rango.
 ## - Apoyo (HEALER): pasa a HEAL si hay un aliado herido o un enemigo en rango.
 
 
@@ -16,7 +17,7 @@ func physics_update(delta: float) -> void:
 		if unit.should_hold_to_support():
 			unit.change_state(UnitBase.STATE_HEAL)
 			return
-	elif unit.acquire_target() != null:
+	elif unit.acquire_target() != null or unit.can_attack_enemy_castle():
 		unit.change_state(UnitBase.STATE_ATTACK)
 		return
 	unit.advance(delta)

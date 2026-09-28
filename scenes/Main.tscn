@@ -9,6 +9,8 @@
 [ext_resource type="Script" path="res://systems/input/LocalInputController.gd" id="7_input"]
 [ext_resource type="Script" path="res://ui/DebugPanel.gd" id="8_debug"]
 [ext_resource type="Script" path="res://systems/combat/LaneManager.gd" id="9_lane"]
+[ext_resource type="Script" path="res://entities/castle/Castle.gd" id="10_castle"]
+[ext_resource type="Script" path="res://ui/CastleHealthDisplay.gd" id="11_castle_hp"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_bar"]
 bg_color = Color(0.1, 0.1, 0.12, 0.92)
@@ -59,24 +61,8 @@ player_id = 1
 
 [node name="EnemyCastle" type="Node2D" parent="World"]
 position = Vector2(540, 820)
-
-[node name="Body" type="ColorRect" parent="World/EnemyCastle"]
-offset_left = -180.0
-offset_top = -60.0
-offset_right = 180.0
-offset_bottom = 60.0
-mouse_filter = 2
-color = Color(0.75, 0.2, 0.2, 1)
-
-[node name="Label" type="Label" parent="World/EnemyCastle"]
-offset_left = -180.0
-offset_top = -60.0
-offset_right = 180.0
-offset_bottom = 60.0
-theme_override_font_sizes/font_size = 40
-text = "ENEMY CASTLE"
-horizontal_alignment = 1
-vertical_alignment = 1
+script = ExtResource("10_castle")
+owner_id = 1
 
 [node name="Lane" type="Node2D" parent="World" node_paths=PackedStringArray("player_spawn", "enemy_spawn", "player_units_container", "enemy_units_container", "projectiles_container")]
 script = ExtResource("9_lane")
@@ -96,24 +82,7 @@ color = Color(0.36, 0.32, 0.24, 1)
 
 [node name="PlayerCastle" type="Node2D" parent="World"]
 position = Vector2(540, 2380)
-
-[node name="Body" type="ColorRect" parent="World/PlayerCastle"]
-offset_left = -180.0
-offset_top = -60.0
-offset_right = 180.0
-offset_bottom = 60.0
-mouse_filter = 2
-color = Color(0.2, 0.4, 0.8, 1)
-
-[node name="Label" type="Label" parent="World/PlayerCastle"]
-offset_left = -180.0
-offset_top = -60.0
-offset_right = 180.0
-offset_bottom = 60.0
-theme_override_font_sizes/font_size = 40
-text = "PLAYER CASTLE"
-horizontal_alignment = 1
-vertical_alignment = 1
+script = ExtResource("10_castle")
 
 [node name="PlayerGrid" type="Node2D" parent="World"]
 position = Vector2(30, 2460)
@@ -163,13 +132,24 @@ anchor_right = 1.0
 offset_bottom = 120.0
 grow_horizontal = 2
 
-[node name="MatchInfo" type="Label" parent="UI/HUD/TopBar"]
+[node name="Lines" type="VBoxContainer" parent="UI/HUD/TopBar"]
+layout_mode = 2
+alignment = 1
+
+[node name="MatchInfo" type="Label" parent="UI/HUD/TopBar/Lines"]
 unique_name_in_owner = true
 layout_mode = 2
-theme_override_font_sizes/font_size = 32
+theme_override_font_sizes/font_size = 28
 text = "Sin partida"
 horizontal_alignment = 1
 vertical_alignment = 1
+
+[node name="CastleInfo" type="Label" parent="UI/HUD/TopBar/Lines"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 34
+horizontal_alignment = 1
+vertical_alignment = 1
+script = ExtResource("11_castle_hp")
 
 [node name="Toast" type="Label" parent="UI/HUD"]
 unique_name_in_owner = true

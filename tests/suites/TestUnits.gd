@@ -47,11 +47,12 @@ func test_units_advance_in_their_direction() -> void:
 	assert_eq(ally.get_state_name(), UnitBase.STATE_ADVANCE, "sin enemigos en rango sigue en ADVANCE")
 
 
-func test_unit_stops_at_lane_end() -> void:
+func test_unit_stops_in_front_of_enemy_castle() -> void:
 	var ally: UnitBase = _spawn(soldier, 0, 1000.0)
 	_run(2.0)
-	assert_eq(ally.global_position.y, lane.lane_top_y, "se detiene al final del carril")
-	assert_true(ally.has_reached_lane_end(), "has_reached_lane_end")
+	var max_y: float = lane.get_castle_front_y(1) + ally.body_radius + ally.attack_range
+	assert_true(ally.global_position.y <= max_y and ally.global_position.y >= lane.lane_top_y, "se detiene a distancia de ataque del castillo")
+	assert_eq(ally.get_state_name(), UnitBase.STATE_ATTACK, "ataca el castillo")
 
 
 func test_combat_two_vs_one() -> void:
@@ -70,7 +71,7 @@ func test_combat_two_vs_one() -> void:
 	assert_eq(first_ally.current_hp, 250.0 - 4.0 * 35.0, "vida del aliado golpeado")
 	assert_eq(allies[1].current_hp, 250.0, "el otro aliado intacto")
 	_run(10.0)
-	assert_eq(first_ally.global_position.y, lane.lane_top_y, "el superviviente sigue avanzando hasta el final")
+	assert_true(first_ally.can_attack_enemy_castle(), "el superviviente sigue avanzando hasta el castillo rival")
 
 
 func test_equal_soldiers_trade_simultaneously() -> void:

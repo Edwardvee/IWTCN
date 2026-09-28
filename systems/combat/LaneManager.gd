@@ -1,33 +1,37 @@
 class_name LaneManager
 extends Node2D
 ## Sistema del carril: aparición, registro, consultas de objetivo, resolución
-## de golpes y retirada de unidades.
+## de golpes/curas, interacción con los castillos y retirada de unidades.
 ##
 ## Simulación determinista por tick (solo en la autoridad):
 ##   1. cada unidad viva simula en orden de unit_id (moverse, decidir golpes,
 ##      disparar proyectiles, decidir curas)
 ##   2. los proyectiles avanzan en orden de id; al llegar encolan su golpe
-##   3. se aplican los golpes en cola (todos a la vez: dos unidades que se
-##      golpean en el mismo tick se hacen daño ambas)
+##   3. se aplican los golpes en cola a unidades y castillos (todos a la vez:
+##      dos unidades que se golpean en el mismo tick se hacen daño ambas)
 ##   4. se aplican las curas en cola, solo a unidades que sigan vivas
 ##      (una cura nunca revive a quien murió en este mismo tick)
 ##   5. las muertas salen del registro (nadie más puede apuntarles) y quedan
 ##      en _dying hasta terminar su animación; después se liberan
 ##
-## Fase 5: base mínima para el combate. La Fase 6 añade la interacción con
-## los castillos al final del carril.
+## Castillos: su vida vive en PlayerState.castle_hp (solo este sistema la
+## modifica). Su frente está a `castle_front_offset` del extremo del carril.
+## Los nodos Castle de la escena son solo visuales.
 
 class PendingHit:
 	extends RefCounted
 
 	var attacker_id: int = 0
 	var target_id: int = 0
+	## Si es un jugador válido, el golpe va a su castillo (target_id se ignora).
+	var castle_owner: int = MatchTypes.NO_PLAYER
 	var amount: float = 0.0
 
-	func _init(p_attacker_id: int, p_target_id: int, p_amount: float) -> void:
+	func _init(p_attacker_id: int, p_target_id: int, p_amount: float, p_castle_owner: int = MatchTypes.NO_PLAYER) -> void:
 		attacker_id = p_attacker_id
 		target_id = p_target_id
 		amount = p_amount
+		castle_owner = p_castle_owner
 
 
 class PendingHeal:
@@ -45,10 +49,19 @@ class PendingHeal:
 
 ## Separación horizontal entre unidades que aparecen juntas.
 const SPAWN_SPACING_X: float = 60.0
+## Separación entre filas cuando un grupo supera SPAWN_ROW_SIZE unidades.
+const SPAWN_SPACING_Y: float = 56.0
+const SPAWN_ROW_SIZE: int = 4
+## Desplazamiento lateral que alterna entre grupos consecutivos para que
+## dos grupos seguidos no queden exactamente superpuestos.
+const GROUP_STAGGER_X: float = 20.0
 
 @export var lane_top_y: float = 900.0
 @export var lane_bottom_y: float = 2300.0
 @export var lane_center_x: float = 540.0
+@export var lane_half_width: float = 150.0
+## Distancia desde el extremo del carril hasta el frente del castillo.
+@export var castle_front_offset: float = 20.0
 ## Distancia desde el extremo propio del carril donde aparecen las unidades
 ## (si no hay Marker2D de spawn asignado).
 @export var spawn_margin: float = 20.0
@@ -66,6 +79,8 @@ var _dying: Array[UnitBase] = []
 var _projectiles: Array[Projectile] = []
 var _pending_hits: Array[PendingHit] = []
 var _pending_heals: Array[PendingHeal] = []
+## Nº de grupos aparecidos por equipo (para el escalonado lateral).
+var _group_counter: Array[int] = [0, 0]
 
 
 func _ready() -> void:
@@ -103,32 +118,100 @@ func spawn_unit(unit_data: UnitData, team: int, world_position: Vector2) -> Unit
 	return unit
 
 
-## Hace aparecer `count` unidades en el punto de spawn del equipo, en fila.
+## Grupo en el punto de spawn del equipo (producción de estructuras, debug).
 func spawn_group(unit_data: UnitData, team: int, count: int) -> Array[UnitBase]:
+	return spawn_group_at(unit_data, team, count, get_spawn_origin(team))
+
+
+## Grupo centrado en `origin` (cartas de unidad: se sueltan en la zona propia).
+## Filas de hasta SPAWN_ROW_SIZE; las siguientes filas quedan detrás.
+func spawn_group_at(unit_data: UnitData, team: int, count: int, origin: Vector2) -> Array[UnitBase]:
 	var spawned: Array[UnitBase] = []
+	if not MatchTypes.is_valid_player_id(team):
+		return spawned
+	var stagger: float = float(_group_counter[team] % 3 - 1) * GROUP_STAGGER_X
+	_group_counter[team] += 1
+	var backward: Vector2 = -MatchTypes.forward_direction(team)
 	for index: int in count:
-		var unit: UnitBase = spawn_unit(unit_data, team, get_spawn_position(team, index, count))
+		@warning_ignore("integer_division")
+		var row: int = index / SPAWN_ROW_SIZE
+		var row_count: int = mini(SPAWN_ROW_SIZE, count - row * SPAWN_ROW_SIZE)
+		var column: int = index % SPAWN_ROW_SIZE
+		var offset_x: float = (float(column) - float(row_count - 1) * 0.5) * SPAWN_SPACING_X + stagger
+		var spawn_position: Vector2 = origin + Vector2(offset_x, 0.0) + backward * (row * SPAWN_SPACING_Y)
+		spawn_position.x = clampf(spawn_position.x, lane_center_x - lane_half_width, lane_center_x + lane_half_width)
+		var unit: UnitBase = spawn_unit(unit_data, team, spawn_position)
 		if unit != null:
 			spawned.append(unit)
 	return spawned
 
 
-func get_spawn_position(team: int, index: int, count: int) -> Vector2:
-	var base: Vector2
+func get_spawn_origin(team: int) -> Vector2:
 	var marker: Marker2D = player_spawn if team == MatchTypes.PLAYER_BOTTOM else enemy_spawn
 	if marker != null:
-		base = marker.global_position
-	elif team == MatchTypes.PLAYER_BOTTOM:
-		base = Vector2(lane_center_x, lane_bottom_y - spawn_margin)
-	else:
-		base = Vector2(lane_center_x, lane_top_y + spawn_margin)
-	var offset_x: float = (float(index) - float(count - 1) * 0.5) * SPAWN_SPACING_X
-	return base + Vector2(offset_x, 0.0)
+		return marker.global_position
+	if team == MatchTypes.PLAYER_BOTTOM:
+		return Vector2(lane_center_x, lane_bottom_y - spawn_margin)
+	return Vector2(lane_center_x, lane_top_y + spawn_margin)
+
+
+## Mitad propia del carril, donde un jugador puede soltar cartas de unidad.
+func get_deploy_rect(team: int) -> Rect2:
+	var middle_y: float = (lane_top_y + lane_bottom_y) * 0.5
+	var left: float = lane_center_x - lane_half_width
+	var width: float = lane_half_width * 2.0
+	if team == MatchTypes.PLAYER_BOTTOM:
+		return Rect2(left, middle_y, width, lane_bottom_y - middle_y)
+	return Rect2(left, lane_top_y, width, middle_y - lane_top_y)
+
+
+func is_valid_deploy_position(team: int, world_position: Vector2) -> bool:
+	return MatchTypes.is_valid_player_id(team) and get_deploy_rect(team).has_point(world_position)
 
 
 ## Y donde se detienen las unidades del equipo (extremo rival del carril).
 func get_lane_end_y(team: int) -> float:
 	return lane_top_y if team == MatchTypes.PLAYER_BOTTOM else lane_bottom_y
+
+
+# --- Castillos ---------------------------------------------------------------
+
+## Y del frente (lado del carril) del castillo de `castle_owner`.
+func get_castle_front_y(castle_owner: int) -> float:
+	if castle_owner == MatchTypes.PLAYER_TOP:
+		return lane_top_y - castle_front_offset
+	return lane_bottom_y + castle_front_offset
+
+
+func is_castle_alive(castle_owner: int) -> bool:
+	var player_state: PlayerState = GameManager.get_player_state(castle_owner)
+	return player_state != null and player_state.is_castle_alive()
+
+
+## La unidad tiene el castillo rival vivo dentro de su rango de ataque.
+func can_unit_attack_castle(unit: UnitBase) -> bool:
+	var castle_owner: int = MatchTypes.opponent_of(unit.team)
+	if not is_castle_alive(castle_owner):
+		return false
+	var distance: float = absf(unit.global_position.y - get_castle_front_y(castle_owner)) - unit.body_radius
+	return distance <= unit.attack_range
+
+
+func queue_castle_hit(attacker: UnitBase, castle_owner: int, amount: float) -> void:
+	if attacker == null or attacker.is_dead:
+		return
+	_pending_hits.append(PendingHit.new(attacker.unit_id, 0, amount, castle_owner))
+
+
+## Aplica daño al castillo (sin bajar de 0). Devuelve el daño aplicado.
+func damage_castle(castle_owner: int, amount: float) -> float:
+	var player_state: PlayerState = GameManager.get_player_state(castle_owner)
+	if player_state == null or amount <= 0.0 or not player_state.is_castle_alive():
+		return 0.0
+	var applied: float = minf(amount, player_state.castle_hp)
+	player_state.castle_hp -= applied
+	EventBus.castillo_danado.emit(castle_owner, player_state.castle_hp, player_state.castle_max_hp)
+	return applied
 
 
 # --- Consultas ---------------------------------------------------------------
@@ -201,11 +284,25 @@ func queue_heal(healer: UnitBase, target: UnitBase, amount: float) -> void:
 	_pending_heals.append(PendingHeal.new(healer.unit_id, target.unit_id, amount))
 
 
-## Dispara un proyectil teledirigido. source_id es el id lógico de quien
+## Proyectil teledirigido a una unidad. source_id es el id lógico de quien
 ## dispara (unidad o, en la Fase 8, torre).
 func spawn_projectile(source_id: int, team: int, origin: Vector2, target_id: int, amount: float, speed: float) -> Projectile:
 	if GameManager.match_state == null or get_unit(target_id) == null:
 		return null
+	return _create_projectile(source_id, team, origin, target_id, amount, speed)
+
+
+## Proyectil al frente del castillo rival, en línea recta desde `origin`.
+func spawn_castle_projectile(source_id: int, team: int, origin: Vector2, amount: float, speed: float) -> Projectile:
+	var castle_owner: int = MatchTypes.opponent_of(team)
+	if GameManager.match_state == null or not is_castle_alive(castle_owner):
+		return null
+	var projectile: Projectile = _create_projectile(source_id, team, origin, 0, amount, speed)
+	projectile.setup_castle_target(castle_owner, Vector2(origin.x, get_castle_front_y(castle_owner)))
+	return projectile
+
+
+func _create_projectile(source_id: int, team: int, origin: Vector2, target_id: int, amount: float, speed: float) -> Projectile:
 	var projectile: Projectile = Projectile.new()
 	projectile.setup(GameManager.match_state.allocate_entity_id(), source_id, team, target_id, amount, speed)
 	var container: Node = projectiles_container if projectiles_container != null else self
@@ -219,14 +316,19 @@ func _simulate_projectiles(delta: float) -> void:
 	var index: int = 0
 	while index < _projectiles.size():
 		var projectile: Projectile = _projectiles[index]
-		var target: UnitBase = get_unit(projectile.target_id)
-		if target == null or target.is_dead:
-			# El objetivo murió antes de la llegada: el proyectil se pierde.
-			_projectiles.remove_at(index)
-			projectile.queue_free()
-			continue
-		if projectile.simulate_towards(target.global_position, delta):
-			_pending_hits.append(PendingHit.new(projectile.source_id, projectile.target_id, projectile.damage))
+		var destination: Vector2
+		if projectile.targets_castle():
+			destination = projectile.target_point
+		else:
+			var target: UnitBase = get_unit(projectile.target_id)
+			if target == null or target.is_dead:
+				# El objetivo murió antes de la llegada: el proyectil se pierde.
+				_projectiles.remove_at(index)
+				projectile.queue_free()
+				continue
+			destination = target.global_position
+		if projectile.simulate_towards(destination, delta):
+			_pending_hits.append(PendingHit.new(projectile.source_id, projectile.target_id, projectile.damage, projectile.target_castle_owner))
 			_projectiles.remove_at(index)
 			projectile.queue_free()
 			continue
@@ -235,6 +337,9 @@ func _simulate_projectiles(delta: float) -> void:
 
 func _resolve_hits() -> void:
 	for hit: PendingHit in _pending_hits:
+		if MatchTypes.is_valid_player_id(hit.castle_owner):
+			damage_castle(hit.castle_owner, hit.amount)
+			continue
 		var target: UnitBase = get_unit(hit.target_id)
 		if target != null and not target.is_dead:
 			target.receive_damage(hit.amount, hit.attacker_id)
@@ -300,6 +405,7 @@ func clear_units() -> void:
 	_projectiles.clear()
 	_pending_hits.clear()
 	_pending_heals.clear()
+	_group_counter = [0, 0]
 
 
 func to_dict() -> Dictionary:
@@ -312,6 +418,7 @@ func to_dict() -> Dictionary:
 			"projectile_id": projectile.projectile_id,
 			"source_id": projectile.source_id,
 			"target_id": projectile.target_id,
+			"target_castle_owner": projectile.target_castle_owner,
 			"position": projectile.global_position,
 		})
 	return {"units": unit_dicts, "projectiles": projectile_dicts}
