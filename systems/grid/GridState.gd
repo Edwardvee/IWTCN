@@ -141,6 +141,18 @@ func clear_slot(slot_index: int) -> void:
 	slot_state.invested_gold = 0
 
 
+## Solo clientes online: sustituye el estado por el replicado del servidor.
+func apply_dict(data: Dictionary) -> void:
+	var plots: Array = data.get("unlocked_plots", [])
+	for plot_index: int in mini(plots.size(), PLOT_COUNT):
+		_unlocked_plots[plot_index] = bool(plots[plot_index])
+	var slots: Array = data.get("slots", [])
+	for slot_index: int in mini(slots.size(), SLOT_COUNT):
+		var slot_data: Dictionary = slots[slot_index]
+		place_structure(slot_index, StringName(str(slot_data.get("structure_id", ""))),
+			int(slot_data.get("building_id", 0)), int(slot_data.get("invested_gold", 0)))
+
+
 func to_dict() -> Dictionary:
 	var slot_dicts: Array[Dictionary] = []
 	for slot_state: SlotState in _slots:

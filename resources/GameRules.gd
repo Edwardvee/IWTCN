@@ -27,6 +27,12 @@ const SLOTS_PER_PLOT: int = 4
 ## Fracción del oro invertido que se devuelve al vender (0.5 = la mitad).
 @export_range(0.0, 1.0, 0.05) var sell_refund_ratio: float = 0.5
 
+@export_group("Structure Pricing")
+## Multiplicador del precio de la 2ª copia de un edificio (1.25 = +25%).
+@export var second_copy_cost_multiplier: float = 1.25
+## Multiplicador acumulado de la 3ª copia y siguientes (1.30 = +30% sobre la anterior).
+@export var extra_copy_cost_multiplier: float = 1.30
+
 @export_group("Plots")
 ## Coste de cada plot por índice (0..5). Ver GridManager para el orden.
 @export var plot_costs: PackedInt32Array = PackedInt32Array([40, 30, 20, 50, 0, 10])
@@ -43,6 +49,15 @@ func get_plot_cost(plot_index: int) -> int:
 	if plot_index < 0 or plot_index >= plot_costs.size():
 		return -1
 	return plot_costs[plot_index]
+
+
+## Precio de una estructura con `owned_count` copias ya construidas.
+## Copia 1 = base; copia 2 = base × second; copia 3+ = anterior × extra.
+func get_scaled_structure_cost(base_cost: int, owned_count: int) -> int:
+	var cost: float = float(base_cost)
+	for copy_index: int in owned_count:
+		cost *= second_copy_cost_multiplier if copy_index == 0 else extra_copy_cost_multiplier
+	return roundi(cost)
 
 
 func get_sell_refund(invested_gold: int) -> int:

@@ -1,0 +1,89 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://ui/MainMenu.gd" id="1_menu"]
+
+[node name="Menu" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_menu")
+
+[node name="Background" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.12, 0.12, 0.16, 1)
+
+[node name="Center" type="CenterContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Layout" type="VBoxContainer" parent="Center"]
+custom_minimum_size = Vector2(800, 0)
+layout_mode = 2
+theme_override_constants/separation = 36
+
+[node name="Title" type="Label" parent="Center/Layout"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 72
+text = "I Want That
+Castle Now!"
+horizontal_alignment = 1
+
+[node name="PlayAI" type="Button" parent="Center/Layout"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 130)
+layout_mode = 2
+theme_override_font_sizes/font_size = 48
+text = "Jugar contra la IA"
+
+[node name="Host" type="Button" parent="Center/Layout"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 130)
+layout_mode = 2
+theme_override_font_sizes/font_size = 48
+text = "Crear sala online"
+
+[node name="JoinRow" type="HBoxContainer" parent="Center/Layout"]
+layout_mode = 2
+theme_override_constants/separation = 20
+
+[node name="Address" type="LineEdit" parent="Center/Layout/JoinRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 110)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 40
+max_length = 8
+placeholder_text = "Código de sala"
+
+[node name="Join" type="Button" parent="Center/Layout/JoinRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(260, 110)
+layout_mode = 2
+theme_override_font_sizes/font_size = 44
+text = "Unirse"
+
+[node name="LocalIP" type="Label" parent="Center/Layout"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 30
+horizontal_alignment = 1
+
+[node name="Status" type="Label" parent="Center/Layout"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.85, 0.3, 1)
+theme_override_font_sizes/font_size = 34
+horizontal_alignment = 1
+autowrap_mode = 3

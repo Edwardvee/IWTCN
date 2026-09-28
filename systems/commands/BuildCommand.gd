@@ -33,13 +33,15 @@ func validate(processor: CommandProcessor) -> String:
 	var reason: String = grid.can_build(slot_index, card.structure)
 	if reason != "":
 		return reason
-	if not EconomyManager.has_gold(player_id, card.cost):
-		return "Oro insuficiente (%d)" % card.cost
+	var cost: int = EconomyManager.get_card_cost(player_id, card)
+	if not EconomyManager.has_gold(player_id, cost):
+		return "Oro insuficiente (%d)" % cost
 	return ""
 
 
 func apply(processor: CommandProcessor) -> bool:
 	var card: CardData = processor.get_database().get_card(card_id)
-	if not EconomyManager.spend_gold(player_id, card.cost):
+	var cost: int = EconomyManager.get_card_cost(player_id, card)
+	if not EconomyManager.spend_gold(player_id, cost):
 		return false
-	return processor.get_grid(player_id).build(slot_index, card.structure, card.cost) != null
+	return processor.get_grid(player_id).build(slot_index, card.structure, cost) != null

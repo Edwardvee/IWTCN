@@ -1,6 +1,6 @@
-[gd_resource type="Resource" script_class="StructureData" format=3]
+[gd_resource type="Resource" script_class="StructureData" format=3 uid="uid://d0idwt75pvvgc"]
 
-[ext_resource type="Script" path="res://resources/StructureData.gd" id="1_2wh6l"]
+[ext_resource type="Script" uid="uid://dyexm254r02lh" path="res://resources/StructureData.gd" id="1_2wh6l"]
 
 [resource]
 script = ExtResource("1_2wh6l")
@@ -11,7 +11,7 @@ tags = Array[StringName]([&"defense"])
 income_per_level = PackedInt32Array()
 spawn_count_per_level = PackedInt32Array()
 spawn_interval_per_level = PackedFloat32Array()
-tower_range_per_level = PackedFloat32Array(300, 320, 340, 360, 380)
+tower_range_per_level = PackedFloat32Array(600, 640, 680, 720, 760)
 tower_damage_per_level = PackedFloat32Array(30, 38, 46, 55, 65)
 tower_cooldown_per_level = PackedFloat32Array(1, 0.95, 0.9, 0.85, 0.8)
 color = Color(0.5, 0.5, 0.55, 1)

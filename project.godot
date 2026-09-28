@@ -11,7 +11,7 @@ config_version=5
 [application]
 
 config/name="I Want That Castle Now!"
-run/main_scene="res://scenes/Main.tscn"
+run/main_scene="res://scenes/Menu.tscn"
 config/features=PackedStringArray("4.7", "GL Compatibility")
 config/icon="res://icon.svg"
 
@@ -20,6 +20,7 @@ config/icon="res://icon.svg"
 EventBus="*res://autoload/EventBus.gd"
 GameManager="*res://autoload/GameManager.gd"
 EconomyManager="*res://autoload/EconomyManager.gd"
+NetworkManager="*res://autoload/NetworkManager.gd"
 
 [display]
 

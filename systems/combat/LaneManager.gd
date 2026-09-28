@@ -89,8 +89,15 @@ func _ready() -> void:
 	EventBus.partida_iniciada.connect(_on_partida_iniciada)
 
 
+## Velocidad de interpolación hacia la posición replicada (clientes online).
+const NETWORK_LERP_SPEED: float = 12.0
+
+
 func _physics_process(delta: float) -> void:
-	simulate_step(delta)
+	if GameManager.is_authority():
+		simulate_step(delta)
+	else:
+		_client_visual_step(delta)
 
 
 func simulate_step(delta: float) -> void:
@@ -508,6 +515,7 @@ func to_dict() -> Dictionary:
 		projectile_dicts.append({
 			"projectile_id": projectile.projectile_id,
 			"source_id": projectile.source_id,
+			"team": projectile.team,
 			"target_id": projectile.target_id,
 			"target_castle_owner": projectile.target_castle_owner,
 			"position": projectile.global_position,
@@ -517,3 +525,85 @@ func to_dict() -> Dictionary:
 
 func _on_partida_iniciada(_modo: int, _semilla: int) -> void:
 	clear_units()
+
+
+# --- Cliente online (solo presentación) ------------------------------------------
+
+## Aplica el estado replicado: crea, actualiza o retira unidades y proyectiles
+## por id lógico. El cliente nunca simula combate: solo presenta.
+func apply_snapshot(data: Dictionary) -> void:
+	var seen_units: Dictionary[int, bool] = {}
+	for unit_variant: Variant in data.get("units", []):
+		var unit_data_dict: Dictionary = unit_variant
+		var unit_id: int = int(unit_data_dict.get("unit_id", 0))
+		var team: int = int(unit_data_dict.get("team", MatchTypes.NO_PLAYER))
+		var network_pos: Vector2 = unit_data_dict.get("position", Vector2.ZERO)
+		seen_units[unit_id] = true
+		var unit: UnitBase = get_unit(unit_id)
+		if unit == null:
+			unit = _create_replicated_unit(unit_id, team, StringName(str(unit_data_dict.get("unit_type", ""))), network_pos)
+			if unit == null:
+				continue
+		elif unit.team != team:
+			convert_unit(unit, team)
+		unit.network_position = network_pos
+		unit.apply_network_health(float(unit_data_dict.get("hp", unit.current_hp)), float(unit_data_dict.get("max_hp", unit.max_hp)))
+	var index: int = 0
+	while index < _units.size():
+		var existing: UnitBase = _units[index]
+		if seen_units.has(existing.unit_id):
+			index += 1
+			continue
+		existing.die()
+		_units.remove_at(index)
+		_units_by_id.erase(existing.unit_id)
+		_dying.append(existing)
+	_apply_projectile_snapshot(data.get("projectiles", []))
+
+
+func _create_replicated_unit(unit_id: int, team: int, unit_type: StringName, network_pos: Vector2) -> UnitBase:
+	var unit_data: UnitData = GameManager.database.get_unit(unit_type) if GameManager.database != null else null
+	if unit_data == null or not MatchTypes.is_valid_player_id(team):
+		return null
+	var unit: UnitBase = UnitBase.new()
+	unit.setup(unit_id, team, unit_data, self)
+	_get_container(team).add_child(unit)
+	unit.global_position = network_pos
+	unit.network_position = network_pos
+	_units.append(unit)
+	_units.sort_custom(func(a: UnitBase, b: UnitBase) -> bool: return a.unit_id < b.unit_id)
+	_units_by_id[unit_id] = unit
+	return unit
+
+
+func _apply_projectile_snapshot(projectile_list: Array) -> void:
+	var by_id: Dictionary[int, Projectile] = {}
+	for projectile: Projectile in _projectiles:
+		by_id[projectile.projectile_id] = projectile
+	var kept: Array[Projectile] = []
+	for projectile_variant: Variant in projectile_list:
+		var projectile_dict: Dictionary = projectile_variant
+		var projectile_id: int = int(projectile_dict.get("projectile_id", 0))
+		var network_pos: Vector2 = projectile_dict.get("position", Vector2.ZERO)
+		var projectile: Projectile = by_id.get(projectile_id, null)
+		if projectile == null:
+			projectile = Projectile.new()
+			projectile.setup(projectile_id, int(projectile_dict.get("source_id", 0)), int(projectile_dict.get("team", MatchTypes.NO_PLAYER)), 0, 0.0, 0.0)
+			var container: Node = projectiles_container if projectiles_container != null else self
+			container.add_child(projectile)
+			projectile.global_position = network_pos
+		by_id.erase(projectile_id)
+		projectile.target_point = network_pos
+		kept.append(projectile)
+	for leftover: Projectile in by_id.values():
+		leftover.queue_free()
+	_projectiles = kept
+
+
+func _client_visual_step(delta: float) -> void:
+	var weight: float = clampf(delta * NETWORK_LERP_SPEED, 0.0, 1.0)
+	for unit: UnitBase in _units:
+		unit.global_position = unit.global_position.lerp(unit.network_position, weight)
+	for projectile: Projectile in _projectiles:
+		projectile.global_position = projectile.global_position.lerp(projectile.target_point, weight)
+	_update_dying(delta)

@@ -16,6 +16,7 @@
 [ext_resource type="Script" path="res://ui/BuffListLabel.gd" id="14_buffs"]
 [ext_resource type="Script" path="res://ui/GameOverPanel.gd" id="15_game_over"]
 [ext_resource type="Script" path="res://systems/ai/AIController.gd" id="16_ai"]
+[ext_resource type="Script" path="res://systems/network/StateReplicator.gd" id="17_replicator"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_bar"]
 bg_color = Color(0.1, 0.1, 0.12, 0.92)
@@ -120,6 +121,9 @@ script = ExtResource("13_draft")
 
 [node name="AIController" type="Node" parent="Systems"]
 script = ExtResource("16_ai")
+
+[node name="StateReplicator" type="Node" parent="Systems"]
+script = ExtResource("17_replicator")
 
 [node name="Camera2D" type="Camera2D" parent="."]
 script = ExtResource("2_camera")

@@ -37,8 +37,9 @@ func validate(processor: CommandProcessor) -> String:
 	var card: CardData = processor.get_database().get_card(card_id)
 	if card == null:
 		return "Carta desconocida"
-	if not EconomyManager.has_gold(player_id, card.cost):
-		return "Oro insuficiente (%d)" % card.cost
+	var cost: int = EconomyManager.get_card_cost(player_id, card)
+	if not EconomyManager.has_gold(player_id, cost):
+		return "Oro insuficiente (%d)" % cost
 	match card.card_type:
 		CardData.CardType.STRUCTURE:
 			var grid: GridManager = processor.get_grid(player_id)
@@ -61,20 +62,21 @@ func validate(processor: CommandProcessor) -> String:
 
 func apply(processor: CommandProcessor) -> bool:
 	var card: CardData = processor.get_database().get_card(card_id)
-	if not EconomyManager.spend_gold(player_id, card.cost):
+	var cost: int = EconomyManager.get_card_cost(player_id, card)
+	if not EconomyManager.spend_gold(player_id, cost):
 		return false
-	if not _apply_effect(processor, card):
+	if not _apply_effect(processor, card, cost):
 		# Operación atómica: si el efecto falla, se devuelve el oro.
-		EconomyManager.add_gold(player_id, card.cost)
+		EconomyManager.add_gold(player_id, cost)
 		return false
 	processor.get_draft().consume_card(player_id, offer_index)
 	return true
 
 
-func _apply_effect(processor: CommandProcessor, card: CardData) -> bool:
+func _apply_effect(processor: CommandProcessor, card: CardData, cost: int) -> bool:
 	match card.card_type:
 		CardData.CardType.STRUCTURE:
-			return processor.get_grid(player_id).build(slot_index, card.structure, card.cost) != null
+			return processor.get_grid(player_id).build(slot_index, card.structure, cost) != null
 		CardData.CardType.DIRECT_UNIT:
 			var spawned: Array[UnitBase] = processor.get_lane().spawn_group_at(card.unit, player_id, card.unit_count, deploy_position)
 			return spawned.size() == card.unit_count

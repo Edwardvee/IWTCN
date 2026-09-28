@@ -34,6 +34,9 @@ func _ready() -> void:
 	_hammer_button.toggled.connect(_on_hammer_toggled)
 	EventBus.draft_ofrecido.connect(_on_draft_ofrecido)
 	EventBus.oro_actualizado.connect(_on_oro_actualizado)
+	EventBus.estructura_construida.connect(func(pid: int, _s: int, _d: StructureData, _l: int) -> void: _on_estructura_cambiada(pid))
+	EventBus.estructura_fusionada.connect(func(pid: int, _a: int, _b: int, _l: int) -> void: _on_estructura_cambiada(pid))
+	EventBus.estructura_vendida.connect(func(pid: int, _s: int, _g: int) -> void: _on_estructura_cambiada(pid))
 	EventBus.coste_reroll_actualizado.connect(_on_coste_reroll_actualizado)
 
 
@@ -65,7 +68,8 @@ func _refresh_affordability() -> void:
 	var gold: int = EconomyManager.get_gold(GameManager.local_player_id)
 	for view: CardView in _card_views:
 		if view.card != null:
-			view.set_affordable(gold >= view.card.cost)
+			view.refresh_cost()
+			view.set_affordable(gold >= EconomyManager.get_card_cost(GameManager.local_player_id, view.card))
 
 
 # --- Arrastre --------------------------------------------------------------------
@@ -127,6 +131,11 @@ func _on_draft_ofrecido(player_id: int, cartas: Array[CardData]) -> void:
 
 
 func _on_oro_actualizado(player_id: int, _nuevo_total: int) -> void:
+	if player_id == GameManager.local_player_id:
+		_refresh_affordability()
+
+
+func _on_estructura_cambiada(player_id: int) -> void:
 	if player_id == GameManager.local_player_id:
 		_refresh_affordability()
 

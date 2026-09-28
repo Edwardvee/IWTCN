@@ -52,6 +52,8 @@ var _sprite: AnimatedSprite2D = null
 var _collision: CollisionShape2D = null
 ## Bonus fijados al aparecer (cuarteles). Los buffs se suman en refresh_stats().
 var _spawn_modifiers: UnitStatModifiers = null
+## Solo clientes online: última posición recibida del servidor (se interpola).
+var network_position: Vector2 = Vector2.ZERO
 
 
 func setup(p_unit_id: int, p_team: int, p_data: UnitData, p_lane: LaneManager, spawn_modifiers: UnitStatModifiers = null) -> void:
@@ -295,6 +297,15 @@ func is_ready_to_free() -> bool:
 	return is_dead and state_machine.get_elapsed_in_state() >= DEATH_DURATION
 
 
+## Solo clientes online: aplica la vida replicada por el servidor.
+func apply_network_health(hp: float, network_max_hp: float) -> void:
+	if is_equal_approx(hp, current_hp) and is_equal_approx(network_max_hp, max_hp):
+		return
+	current_hp = hp
+	max_hp = maxf(1.0, network_max_hp)
+	queue_redraw()
+
+
 func get_hp_ratio() -> float:
 	return current_hp / max_hp if max_hp > 0.0 else 0.0
 
@@ -360,7 +371,9 @@ func _draw() -> void:
 		_draw_shape(data.fallback_shape, body_radius, MatchTypes.team_color(team))
 		_draw_shape(data.fallback_shape, body_radius * 0.45, data.fallback_color)
 	var bar_width: float = body_radius * 2.0 + 10.0
-	var bar_rect: Rect2 = Rect2(-bar_width * 0.5, -body_radius - 16.0, bar_width, HP_BAR_HEIGHT)
+	# Con la vista girada la barra se dibuja "debajo" para verse encima en pantalla.
+	var bar_y: float = body_radius + 9.0 if ViewOrientation.is_flipped() else -body_radius - 16.0
+	var bar_rect: Rect2 = Rect2(-bar_width * 0.5, bar_y, bar_width, HP_BAR_HEIGHT)
 	draw_rect(bar_rect, Color(0.0, 0.0, 0.0, 0.75))
 	var ratio: float = get_hp_ratio()
 	draw_rect(Rect2(bar_rect.position, Vector2(bar_width * ratio, HP_BAR_HEIGHT)), Color.RED.lerp(Color.LIME_GREEN, ratio))

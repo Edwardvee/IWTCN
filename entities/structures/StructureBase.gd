@@ -114,6 +114,7 @@ func _create_visuals() -> void:
 	_label.add_theme_constant_override("outline_size", 8)
 	_label.add_theme_color_override("font_outline_color", Color.BLACK)
 	add_child(_label)
+	ViewOrientation.orient(_label)
 	_update_label()
 	queue_redraw()
 

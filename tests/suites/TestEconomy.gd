@@ -79,3 +79,10 @@ func test_income_timer_is_serialized() -> void:
 	var player_zero: Dictionary = players[0]
 	assert_eq(player_zero["gold"], 20, "oro en el snapshot")
 	assert_true(is_equal_approx(player_zero["base_income_timer"], 1.25), "temporizador en el snapshot")
+
+
+func test_structure_cost_scales_with_owned_copies() -> void:
+	assert_eq(rules.get_scaled_structure_cost(50, 0), 50, "1ª copia al precio base")
+	assert_eq(rules.get_scaled_structure_cost(50, 1), 63, "2ª copia +25% (62.5 redondeado)")
+	assert_eq(rules.get_scaled_structure_cost(50, 2), 81, "3ª copia +30% sobre la anterior")
+	assert_eq(rules.get_scaled_structure_cost(50, 3), 106, "4ª copia sigue +30%")

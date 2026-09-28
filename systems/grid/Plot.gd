@@ -30,6 +30,10 @@ func set_lock_state(is_locked: bool, cost: int) -> void:
 	unlock_cost = cost
 	_overlay.visible = locked
 	_cost_label.text = str(unlock_cost)
+	# Con la vista girada, moneda y número se reflejan para leerse "● 40".
+	var flipped: bool = ViewOrientation.is_flipped()
+	_cost_label.position.x = size.x * 0.5 + 10.0 - _cost_label.size.x if flipped else size.x * 0.5 - 10.0
+	ViewOrientation.orient(_cost_label)
 	_overlay.queue_redraw()
 
 
@@ -58,4 +62,5 @@ func _draw() -> void:
 
 func _draw_overlay() -> void:
 	_overlay.draw_rect(Rect2(Vector2.ZERO, size), Color(0.0, 0.0, 0.0, 0.6))
-	_overlay.draw_circle(Vector2(size.x * 0.5 - 45.0, size.y * 0.5), 28.0, COIN_COLOR)
+	var coin_offset: float = 45.0 if ViewOrientation.is_flipped() else -45.0
+	_overlay.draw_circle(Vector2(size.x * 0.5 + coin_offset, size.y * 0.5), 28.0, COIN_COLOR)

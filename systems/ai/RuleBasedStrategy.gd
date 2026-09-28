@@ -34,7 +34,7 @@ func choose_command(ai: AIController) -> GameCommand:
 			continue
 		score += rng.randi_range(0, SCORE_JITTER)
 		top_score = maxi(top_score, score)
-		if card.cost <= gold and score > best_score:
+		if EconomyManager.get_card_cost(ai.player_id, card) <= gold and score > best_score:
 			best_score = score
 			best_index = index
 	if best_index >= 0 and best_score >= PLAY_THRESHOLD:

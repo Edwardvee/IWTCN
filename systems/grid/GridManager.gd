@@ -208,7 +208,7 @@ func get_slot_size() -> Vector2:
 func get_plot_rect(plot_index: int) -> Rect2:
 	@warning_ignore("integer_division")
 	var front_row: int = plot_index / PLOT_COLUMNS
-	var column: int = plot_index % PLOT_COLUMNS
+	var column: int = _screen_column(plot_index % PLOT_COLUMNS, PLOT_COLUMNS)
 	var plot_size: Vector2 = get_plot_size()
 	var screen_row: int = _screen_row(front_row, PLOT_ROWS)
 	return Rect2(Vector2(column * (plot_size.x + plot_gap), screen_row * (plot_size.y + plot_gap)), plot_size)
@@ -219,7 +219,7 @@ func get_slot_rect(slot_index: int) -> Rect2:
 	var local_index: int = slot_index % GridState.SLOTS_PER_PLOT
 	@warning_ignore("integer_division")
 	var front_row: int = local_index / SLOT_COLUMNS
-	var column: int = local_index % SLOT_COLUMNS
+	var column: int = _screen_column(local_index % SLOT_COLUMNS, SLOT_COLUMNS)
 	var slot_size: Vector2 = get_slot_size()
 	var screen_row: int = _screen_row(front_row, SLOT_ROWS)
 	var offset: Vector2 = Vector2(plot_padding, plot_padding) + Vector2(column * (slot_size.x + slot_gap), screen_row * (slot_size.y + slot_gap))
@@ -261,6 +261,12 @@ func resolve_drop_slot(world_position: Vector2) -> int:
 
 
 # --- Nodos ------------------------------------------------------------------
+
+## Player 1 está reflejado respecto al centro (filas y columnas): con su
+## vista girada 180° ve su reino exactamente igual que el player 0 el suyo.
+func _screen_column(column: int, columns: int) -> int:
+	return column if player_id == MatchTypes.PLAYER_BOTTOM else columns - 1 - column
+
 
 func _screen_row(front_row: int, rows: int) -> int:
 	# Player 0 (abajo) tiene la fila delantera arriba; player 1, abajo.
@@ -342,6 +348,11 @@ func _sync_from_state() -> void:
 			touched.append(structure)
 	for structure: StructureData in touched:
 		_refresh_levels(structure)
+
+
+## Reconstruye los nodos desde el estado (clientes online tras un snapshot).
+func resync_from_state() -> void:
+	_sync_from_state()
 
 
 func _on_partida_iniciada(_modo: int, _semilla: int) -> void:

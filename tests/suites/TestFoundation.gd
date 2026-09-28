@@ -13,13 +13,14 @@ func test_autoloads_registered() -> void:
 	assert_true(root.has_node("EventBus"), "Falta autoload EventBus")
 	assert_true(root.has_node("GameManager"), "Falta autoload GameManager")
 	assert_true(root.has_node("EconomyManager"), "Falta autoload EconomyManager")
+	assert_true(root.has_node("NetworkManager"), "Falta autoload NetworkManager")
 
 
 func test_display_settings() -> void:
 	assert_eq(ProjectSettings.get_setting("display/window/size/viewport_width"), 1080, "viewport_width")
 	assert_eq(ProjectSettings.get_setting("display/window/size/viewport_height"), 1920, "viewport_height")
 	assert_eq(ProjectSettings.get_setting("display/window/handheld/orientation"), 1, "orientación portrait")
-	assert_eq(ProjectSettings.get_setting("application/run/main_scene"), "res://scenes/Main.tscn", "main_scene")
+	assert_eq(ProjectSettings.get_setting("application/run/main_scene"), "res://scenes/Menu.tscn", "main_scene (menú)")
 
 
 func test_main_scene_structure() -> void:

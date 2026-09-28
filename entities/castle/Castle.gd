@@ -30,6 +30,7 @@ func _ready() -> void:
 
 
 func _refresh_from_state() -> void:
+	ViewOrientation.orient(_label)
 	var player_state: PlayerState = GameManager.get_player_state(owner_id)
 	if player_state == null:
 		_show(1.0, 1.0)

@@ -43,6 +43,20 @@ func get_gold(player_id: int) -> int:
 	return player_state.gold
 
 
+## Precio real de una carta para un jugador. Las estructuras suben de precio
+## según las copias que ya tiene construidas; el resto cuesta card.cost.
+func get_card_cost(player_id: int, card: CardData) -> int:
+	if card == null:
+		return 0
+	if card.card_type != CardData.CardType.STRUCTURE or card.structure == null:
+		return card.cost
+	var rules: GameRules = GameManager.get_rules()
+	var player_state: PlayerState = GameManager.get_player_state(player_id)
+	if rules == null or player_state == null:
+		return card.cost
+	return rules.get_scaled_structure_cost(card.cost, player_state.grid.count_structures(card.structure.id))
+
+
 func has_gold(player_id: int, amount: int) -> bool:
 	if amount < 0:
 		return false

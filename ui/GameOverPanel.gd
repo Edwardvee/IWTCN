@@ -60,6 +60,12 @@ func _on_partida_iniciada(_modo: int, _semilla: int) -> void:
 	visible = false
 
 
-## Reinicio limpio: se recarga la escena y Main arranca una partida nueva.
+## VS AI: se recarga la escena y Main arranca una partida nueva.
+## Online: se cierra la conexión y se vuelve al menú.
 func _on_restart_pressed() -> void:
+	if GameManager.game_mode == MatchTypes.GameMode.ONLINE:
+		NetworkManager.close()
+		get_tree().change_scene_to_file(NetworkManager.MENU_SCENE)
+		return
+	GameManager.configure_next_match(MatchTypes.GameMode.VS_AI, 0, MatchTypes.PLAYER_BOTTOM)
 	get_tree().reload_current_scene()

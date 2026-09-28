@@ -1,8 +1,9 @@
-[gd_resource type="Resource" script_class="GameRules" format=3]
+[gd_resource type="Resource" script_class="GameRules" format=3 uid="uid://c4urvr63i368t"]
 
-[ext_resource type="Script" path="res://resources/GameRules.gd" id="1_u45a7"]
+[ext_resource type="Script" uid="uid://ddrouplk8wogf" path="res://resources/GameRules.gd" id="1_u45a7"]
 
 [resource]
 script = ExtResource("1_u45a7")
+starting_gold = 50
 plot_costs = PackedInt32Array(40, 30, 20, 50, 0, 10)
 initial_unlocked_plots = PackedInt32Array(4)

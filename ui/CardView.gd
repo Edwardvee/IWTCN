@@ -62,9 +62,15 @@ func set_card(p_offer_index: int, p_card: CardData) -> void:
 	_type_label.text = TYPE_NAMES.get(card.card_type, "")
 	_name_label.text = card.display_name
 	_description_label.text = card.description
-	_cost_label.text = "● %d" % card.cost
+	refresh_cost()
 	_style.bg_color = card.color.darkened(0.55)
 	_style.border_color = card.color
+
+
+## Precio real para el jugador local (sube con cada copia construida).
+func refresh_cost() -> void:
+	if card != null:
+		_cost_label.text = "● %d" % EconomyManager.get_card_cost(GameManager.local_player_id, card)
 
 
 func set_affordable(affordable: bool) -> void:
