@@ -18,11 +18,19 @@ enum Kind { FARM, SPAWNER, TOWER }
 @export_group("Farm")
 @export var income_per_level: PackedInt32Array = PackedInt32Array()
 @export var income_interval: float = 8.0
+## true: income_per_level es el ingreso TOTAL de todas las granjas del
+## jugador, repartido entre ellas (Lv3 = 3 granjas = +60 en total).
+## false: cada granja da income_per_level de su nivel (3 granjas = +60 cada una).
+@export var income_shared_between_buildings: bool = true
 
 @export_group("Spawner")
 @export var spawn_unit: UnitData
 @export var spawn_count_per_level: PackedInt32Array = PackedInt32Array()
 @export var spawn_interval_per_level: PackedFloat32Array = PackedFloat32Array()
+## Mejora de las unidades de spawn_unit por cada estructura adicional de
+## este tipo (la primera da las estadísticas base).
+@export var unit_bonus_damage_per_extra_building: float = 0.0
+@export var unit_bonus_hp_per_extra_building: float = 0.0
 
 @export_group("Tower")
 @export var tower_range_per_level: PackedFloat32Array = PackedFloat32Array()

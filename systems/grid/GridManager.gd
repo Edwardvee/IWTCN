@@ -25,15 +25,34 @@ const STRUCTURE_FILL: float = 0.86
 @export var plot_padding: float = 12.0
 @export var slot_gap: float = 10.0
 
+## Carril al que las estructuras envían unidades y proyectiles (lo asigna Main).
+var lane: LaneManager = null
+
 var _plots: Array[Plot] = []
 var _slots: Array[BuildingSlot] = []
 
 
 func _ready() -> void:
+	# Las estructuras simulan antes que el carril en cada tick, para que las
+	# unidades producidas en este tick se muevan en el mismo tick en ambos bandos.
+	process_physics_priority = -10
 	_create_nodes()
 	EventBus.partida_iniciada.connect(_on_partida_iniciada)
 	EventBus.slot_seleccionado.connect(_on_slot_seleccionado)
 	_sync_from_state()
+
+
+func _physics_process(delta: float) -> void:
+	simulate_step(delta)
+
+
+## Simula las estructuras en orden de slot. Solo en la autoridad.
+func simulate_step(delta: float) -> void:
+	if delta <= 0.0 or not GameManager.is_authority() or not GameManager.is_match_running():
+		return
+	for slot: BuildingSlot in _slots:
+		if slot.structure != null:
+			slot.structure.simulate(delta)
 
 
 # --- Estado -----------------------------------------------------------------
@@ -66,6 +85,19 @@ func get_structure_level(structure: StructureData) -> int:
 	if state == null or structure == null:
 		return 0
 	return structure.clamp_level(state.count_structures(structure.id))
+
+
+## Menor building_id entre las estructuras de ese tipo del jugador (0 si no hay).
+func get_first_building_id(structure_id: StringName) -> int:
+	var state: GridState = get_state()
+	if state == null:
+		return 0
+	var first: int = 0
+	for slot_index: int in state.get_occupied_slots():
+		var slot_state: GridState.SlotState = state.get_slot(slot_index)
+		if slot_state.structure_id == structure_id and (first == 0 or slot_state.building_id < first):
+			first = slot_state.building_id
+	return first
 
 
 func count_structures_with_tag(tag: StringName) -> int:
@@ -261,10 +293,21 @@ func _create_nodes() -> void:
 
 
 func _spawn_structure_node(slot_index: int, structure: StructureData, building_id: int) -> StructureBase:
-	var node: StructureBase = StructureBase.new()
-	node.setup(building_id, player_id, structure, slot_index, get_slot_size() * STRUCTURE_FILL)
+	var node: StructureBase = _create_structure_for_kind(structure.kind)
+	node.setup(building_id, player_id, structure, slot_index, get_slot_size() * STRUCTURE_FILL, self)
 	_slots[slot_index].attach_structure(node)
 	return node
+
+
+func _create_structure_for_kind(kind: StructureData.Kind) -> StructureBase:
+	match kind:
+		StructureData.Kind.FARM:
+			return FarmStructure.new()
+		StructureData.Kind.SPAWNER:
+			return SpawnerStructure.new()
+		StructureData.Kind.TOWER:
+			return TowerStructure.new()
+	return StructureBase.new()
 
 
 func _refresh_levels(structure: StructureData) -> void:

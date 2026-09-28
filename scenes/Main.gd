@@ -15,6 +15,7 @@ extends Node
 
 func _ready() -> void:
 	for grid: GridManager in [_player_grid, _enemy_grid]:
+		grid.lane = _lane
 		_command_processor.register_grid(grid)
 		_local_input.register_grid(grid)
 	_command_processor.register_lane(_lane)

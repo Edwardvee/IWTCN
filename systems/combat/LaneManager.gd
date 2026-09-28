@@ -110,7 +110,7 @@ func spawn_unit(unit_data: UnitData, team: int, world_position: Vector2) -> Unit
 		push_error("LaneManager.spawn_unit: parámetros inválidos")
 		return null
 	var unit: UnitBase = UnitBase.new()
-	unit.setup(GameManager.match_state.allocate_entity_id(), team, unit_data, self)
+	unit.setup(GameManager.match_state.allocate_entity_id(), team, unit_data, self, UnitStatModifiers.for_player(team, unit_data))
 	_get_container(team).add_child(unit)
 	unit.global_position = world_position
 	_register(unit)
@@ -241,6 +241,24 @@ func find_nearest_enemy_in_range(seeker: UnitBase, max_range: float) -> UnitBase
 		if candidate.team == seeker.team or candidate.is_dead:
 			continue
 		var distance: float = seeker.edge_distance_to(candidate)
+		if distance > max_range:
+			continue
+		if distance < best_distance or (is_equal_approx(distance, best_distance) and candidate.unit_id < best.unit_id):
+			best = candidate
+			best_distance = distance
+	return best
+
+
+## Enemigo vivo de `team` más cercano a la coordenada `origin_y` (distancia en
+## el eje del carril hasta el borde de la unidad). Lo usan las torres, que
+## están fuera del carril. Desempate determinista: menor unit_id.
+func find_nearest_enemy_to_y(team: int, origin_y: float, max_range: float) -> UnitBase:
+	var best: UnitBase = null
+	var best_distance: float = INF
+	for candidate: UnitBase in _units:
+		if candidate.team == team or candidate.is_dead:
+			continue
+		var distance: float = absf(candidate.global_position.y - origin_y) - candidate.body_radius
 		if distance > max_range:
 			continue
 		if distance < best_distance or (is_equal_approx(distance, best_distance) and candidate.unit_id < best.unit_id):

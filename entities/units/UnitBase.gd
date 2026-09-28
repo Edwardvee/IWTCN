@@ -50,16 +50,19 @@ var _sprite: AnimatedSprite2D = null
 var _collision: CollisionShape2D = null
 
 
-func setup(p_unit_id: int, p_team: int, p_data: UnitData, p_lane: LaneManager) -> void:
+func setup(p_unit_id: int, p_team: int, p_data: UnitData, p_lane: LaneManager, modifiers: UnitStatModifiers = null) -> void:
 	unit_id = p_unit_id
 	team = p_team
 	data = p_data
 	lane = p_lane
 	name = "Unit_%d" % unit_id
-	max_hp = data.max_hp
-	current_hp = data.max_hp
+	var bonus_hp: float = modifiers.bonus_max_hp if modifiers != null else 0.0
+	var bonus_damage: float = modifiers.bonus_damage if modifiers != null else 0.0
+	max_hp = data.max_hp + bonus_hp
+	current_hp = max_hp
 	move_speed = data.move_speed
-	damage = data.damage
+	# Una unidad sin daño base (Priest) no gana daño por bonus.
+	damage = data.damage + bonus_damage if data.damage > 0.0 else 0.0
 	attack_range = data.attack_range
 	attack_cooldown = data.attack_cooldown
 	damage_mitigation = data.damage_mitigation
