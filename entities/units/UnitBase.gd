@@ -40,6 +40,8 @@ var heal_amount: float = 0.0
 var body_radius: float = 20.0
 
 var attack_cooldown_left: float = 0.0
+## Solo HEALER con conversión activa: segundos hasta el próximo intento.
+var conversion_cooldown_left: float = 0.0
 var target_id: int = 0
 var is_dead: bool = false
 ## Y donde la unidad deja de avanzar (final del carril de su equipo).
@@ -98,6 +100,7 @@ func refresh_stats(keep_hp_ratio: bool) -> void:
 func simulate(delta: float) -> void:
 	if not is_dead:
 		attack_cooldown_left = maxf(0.0, attack_cooldown_left - delta)
+		conversion_cooldown_left = maxf(0.0, conversion_cooldown_left - delta)
 	state_machine.physics_update(delta)
 
 
@@ -226,6 +229,38 @@ func receive_heal(amount: float, _source_id: int) -> float:
 
 func is_injured() -> bool:
 	return not is_dead and current_hp < max_hp
+
+
+## Conversión mental: cada attack_cooldown, si una estructura del equipo la
+## habilita, tira conversion_chance sobre el enemigo convertible más cercano
+## en rango. La conversión se aplica en la fase de resolución del LaneManager.
+func try_mind_conversion() -> void:
+	if conversion_cooldown_left > 0.0 or lane == null:
+		return
+	var source: StructureData = MindConversion.get_active_source(team, data)
+	if source == null:
+		return
+	var target: UnitBase = lane.find_nearest_convertible_enemy(self, attack_range, source.conversion_max_target_hp)
+	if target == null:
+		return
+	conversion_cooldown_left = attack_cooldown
+	if MindConversion.roll(MindConversion.get_rng(), source.conversion_chance):
+		lane.queue_conversion(self, target)
+
+
+## Cambia de bando sobre la MISMA instancia (mismo unit_id): equipo, capa de
+## colisión, dirección, final de carril, objetivo, estadísticas (buffs del
+## nuevo equipo, conservando el % de vida) y estado.
+func change_team(new_team: int) -> void:
+	team = new_team
+	lane_end_y = lane.get_lane_end_y(team) if lane != null else lane_end_y
+	target_id = 0
+	_apply_team()
+	refresh_stats(true)
+	state_machine.transition_to(STATE_ADVANCE)
+	modulate = Color(0.85, 0.45, 1.0)
+	var tween: Tween = create_tween()
+	tween.tween_property(self, "modulate", Color.WHITE, 0.5)
 
 
 func calculate_damage_taken(incoming: float) -> float:

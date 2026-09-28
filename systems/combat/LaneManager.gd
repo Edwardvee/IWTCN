@@ -79,6 +79,8 @@ var _dying: Array[UnitBase] = []
 var _projectiles: Array[Projectile] = []
 var _pending_hits: Array[PendingHit] = []
 var _pending_heals: Array[PendingHeal] = []
+## Conversiones decididas este tick: [id del convertidor, id del objetivo].
+var _pending_conversions: Array[Vector2i] = []
 ## Nº de grupos aparecidos por equipo (para el escalonado lateral).
 var _group_counter: Array[int] = [0, 0]
 
@@ -99,6 +101,7 @@ func simulate_step(delta: float) -> void:
 	_simulate_projectiles(delta)
 	_resolve_hits()
 	_resolve_heals()
+	_resolve_conversions()
 	_process_deaths()
 	_update_dying(delta)
 
@@ -372,6 +375,53 @@ func _resolve_hits() -> void:
 	_pending_hits.clear()
 
 
+func queue_conversion(converter: UnitBase, target: UnitBase) -> void:
+	if converter == null or target == null or converter.is_dead:
+		return
+	_pending_conversions.append(Vector2i(converter.unit_id, target.unit_id))
+
+
+## Enemigo vivo más cercano en rango con max_hp ≤ max_target_hp.
+## Desempate determinista: menor unit_id.
+func find_nearest_convertible_enemy(seeker: UnitBase, max_range: float, max_target_hp: float) -> UnitBase:
+	var best: UnitBase = null
+	var best_distance: float = INF
+	for candidate: UnitBase in _units:
+		if candidate.team == seeker.team or candidate.is_dead or candidate.max_hp > max_target_hp:
+			continue
+		var distance: float = seeker.edge_distance_to(candidate)
+		if distance > max_range:
+			continue
+		if distance < best_distance or (is_equal_approx(distance, best_distance) and candidate.unit_id < best.unit_id):
+			best = candidate
+			best_distance = distance
+	return best
+
+
+## Convierte una unidad al equipo `new_team` sobre la misma instancia.
+func convert_unit(unit: UnitBase, new_team: int) -> void:
+	if unit == null or unit.is_dead or unit.team == new_team or not MatchTypes.is_valid_player_id(new_team):
+		return
+	var old_team: int = unit.team
+	unit.change_team(new_team)
+	var container: Node = _get_container(new_team)
+	if unit.get_parent() != container:
+		# Diferido: el cambio de padre es solo organizativo/visual.
+		unit.reparent.call_deferred(container, true)
+	EventBus.unidad_convertida.emit(unit, old_team, new_team)
+
+
+func _resolve_conversions() -> void:
+	for conversion: Vector2i in _pending_conversions:
+		# Aunque el convertidor muera en este tick, sigue registrado hasta
+		# _process_deaths: la conversión ya estaba decidida y se aplica.
+		var converter: UnitBase = get_unit(conversion.x)
+		var target: UnitBase = get_unit(conversion.y)
+		if converter != null and target != null and not target.is_dead:
+			convert_unit(target, converter.team)
+	_pending_conversions.clear()
+
+
 func _resolve_heals() -> void:
 	for heal: PendingHeal in _pending_heals:
 		var target: UnitBase = get_unit(heal.target_id)
@@ -431,6 +481,7 @@ func clear_units() -> void:
 	_projectiles.clear()
 	_pending_hits.clear()
 	_pending_heals.clear()
+	_pending_conversions.clear()
 	_group_counter = [0, 0]
 
 
