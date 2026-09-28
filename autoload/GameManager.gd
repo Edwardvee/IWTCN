@@ -43,6 +43,7 @@ func end_match(winner_player_id: int) -> void:
 	if match_phase != MatchTypes.MatchPhase.RUNNING:
 		return
 	match_phase = MatchTypes.MatchPhase.ENDED
+	match_state.winner_player_id = winner_player_id
 	set_physics_process(false)
 	EventBus.partida_terminada.emit(winner_player_id)
 

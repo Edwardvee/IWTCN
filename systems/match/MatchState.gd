@@ -12,6 +12,8 @@ var players: Array[PlayerState] = []
 var next_entity_id: int = 1
 ## Única fuente de azar de la partida (tienda, combate, IA).
 var random: MatchRandom
+## Ganador al terminar (MatchTypes.NO_PLAYER = empate o partida en curso).
+var winner_player_id: int = MatchTypes.NO_PLAYER
 
 
 func _init(p_match_id: int, p_match_seed: int, player_count: int, rules: GameRules) -> void:
@@ -43,6 +45,7 @@ func to_dict() -> Dictionary:
 		"match_seed": match_seed,
 		"match_time": match_time,
 		"next_entity_id": next_entity_id,
+		"winner_player_id": winner_player_id,
 		"random": random.to_dict(),
 		"players": player_dicts,
 	}

@@ -4,6 +4,7 @@ extends VBoxContainer
 ## grids. Solo existe en builds de depuración.
 
 const GOLD_GRANT: int = 100
+const CASTLE_DAMAGE: int = 1000
 const FONT_SIZE: int = 30
 
 var _target_player_id: int = MatchTypes.NO_PLAYER
@@ -63,6 +64,13 @@ func _build_ui() -> void:
 		gold_button.pressed.connect(_on_add_gold_pressed.bind(player_id))
 		gold_row.add_child(gold_button)
 
+	var castle_row: HBoxContainer = HBoxContainer.new()
+	content.add_child(castle_row)
+	for player_id: int in MatchTypes.PLAYER_COUNT:
+		var castle_button: Button = _make_button("-%d castillo P%d" % [CASTLE_DAMAGE, player_id])
+		castle_button.pressed.connect(_on_damage_castle_pressed.bind(player_id))
+		castle_row.add_child(castle_button)
+
 	var spawn_grid: GridContainer = GridContainer.new()
 	spawn_grid.columns = 2
 	content.add_child(spawn_grid)
@@ -109,6 +117,10 @@ func _on_sell_pressed() -> void:
 
 func _on_add_gold_pressed(player_id: int) -> void:
 	GameManager.submit_command(DebugAddGoldCommand.new(player_id, GOLD_GRANT))
+
+
+func _on_damage_castle_pressed(player_id: int) -> void:
+	GameManager.submit_command(DebugDamageCastleCommand.new(player_id, float(CASTLE_DAMAGE)))
 
 
 func _on_spawn_pressed(player_id: int, unit_id: StringName) -> void:

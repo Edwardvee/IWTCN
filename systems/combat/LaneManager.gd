@@ -104,6 +104,7 @@ func simulate_step(delta: float) -> void:
 	_resolve_conversions()
 	_process_deaths()
 	_update_dying(delta)
+	_check_castles()
 
 
 # --- Aparición -------------------------------------------------------------
@@ -204,6 +205,19 @@ func queue_castle_hit(attacker: UnitBase, castle_owner: int, amount: float) -> v
 	if attacker == null or attacker.is_dead:
 		return
 	_pending_hits.append(PendingHit.new(attacker.unit_id, 0, amount, castle_owner))
+
+
+## Condición de victoria: destruir el castillo rival. Si ambos caen en el
+## mismo tick, empate. La decide la autoridad y la comunica GameManager.
+func _check_castles() -> void:
+	var destroyed: Array[int] = []
+	for player_id: int in MatchTypes.PLAYER_COUNT:
+		if not is_castle_alive(player_id):
+			destroyed.append(player_id)
+	if destroyed.size() == MatchTypes.PLAYER_COUNT:
+		GameManager.end_match(MatchTypes.NO_PLAYER)
+	elif destroyed.size() == 1:
+		GameManager.end_match(MatchTypes.opponent_of(destroyed[0]))
 
 
 ## Aplica daño al castillo (sin bajar de 0). Devuelve el daño aplicado.

@@ -86,13 +86,12 @@ func test_archer_shoots_castle_from_range() -> void:
 	assert_eq(fmod(3000.0 - _castle_hp(1), 42.0), 0.0, "daño en múltiplos de 42")
 
 
-func test_castle_never_below_zero_and_stops_being_target() -> void:
+func test_castle_never_below_zero() -> void:
 	lane.damage_castle(1, 2990.0)
-	var ally: UnitBase = _spawn(soldier, 0, 920.0)
+	_spawn(soldier, 0, 920.0)
 	_run(3.0)
 	assert_eq(_castle_hp(1), 0.0, "vida mínima 0")
 	assert_false(lane.is_castle_alive(1), "castillo destruido")
-	assert_eq(ally.get_state_name(), UnitBase.STATE_ADVANCE, "sin objetivo tras destruirlo")
 	assert_eq(lane.damage_castle(1, 50.0), 0.0, "un castillo destruido no recibe más daño")
 
 
