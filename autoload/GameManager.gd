@@ -3,7 +3,11 @@ extends Node
 ##
 ## No contiene reglas de gameplay: crea el MatchState, avanza el reloj
 ## de partida y responde quién tiene autoridad para modificar el estado.
+## También carga el GameDatabase, la única fuente de datos del juego.
 
+const DATABASE_PATH: String = "res://data/game_database.tres"
+
+var database: GameDatabase = null
 var game_mode: MatchTypes.GameMode = MatchTypes.GameMode.VS_AI
 var match_phase: MatchTypes.MatchPhase = MatchTypes.MatchPhase.IDLE
 ## Asiento del jugador que usa este dispositivo (solo lo usan UI/input).
@@ -15,6 +19,7 @@ var _next_match_id: int = 1
 
 func _ready() -> void:
 	set_physics_process(false)
+	_load_database()
 
 
 func _physics_process(delta: float) -> void:
@@ -57,3 +62,19 @@ func get_player_state(player_id: int) -> PlayerState:
 	if match_state == null:
 		return null
 	return match_state.get_player(player_id)
+
+
+func get_rules() -> GameRules:
+	if database == null:
+		return null
+	return database.rules
+
+
+func _load_database() -> void:
+	database = load(DATABASE_PATH) as GameDatabase
+	if database == null:
+		push_error("GameManager: no se pudo cargar %s" % DATABASE_PATH)
+		return
+	database.build_index()
+	for error: String in database.get_validation_errors():
+		push_error(error)

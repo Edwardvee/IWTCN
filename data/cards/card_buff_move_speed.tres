@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="CardData" format=3]
+
+[ext_resource type="Resource" path="res://data/buffs/buff_move_speed.tres" id="1_176u7"]
+[ext_resource type="Script" path="res://resources/CardData.gd" id="2_qcqr3"]
+
+[resource]
+script = ExtResource("2_qcqr3")
+id = &"card_buff_move_speed"
+display_name = "+15% Velocidad"
+description = "Tus unidades se mueven un 15% más rápido."
+card_type = 1
+cost = 80
+shop_weight = 5
+buff = ExtResource("1_176u7")
+color = Color(0.7, 0.4, 0.9, 1)

@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="CardData" format=3]
+
+[ext_resource type="Resource" path="res://data/buffs/buff_max_hp.tres" id="1_0eckj"]
+[ext_resource type="Script" path="res://resources/CardData.gd" id="2_q2phv"]
+
+[resource]
+script = ExtResource("2_q2phv")
+id = &"card_buff_max_hp"
+display_name = "+10% Vida"
+description = "Tus unidades tienen un 10% más de vida."
+card_type = 1
+cost = 80
+shop_weight = 5
+buff = ExtResource("1_0eckj")
+color = Color(0.7, 0.4, 0.9, 1)

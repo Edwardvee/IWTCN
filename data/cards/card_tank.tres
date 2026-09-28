@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="CardData" format=3]
+
+[ext_resource type="Script" path="res://resources/CardData.gd" id="1_sy4qj"]
+[ext_resource type="Resource" path="res://data/units/tank.tres" id="2_2hr8m"]
+
+[resource]
+script = ExtResource("1_sy4qj")
+id = &"card_tank"
+display_name = "Tank"
+description = "Despliega un Tank. Requiere 3 cuarteles."
+card_type = 2
+cost = 70
+shop_weight = 6
+unit = ExtResource("2_2hr8m")
+required_structure_tag = &"barracks"
+required_structure_count = 3
+color = Color(0.6, 0.6, 0.7, 1)

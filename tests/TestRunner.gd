@@ -4,6 +4,7 @@ extends Node
 
 const SUITE_PATHS: PackedStringArray = [
 	"res://tests/suites/TestFoundation.gd",
+	"res://tests/suites/TestDataModel.gd",
 ]
 
 

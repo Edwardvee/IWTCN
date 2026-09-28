@@ -1,0 +1,10 @@
+[gd_resource type="Resource" script_class="BuffData" format=3]
+
+[ext_resource type="Script" path="res://resources/BuffData.gd" id="1_nwm1u"]
+
+[resource]
+script = ExtResource("1_nwm1u")
+id = &"buff_max_hp"
+display_name = "+10% Vida"
+stat = 1
+value = 0.1

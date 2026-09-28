@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="StructureData" format=3]
+
+[ext_resource type="Script" path="res://resources/StructureData.gd" id="1_r3mnw"]
+[ext_resource type="Resource" path="res://data/units/soldier.tres" id="2_ixal8"]
+
+[resource]
+script = ExtResource("1_r3mnw")
+id = &"soldier_barracks"
+display_name = "Soldier Barracks"
+kind = 1
+tags = Array[StringName]([&"barracks"])
+income_per_level = PackedInt32Array()
+spawn_unit = ExtResource("2_ixal8")
+spawn_count_per_level = PackedInt32Array(2, 2, 3, 3, 4)
+spawn_interval_per_level = PackedFloat32Array(8, 7.5, 7, 6.5, 6)
+tower_range_per_level = PackedFloat32Array()
+tower_damage_per_level = PackedFloat32Array()
+tower_cooldown_per_level = PackedFloat32Array()
+color = Color(0.65, 0.42, 0.25, 1)
+short_label = "SOLD"

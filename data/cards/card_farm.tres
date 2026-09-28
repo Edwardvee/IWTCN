@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="CardData" format=3]
+
+[ext_resource type="Script" path="res://resources/CardData.gd" id="1_lvnh6"]
+[ext_resource type="Resource" path="res://data/structures/farm.tres" id="2_v1ure"]
+
+[resource]
+script = ExtResource("1_lvnh6")
+id = &"card_farm"
+display_name = "Farm"
+description = "Genera oro cada 8 s."
+cost = 50
+structure = ExtResource("2_v1ure")
+color = Color(0.85, 0.7, 0.2, 1)

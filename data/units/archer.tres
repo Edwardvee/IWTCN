@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="UnitData" format=3]
+
+[ext_resource type="Script" path="res://resources/UnitData.gd" id="1_2754n"]
+
+[resource]
+script = ExtResource("1_2754n")
+id = &"archer"
+display_name = "Archer"
+role = 1
+max_hp = 110.0
+attack_range = 280.0
+attack_cooldown = 0.9
+damage = 42.0
+uses_projectile = true
+fallback_shape = 1
+fallback_color = Color(0.55, 0.9, 0.45, 1)
+body_radius = 18.0

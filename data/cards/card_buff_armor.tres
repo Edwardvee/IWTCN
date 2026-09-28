@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="CardData" format=3]
+
+[ext_resource type="Resource" path="res://data/buffs/buff_armor.tres" id="1_7rph4"]
+[ext_resource type="Script" path="res://resources/CardData.gd" id="2_mg4vh"]
+
+[resource]
+script = ExtResource("2_mg4vh")
+id = &"card_buff_armor"
+display_name = "+10% Armadura"
+description = "Tus unidades reciben un 10% menos de daño."
+card_type = 1
+cost = 90
+shop_weight = 5
+buff = ExtResource("1_7rph4")
+color = Color(0.7, 0.4, 0.9, 1)

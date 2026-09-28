@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="CardData" format=3]
+
+[ext_resource type="Script" path="res://resources/CardData.gd" id="1_33e51"]
+[ext_resource type="Resource" path="res://data/structures/archer_barracks.tres" id="2_tvt7i"]
+
+[resource]
+script = ExtResource("1_33e51")
+id = &"card_archer_barracks"
+display_name = "Archer Barracks"
+description = "Produce Archers."
+cost = 70
+structure = ExtResource("2_tvt7i")
+color = Color(0.3, 0.6, 0.3, 1)

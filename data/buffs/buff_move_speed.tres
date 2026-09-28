@@ -1,0 +1,9 @@
+[gd_resource type="Resource" script_class="BuffData" format=3]
+
+[ext_resource type="Script" path="res://resources/BuffData.gd" id="1_8c5cc"]
+
+[resource]
+script = ExtResource("1_8c5cc")
+id = &"buff_move_speed"
+display_name = "+15% Velocidad"
+value = 0.15

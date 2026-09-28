@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="StructureData" format=3]
+
+[ext_resource type="Script" path="res://resources/StructureData.gd" id="1_txnab"]
+
+[resource]
+script = ExtResource("1_txnab")
+id = &"farm"
+display_name = "Farm"
+income_per_level = PackedInt32Array(25, 40, 60, 80, 100)
+spawn_count_per_level = PackedInt32Array()
+spawn_interval_per_level = PackedFloat32Array()
+tower_range_per_level = PackedFloat32Array()
+tower_damage_per_level = PackedFloat32Array()
+tower_cooldown_per_level = PackedFloat32Array()
+color = Color(0.85, 0.7, 0.2, 1)
+short_label = "FARM"

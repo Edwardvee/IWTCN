@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="BuffData" format=3]
+
+[ext_resource type="Script" path="res://resources/BuffData.gd" id="1_7118u"]
+
+[resource]
+script = ExtResource("1_7118u")
+id = &"buff_production"
+display_name = "-1.5 s Producción"
+stat = 4
+operation = 1
+value = -1.5

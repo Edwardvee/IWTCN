@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="UnitData" format=3]
+
+[ext_resource type="Script" path="res://resources/UnitData.gd" id="1_vg23u"]
+
+[resource]
+script = ExtResource("1_vg23u")
+id = &"priest"
+display_name = "Priest"
+role = 2
+max_hp = 140.0
+move_speed = 95.0
+attack_range = 220.0
+attack_cooldown = 2.5
+heal_amount = 45.0
+fallback_shape = 2
+fallback_color = Color(1, 0.95, 0.6, 1)

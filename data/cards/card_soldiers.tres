@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="CardData" format=3]
+
+[ext_resource type="Script" path="res://resources/CardData.gd" id="1_agoch"]
+[ext_resource type="Resource" path="res://data/units/soldier.tres" id="2_e7suc"]
+
+[resource]
+script = ExtResource("1_agoch")
+id = &"card_soldiers"
+display_name = "3 Soldiers"
+description = "Despliega 3 Soldiers en el carril."
+card_type = 2
+cost = 30
+unit = ExtResource("2_e7suc")
+unit_count = 3
+color = Color(0.9, 0.9, 0.9, 1)

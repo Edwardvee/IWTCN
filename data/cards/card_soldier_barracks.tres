@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="CardData" format=3]
+
+[ext_resource type="Script" path="res://resources/CardData.gd" id="1_0c62b"]
+[ext_resource type="Resource" path="res://data/structures/soldier_barracks.tres" id="2_j4im1"]
+
+[resource]
+script = ExtResource("1_0c62b")
+id = &"card_soldier_barracks"
+display_name = "Soldier Barracks"
+description = "Produce Soldiers."
+cost = 60
+structure = ExtResource("2_j4im1")
+color = Color(0.65, 0.42, 0.25, 1)

@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="CardData" format=3]
+
+[ext_resource type="Resource" path="res://data/buffs/buff_production.tres" id="1_aq36t"]
+[ext_resource type="Script" path="res://resources/CardData.gd" id="2_4edv0"]
+
+[resource]
+script = ExtResource("2_4edv0")
+id = &"card_buff_production"
+display_name = "-1.5 s Producción"
+description = "Tus edificios producen 1.5 s más rápido."
+card_type = 1
+cost = 100
+shop_weight = 5
+buff = ExtResource("1_aq36t")
+color = Color(0.7, 0.4, 0.9, 1)

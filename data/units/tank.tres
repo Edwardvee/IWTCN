@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="UnitData" format=3]
+
+[ext_resource type="Script" path="res://resources/UnitData.gd" id="1_xul35"]
+
+[resource]
+script = ExtResource("1_xul35")
+id = &"tank"
+display_name = "Tank"
+max_hp = 850.0
+move_speed = 70.0
+attack_range = 50.0
+attack_cooldown = 2.0
+damage = 25.0
+damage_mitigation = 0.2
+fallback_shape = 3
+fallback_color = Color(0.6, 0.6, 0.7, 1)
+body_radius = 34.0

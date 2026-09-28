@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="CardData" format=3]
+
+[ext_resource type="Script" path="res://resources/CardData.gd" id="1_4s1ab"]
+[ext_resource type="Resource" path="res://data/structures/tower.tres" id="2_ecu0s"]
+
+[resource]
+script = ExtResource("1_4s1ab")
+id = &"card_tower"
+display_name = "Tower"
+description = "Dispara a enemigos en rango."
+cost = 60
+structure = ExtResource("2_ecu0s")
+color = Color(0.5, 0.5, 0.55, 1)

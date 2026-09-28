@@ -1,0 +1,41 @@
+[gd_resource type="Resource" script_class="GameDatabase" format=3]
+
+[ext_resource type="Script" path="res://resources/BuffData.gd" id="1_kib3y"]
+[ext_resource type="Resource" path="res://data/buffs/buff_move_speed.tres" id="2_br8rk"]
+[ext_resource type="Resource" path="res://data/buffs/buff_armor.tres" id="3_t3hgm"]
+[ext_resource type="Resource" path="res://data/buffs/buff_max_hp.tres" id="4_ins62"]
+[ext_resource type="Resource" path="res://data/buffs/buff_production.tres" id="5_mg05e"]
+[ext_resource type="Script" path="res://resources/CardData.gd" id="6_bm8cc"]
+[ext_resource type="Resource" path="res://data/cards/card_farm.tres" id="7_wdau7"]
+[ext_resource type="Resource" path="res://data/cards/card_soldier_barracks.tres" id="8_bs1kh"]
+[ext_resource type="Resource" path="res://data/cards/card_archer_barracks.tres" id="9_y4ny8"]
+[ext_resource type="Resource" path="res://data/cards/card_church.tres" id="10_0rfu2"]
+[ext_resource type="Resource" path="res://data/cards/card_tower.tres" id="11_hq7mt"]
+[ext_resource type="Resource" path="res://data/cards/card_soldiers.tres" id="12_6nn2q"]
+[ext_resource type="Resource" path="res://data/cards/card_archers.tres" id="13_gcs4y"]
+[ext_resource type="Resource" path="res://data/cards/card_tank.tres" id="14_yo4sn"]
+[ext_resource type="Resource" path="res://data/cards/card_buff_move_speed.tres" id="15_h6kyv"]
+[ext_resource type="Resource" path="res://data/cards/card_buff_armor.tres" id="16_7kpo8"]
+[ext_resource type="Resource" path="res://data/cards/card_buff_max_hp.tres" id="17_dsgde"]
+[ext_resource type="Resource" path="res://data/cards/card_buff_production.tres" id="18_a2emy"]
+[ext_resource type="Resource" path="res://data/game_rules.tres" id="19_yt75o"]
+[ext_resource type="Script" path="res://resources/GameDatabase.gd" id="20_ydtca"]
+[ext_resource type="Script" path="res://resources/StructureData.gd" id="21_q0fyq"]
+[ext_resource type="Resource" path="res://data/structures/farm.tres" id="22_m1ws1"]
+[ext_resource type="Resource" path="res://data/structures/soldier_barracks.tres" id="23_ap1wn"]
+[ext_resource type="Resource" path="res://data/structures/archer_barracks.tres" id="24_2oi3a"]
+[ext_resource type="Resource" path="res://data/structures/church.tres" id="25_jm8uu"]
+[ext_resource type="Resource" path="res://data/structures/tower.tres" id="26_wpomh"]
+[ext_resource type="Script" path="res://resources/UnitData.gd" id="27_7h56u"]
+[ext_resource type="Resource" path="res://data/units/soldier.tres" id="28_aolhs"]
+[ext_resource type="Resource" path="res://data/units/archer.tres" id="29_3k60q"]
+[ext_resource type="Resource" path="res://data/units/tank.tres" id="30_verxg"]
+[ext_resource type="Resource" path="res://data/units/priest.tres" id="31_8xss3"]
+
+[resource]
+script = ExtResource("20_ydtca")
+rules = ExtResource("19_yt75o")
+units = Array[ExtResource("27_7h56u")]([ExtResource("28_aolhs"), ExtResource("29_3k60q"), ExtResource("30_verxg"), ExtResource("31_8xss3")])
+structures = Array[ExtResource("21_q0fyq")]([ExtResource("22_m1ws1"), ExtResource("23_ap1wn"), ExtResource("24_2oi3a"), ExtResource("25_jm8uu"), ExtResource("26_wpomh")])
+buffs = Array[ExtResource("1_kib3y")]([ExtResource("2_br8rk"), ExtResource("3_t3hgm"), ExtResource("4_ins62"), ExtResource("5_mg05e")])
+cards = Array[ExtResource("6_bm8cc")]([ExtResource("7_wdau7"), ExtResource("8_bs1kh"), ExtResource("9_y4ny8"), ExtResource("10_0rfu2"), ExtResource("11_hq7mt"), ExtResource("12_6nn2q"), ExtResource("13_gcs4y"), ExtResource("14_yo4sn"), ExtResource("15_h6kyv"), ExtResource("16_7kpo8"), ExtResource("17_dsgde"), ExtResource("18_a2emy")])
