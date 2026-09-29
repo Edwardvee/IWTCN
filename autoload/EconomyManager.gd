@@ -33,7 +33,7 @@ func simulate_step(delta: float) -> void:
 		player_state.base_income_timer += delta
 		while player_state.base_income_timer >= rules.base_income_interval:
 			player_state.base_income_timer -= rules.base_income_interval
-			add_gold(player_state.player_id, rules.base_income_amount)
+			add_income(player_state.player_id, rules.base_income_amount)
 
 
 func get_gold(player_id: int) -> int:
@@ -61,6 +61,28 @@ func has_gold(player_id: int, amount: int) -> bool:
 	if amount < 0:
 		return false
 	return get_gold(player_id) >= amount
+
+
+## Ingreso (base o de granjas): como add_gold pero aplicando el multiplicador de
+## ingresos del jugador. Los reembolsos, ventas y oro debug NO pasan por aquí.
+func add_income(player_id: int, amount: int) -> bool:
+	var player_state: PlayerState = GameManager.get_player_state(player_id)
+	if player_state == null or is_equal_approx(player_state.income_multiplier, 1.0):
+		return add_gold(player_id, amount)
+	var exact: float = float(amount) * player_state.income_multiplier + player_state.income_remainder
+	var whole: int = floori(exact)
+	if not add_gold(player_id, whole):
+		return false
+	player_state.income_remainder = exact - whole
+	return true
+
+
+## Ventaja (>1) o desventaja (<1) de ingresos de un jugador. Solo la IA.
+func set_income_multiplier(player_id: int, multiplier: float) -> void:
+	var player_state: PlayerState = GameManager.get_player_state(player_id)
+	if player_state != null and GameManager.is_authority():
+		player_state.income_multiplier = maxf(0.0, multiplier)
+		player_state.income_remainder = 0.0
 
 
 func add_gold(player_id: int, amount: int) -> bool:

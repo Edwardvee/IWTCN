@@ -59,9 +59,9 @@ func set_card(p_offer_index: int, p_card: CardData) -> void:
 	visible = card != null
 	if card == null:
 		return
-	_type_label.text = TYPE_NAMES.get(card.card_type, "")
-	_name_label.text = card.display_name
-	_description_label.text = card.description
+	_type_label.text = tr(TYPE_NAMES.get(card.card_type, ""))
+	_name_label.text = tr(card.display_name)
+	_description_label.text = tr(card.description)
 	refresh_cost()
 	_style.bg_color = card.color.darkened(0.55)
 	_style.border_color = card.color
@@ -82,7 +82,7 @@ func set_affordable(affordable: bool, missing_gold: int = 0) -> void:
 		_cost_label.text = "● %d" % cost
 		_cost_label.add_theme_color_override("font_color", Color.WHITE)
 	else:
-		_cost_label.text = "● %d  (faltan %d)" % [cost, missing_gold]
+		_cost_label.text = tr("● %d  (faltan %d)") % [cost, missing_gold]
 		_cost_label.add_theme_color_override("font_color", Color(1.0, 0.5, 0.45))
 
 

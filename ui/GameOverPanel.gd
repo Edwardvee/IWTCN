@@ -22,11 +22,11 @@ func _ready() -> void:
 	add_child(layout)
 	_title = _make_label(110, layout)
 	_subtitle = _make_label(40, layout)
-	_restart_button = _make_button("Jugar de nuevo", layout)
+	_restart_button = _make_button(tr("Jugar de nuevo"), layout)
 	_restart_button.pressed.connect(_on_restart_pressed)
-	_replay_button = _make_button("Ver repetición", layout)
+	_replay_button = _make_button(tr("Ver repetición"), layout)
 	_replay_button.pressed.connect(_on_replay_pressed)
-	_menu_button = _make_button("Menú", layout)
+	_menu_button = _make_button(tr("Menú"), layout)
 	_menu_button.pressed.connect(_on_menu_pressed)
 	EventBus.partida_terminada.connect(_on_partida_terminada)
 	EventBus.partida_iniciada.connect(_on_partida_iniciada)
@@ -55,7 +55,7 @@ func _make_label(font_size: int, parent: Control) -> Label:
 func _on_partida_terminada(ganador_player_id: int) -> void:
 	var mode: MatchTypes.GameMode = GameManager.game_mode
 	var online_spectator: bool = mode == MatchTypes.GameMode.ONLINE and GameManager.is_watching()
-	_restart_button.text = "Repetir" if mode == MatchTypes.GameMode.REPLAY else ("Nueva partida" if mode == MatchTypes.GameMode.SPECTATE else "Jugar de nuevo")
+	_restart_button.text = tr("Repetir") if mode == MatchTypes.GameMode.REPLAY else (tr("Nueva partida") if mode == MatchTypes.GameMode.SPECTATE else tr("Jugar de nuevo"))
 	# El espectador online solo puede salir; el invitado no graba.
 	_restart_button.visible = not online_spectator
 	_replay_button.visible = mode != MatchTypes.GameMode.REPLAY and GameManager.is_authority()
@@ -65,17 +65,17 @@ func _on_partida_terminada(ganador_player_id: int) -> void:
 		visible = true
 		return
 	if ganador_player_id == MatchTypes.NO_PLAYER:
-		_title.text = "EMPATE"
+		_title.text = tr("EMPATE")
 		_title.add_theme_color_override("font_color", Color(0.9, 0.9, 0.9))
-		_subtitle.text = "Ambos castillos han caído"
+		_subtitle.text = tr("Ambos castillos han caído")
 	elif ganador_player_id == GameManager.local_player_id:
-		_title.text = "¡VICTORIA!"
+		_title.text = tr("¡VICTORIA!")
 		_title.add_theme_color_override("font_color", Color(1.0, 0.85, 0.2))
-		_subtitle.text = "Has destruido el castillo enemigo"
+		_subtitle.text = tr("Has destruido el castillo enemigo")
 	else:
-		_title.text = "DERROTA"
+		_title.text = tr("DERROTA")
 		_title.add_theme_color_override("font_color", Color(1.0, 0.35, 0.3))
-		_subtitle.text = "Tu castillo ha caído"
+		_subtitle.text = tr("Tu castillo ha caído")
 	visible = true
 
 
@@ -83,17 +83,17 @@ func _on_partida_terminada(ganador_player_id: int) -> void:
 func _show_watch_result(ganador_player_id: int) -> void:
 	match ganador_player_id:
 		MatchTypes.PLAYER_BOTTOM:
-			_title.text = "GANA ABAJO"
+			_title.text = tr("GANA ABAJO")
 			_title.add_theme_color_override("font_color", MatchTypes.team_color(MatchTypes.PLAYER_BOTTOM))
-			_subtitle.text = "El castillo de arriba ha caído"
+			_subtitle.text = tr("El castillo de arriba ha caído")
 		MatchTypes.PLAYER_TOP:
-			_title.text = "GANA ARRIBA"
+			_title.text = tr("GANA ARRIBA")
 			_title.add_theme_color_override("font_color", MatchTypes.team_color(MatchTypes.PLAYER_TOP))
-			_subtitle.text = "El castillo de abajo ha caído"
+			_subtitle.text = tr("El castillo de abajo ha caído")
 		_:
-			_title.text = "EMPATE"
+			_title.text = tr("EMPATE")
 			_title.add_theme_color_override("font_color", Color(0.9, 0.9, 0.9))
-			_subtitle.text = "Ambos castillos han caído"
+			_subtitle.text = tr("Ambos castillos han caído")
 
 
 func _on_partida_iniciada(_modo: int, _semilla: int) -> void:
@@ -116,7 +116,7 @@ func _on_restart_pressed() -> void:
 func _on_replay_pressed() -> void:
 	var data: ReplayData = ReplayData.load_from(GameManager.last_replay_path) if GameManager.last_replay_path != "" else null
 	if data == null:
-		_subtitle.text = "No hay repetición guardada"
+		_subtitle.text = tr("No hay repetición guardada")
 		return
 	GameManager.pending_replay = data
 	GameManager.configure_next_match(MatchTypes.GameMode.REPLAY, data.get_seed(), MatchTypes.PLAYER_BOTTOM)

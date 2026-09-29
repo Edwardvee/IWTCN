@@ -14,6 +14,8 @@ var enabled: bool = true
 var last_saved_path: String = ""
 
 var _data: ReplayData = null
+## Qué partes del estado ya se guardaron (los frames solo repiten lo que cambia).
+var _delta_cache: Dictionary = {}
 var _next_capture_time: float = 0.0
 
 
@@ -40,16 +42,16 @@ func _physics_process(_delta: float) -> void:
 
 
 func _capture(match_time: float) -> void:
-	var snapshot: Dictionary = replicator.build_snapshot()
-	# El estado de los generadores aleatorios no hace falta para reproducir.
-	(snapshot.get("match", {}) as Dictionary).erase("random")
-	_data.add_frame(match_time, snapshot)
+	# El primer frame va completo; los demás omiten lo que no cambió. El
+	# ReplayPlayer los aplica siempre en orden desde el principio.
+	_data.add_frame(match_time, replicator.build_delta_snapshot(_delta_cache))
 
 
 func _on_partida_iniciada(mode: int, seed_value: int) -> void:
 	_data = null
 	if not enabled or replicator == null or not GameManager.is_authority() or mode == MatchTypes.GameMode.REPLAY:
 		return
+	_delta_cache = {}
 	_data = ReplayData.new({
 		"seed": seed_value,
 		"mode": mode,

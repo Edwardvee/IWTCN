@@ -166,3 +166,63 @@ func _snapshot_without_match_id() -> String:
 	var snapshot: Dictionary = GameManager.match_state.to_dict()
 	snapshot.erase("match_id")
 	return str(snapshot)
+
+
+# --- Dificultad ---------------------------------------------------------------------
+
+func test_difficulty_levels_configure_the_ai() -> void:
+	AIDifficulty.apply(ai, AIDifficulty.Level.NORMAL)
+	assert_eq(ai.think_interval, 1.0, "normal: reacción de siempre")
+	assert_eq(ai.income_multiplier, 1.0, "normal: sin ventaja de ingresos")
+	AIDifficulty.apply(ai, AIDifficulty.Level.EASY)
+	assert_true(ai.think_interval > 2.0 and ai.income_multiplier < 1.0, "fácil: reacciona despacio e ingresa menos")
+	assert_true((ai.strategy as RuleBasedStrategy).idle_chance > 0.0, "fácil: a veces no hace nada")
+	AIDifficulty.apply(ai, AIDifficulty.Level.HARD)
+	assert_true(ai.think_interval < 1.0 and ai.income_multiplier > 1.0, "difícil: reacciona rápido e ingresa más")
+	assert_eq((ai.strategy as RuleBasedStrategy).idle_chance, 0.0, "difícil: no se equivoca a propósito")
+	AIDifficulty.apply(ai, AIDifficulty.Level.NORMAL)
+
+
+func test_level_names_and_cycling() -> void:
+	assert_eq(AIDifficulty.level_from_name(&"hard"), AIDifficulty.Level.HARD, "por nombre")
+	assert_eq(AIDifficulty.level_from_name(&"nope"), -1, "nombre desconocido")
+	assert_eq(AIDifficulty.next_level(AIDifficulty.Level.EASY), AIDifficulty.Level.NORMAL, "fácil → normal")
+	assert_eq(AIDifficulty.next_level(AIDifficulty.Level.HARD), AIDifficulty.Level.EASY, "difícil → fácil (vuelve al principio)")
+	AIDifficulty.apply_by_name(ai, &"rush")
+	assert_eq(ai.income_multiplier, 1.0, "un estilo suelto no da ventaja")
+	AIDifficulty.apply(ai, AIDifficulty.Level.NORMAL)
+
+
+func test_income_multiplier_scales_income_with_remainder() -> void:
+	ai.income_multiplier = 1.3
+	GameManager.start_match(MatchTypes.GameMode.VS_AI, 1313)
+	var start: int = EconomyManager.get_gold(AI_PLAYER)
+	for _cycle: int in 10:
+		EconomyManager.add_income(AI_PLAYER, 3)
+	# 10 × 3 × 1.3 = 39 exactos (los decimales se acumulan, no se pierden).
+	assert_eq(EconomyManager.get_gold(AI_PLAYER) - start, 39, "10 ingresos de 3 con ×1.3")
+	EconomyManager.add_income(0, 3)
+	assert_eq(EconomyManager.get_gold(0), GameManager.get_rules().starting_gold + 3, "el jugador humano no tiene multiplicador")
+	EconomyManager.add_gold(AI_PLAYER, 100)
+	assert_eq(EconomyManager.get_gold(AI_PLAYER) - start, 139, "el oro normal (ventas, reembolsos) no se multiplica")
+	ai.income_multiplier = 1.0
+	GameManager.start_match(MatchTypes.GameMode.VS_AI, 1313)
+
+
+func test_easy_ai_wastes_turns_but_hard_does_not() -> void:
+	var easy_actions: int = _count_actions(AIDifficulty.Level.EASY)
+	var hard_actions: int = _count_actions(AIDifficulty.Level.HARD)
+	AIDifficulty.apply(ai, AIDifficulty.Level.NORMAL)
+	assert_true(easy_actions < hard_actions, "fácil actúa menos veces (%d) que difícil (%d)" % [easy_actions, hard_actions])
+
+
+## Turnos de decisión con oro de sobra en los que la IA hace algo.
+func _count_actions(level: AIDifficulty.Level) -> int:
+	AIDifficulty.apply(ai, level)
+	GameManager.start_match(MatchTypes.GameMode.VS_AI, 4321)
+	var acted: int = 0
+	for _turn: int in 60:
+		EconomyManager.add_gold(AI_PLAYER, 40)
+		if ai.think():
+			acted += 1
+	return acted

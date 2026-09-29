@@ -22,13 +22,13 @@ func get_type() -> StringName:
 
 func validate(processor: CommandProcessor) -> String:
 	if source != GameCommand.Source.DEBUG:
-		return "Comando exclusivo de debug"
+		return Reason.make("Comando exclusivo de debug")
 	if processor.get_lane() == null:
-		return "Carril no encontrado"
+		return Reason.make("Carril no encontrado")
 	if processor.get_database().get_unit(unit_id) == null:
-		return "Unidad desconocida"
+		return Reason.make("Unidad desconocida")
 	if count < 1 or count > MAX_COUNT:
-		return "Cantidad inválida"
+		return Reason.make("Cantidad inválida")
 	return ""
 
 

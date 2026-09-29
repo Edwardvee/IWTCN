@@ -16,6 +16,8 @@ const BUILD_SLOT_ORDER: Array[int] = [2, 3, 0, 1]
 @export var enabled: bool = true
 ## Segundos entre decisiones (tiempo de reacción).
 @export var think_interval: float = 1.0
+## Multiplicador de ingresos de este rival (dificultad). 1.0 = sin ventaja.
+@export var income_multiplier: float = 1.0
 
 var player_id: int = MatchTypes.PLAYER_TOP
 var strategy: AIStrategy = RuleBasedStrategy.new()
@@ -151,3 +153,4 @@ func get_rng() -> RandomNumberGenerator:
 
 func _on_partida_iniciada(_modo: int, _semilla: int) -> void:
 	_think_timer = 0.0
+	EconomyManager.set_income_multiplier(player_id, income_multiplier)

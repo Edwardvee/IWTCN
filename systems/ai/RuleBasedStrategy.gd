@@ -31,6 +31,10 @@ const PROFILE_RUSH: StringName = &"rush"
 const PROFILE_TURTLE: StringName = &"turtle"
 const PROFILE_BARRACKS: StringName = &"barracks"
 const PROFILE_SPAM: StringName = &"spam"
+## Solo para AIDifficulty (no salen en PROFILES: el espectador y el simulador
+## enfrentan estilos, no niveles).
+const PROFILE_EASY: StringName = &"easy"
+const PROFILE_HARD: StringName = &"hard"
 const PROFILES: Array[StringName] = [PROFILE_BALANCED, PROFILE_ECONOMY, PROFILE_RUSH, PROFILE_TURTLE, PROFILE_BARRACKS, PROFILE_SPAM]
 
 var profile_name: StringName = PROFILE_BALANCED
@@ -46,6 +50,14 @@ var tower_idle_score: int = 25
 ## Cartas de unidades sin amenaza (poco valor) y con oro de sobra.
 var unit_idle_score: int = 10
 var unit_surplus_score: int = 30
+## --- Errores humanos (dificultad fácil) ---
+## Probabilidad de no hacer nada en un turno de decisión.
+var idle_chance: float = 0.0
+## Probabilidad de comprar una carta asequible al azar en vez de la mejor.
+var random_pick_chance: float = 0.0
+var score_jitter: int = SCORE_JITTER
+var play_threshold: int = PLAY_THRESHOLD
+var allow_reroll: bool = true
 var buff_army_score: int = 40
 var tower_buff_score: int = 35
 var buff_production_score: int = 45
@@ -88,6 +100,33 @@ static func create(profile: StringName) -> RuleBasedStrategy:
 			strategy.unit_idle_score = 60
 			strategy.unit_surplus_score = 80
 			strategy.tower_idle_score = 5
+		PROFILE_EASY:
+			# Pasiva y descuidada: economía lenta, poco ejército, muchos fallos.
+			strategy.farm_priority_count = 1
+			strategy.farm_max_count = 2
+			strategy.spawner_score = 55
+			strategy.unit_idle_score = 8
+			strategy.tower_idle_score = 15
+			strategy.idle_chance = 0.5
+			strategy.random_pick_chance = 0.35
+			strategy.score_jitter = 16
+			strategy.play_threshold = 35
+			strategy.allow_reroll = false
+		PROFILE_HARD:
+			# Presión temprana constante (cuarteles y tropas) con una sola granja,
+			# torres solo bajo amenaza y mejoras cuando hay ejército.
+			strategy.farm_priority_count = 1
+			strategy.farm_max_count = 2
+			strategy.spawner_score = 99
+			strategy.healer_score = 60
+			strategy.unit_idle_score = 40
+			strategy.unit_surplus_score = 70
+			strategy.tower_threat_score = 80
+			strategy.tower_idle_score = 5
+			strategy.buff_army_score = 55
+			strategy.buff_production_score = 60
+			strategy.tower_buff_score = 45
+			strategy.score_jitter = 2
 	return strategy
 
 
@@ -104,19 +143,29 @@ func choose_command(ai: AIController) -> GameCommand:
 	var best_score: int = 0
 	var top_score: int = 0
 	var rng: RandomNumberGenerator = ai.get_rng()
+	# Solo se consume azar de los "errores" si el nivel los tiene: así el nivel
+	# normal sigue jugando exactamente igual que antes.
+	if idle_chance > 0.0 and rng.randf() < idle_chance:
+		return null
+	var affordable: Array[int] = []
 	for index: int in offer.size():
 		var card: CardData = offer[index]
 		var score: int = score_card(ai, card)
 		if score <= 0:
 			continue
-		score += rng.randi_range(0, SCORE_JITTER)
+		score += rng.randi_range(0, score_jitter)
 		top_score = maxi(top_score, score)
-		if EconomyManager.get_card_cost(ai.player_id, card) <= gold and score > best_score:
-			best_score = score
-			best_index = index
-	if best_index >= 0 and best_score >= PLAY_THRESHOLD:
+		if EconomyManager.get_card_cost(ai.player_id, card) <= gold:
+			affordable.append(index)
+			if score > best_score:
+				best_score = score
+				best_index = index
+	if random_pick_chance > 0.0 and not affordable.is_empty() and rng.randf() < random_pick_chance:
+		var random_index: int = affordable[rng.randi_range(0, affordable.size() - 1)]
+		return _make_play(ai, random_index, offer[random_index])
+	if best_index >= 0 and best_score >= play_threshold:
 		return _make_play(ai, best_index, offer[best_index])
-	if top_score < PLAY_THRESHOLD and gold >= ai.get_reroll_cost() + REROLL_RESERVE:
+	if allow_reroll and top_score < play_threshold and gold >= ai.get_reroll_cost() + REROLL_RESERVE:
 		return RerollShopCommand.new(ai.player_id, GameCommand.Source.AI)
 	return null
 

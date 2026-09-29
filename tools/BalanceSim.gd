@@ -217,8 +217,8 @@ func _play_match(bottom: StringName, top: StringName, seed_value: int) -> MatchR
 	_current.seed_value = seed_value
 	_current.profiles = [bottom, top]
 	_last_gold = [0, 0]
-	_ais[0].strategy = RuleBasedStrategy.create(bottom)
-	_ais[1].strategy = RuleBasedStrategy.create(top)
+	AIDifficulty.apply_by_name(_ais[0], bottom)
+	AIDifficulty.apply_by_name(_ais[1], top)
 	GameManager.start_match(MatchTypes.GameMode.SPECTATE, seed_value)
 	GameManager.set_physics_process(false)
 	var sample_timer: float = 0.0

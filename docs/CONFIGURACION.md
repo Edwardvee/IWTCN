@@ -160,3 +160,41 @@ Lanza el juego con `-- --relay=ws://localhost:8787` (argumento de usuario tras `
 
 ## Límites del plan gratuito
 Verifica las cifras vigentes en la documentación de Cloudflare (Workers y Durable Objects, plan Free). Cada partida usa ~20 mensajes/s; para unos pocos amigos queda muy por debajo de los límites diarios. El relay no tiene login: quien conozca el código puede entrar a una sala libre, y el código dura lo que dure la sala.
+
+---
+
+# Idiomas (español / inglés)
+
+- **Cambiar de idioma:** botón en la parte superior del menú (muestra el idioma al que cambia). Se guarda en `user://settings.cfg`. Por defecto: español si el sistema está en español, inglés en cualquier otro caso. Atajo de desarrollo: `-- --lang=en`.
+- **Dónde están los textos:** `systems/i18n/TranslationTables.gd`. La clave es el texto tal como está en el código o en los `.tres` (español para la interfaz, inglés para nombres de contenido como *Farm*). `EN` traduce al inglés y `ES` da la versión en español de los nombres en inglés.
+- **Añadir un texto nuevo:** envolverlo en `tr("…")` (o `Reason.make("…")` si es un motivo de rechazo de comando) y añadir su versión en inglés en `EN`. Si es un nombre o descripción de contenido en un `.tres`, añadirlo a `EN` (y a `ES` si lleva nombres en inglés). Los textos de `Label`/`Button` se traducen solos, pero los que llevan formato (`%d`, `%s`) necesitan `tr()` explícito.
+- **Motivos de rechazo:** `validate()` devuelve `Reason.make(clave, argumentos)` y se traduce donde se muestra (`Reason.text()`), así un invitado online lo ve en su propio idioma aunque el anfitrión juegue en otro.
+- **Seguridad:** `tests/suites/TestLocalization.gd` escanea el código y falla si falta alguna traducción, si no coinciden los `%d/%s`, o si un nombre o descripción del contenido no está traducido.
+- `ui/DebugPanel.gd` (solo desarrollo) queda en español. El fallback del proyecto es `es`; por eso las claves en inglés de contenido también tienen entrada en `EN`.
+
+---
+
+# Rendimiento
+
+- **Medir:** `godot --headless --path . res://tools/PerfBench.tscn -- --units=80 --seconds=20` enfrenta dos ejércitos (con torres y curanderos) y muestra ms por tick de `LaneManager.simulate_step` (media, p50, p99, máx), tiempo por fase, tamaño de los snapshots y memoria de una repetición. Referencia en PC (80 tropas por bando, unas 150 unidades vivas): **≈1,0 ms por tick** (antes 2,6 ms); con 150 por bando ≈3,2 ms (antes 12 ms). En móvil cuenta con 3-5 veces más.
+- **Búsqueda de objetivos:** índice espacial por equipo ordenado por Y (`LaneManager._refresh_index`), que solo se usa dentro de `simulate_step`; fuera de ahí (tests, IA) se recorren todas las unidades. `lane.use_spatial_index = false` lo desactiva; `TestPerformance` comprueba que una batalla larga acaba idéntica con y sin índice. El reparto de blancos usa un hash de los `unit_id`, así que no depende del orden de recorrido.
+- **Contadores y pool:** `get_alive_count` usa una caché que se invalida al aparecer, morir o convertirse una unidad. Los proyectiles se reutilizan (`_acquire_projectile` / `_release_projectile`, pool de 96).
+- **Red y repeticiones:** el carril viaja en arrays planos (`LaneManager.to_snapshot`, ~8 veces menos que `to_dict`), y `StateReplicator.build_delta_snapshot(cache)` omite cuadrícula, tienda y mejoras si no cambiaron. Con 150 unidades: ~5 KB por snapshot (antes ~48 KB) y una repetición de 1 minuto ocupa ~5 MB en memoria (antes ~120 MB). Al entrar un invitado o espectador se vacía la caché y el siguiente snapshot va completo. `NetworkManager.PROTOCOL_VERSION` avisa si anfitrión e invitado/espectador tienen versiones incompatibles.
+- **Interfaz:** los golpes al castillo se agrupan (una actualización de texto por fotograma), los números flotantes miden su texto una sola vez y escalan con el transform en vez de cambiar de tamaño de fuente, y `physics/common/max_physics_steps_per_frame` está en 4 para que un móvil lento no entre en espiral de pasos de física.
+- **Si añades sistemas nuevos:** no recorras `_units` en cada tick; usa `_select_candidates` para búsquedas por posición y mide con PerfBench antes y después.
+
+---
+
+# Dificultad de la IA
+
+Botón *Dificultad* en el menú (Fácil → Normal → Difícil); se recuerda en `user://settings.cfg` y solo afecta a *Jugar contra la IA*. Código: `systems/ai/AIDifficulty.gd`.
+
+| Nivel | Reacción | Comportamiento | Ingresos de la IA |
+| :--- | :--- | :--- | :--- |
+| Fácil | cada 3,0 s | 50 % de turnos sin hacer nada, 35 % de compras al azar, mucho ruido en la puntuación, no hace reroll, estilo pasivo | ×0,85 |
+| Normal | cada 1,0 s | La IA equilibrada de siempre | ×1,0 |
+| Difícil | cada 0,5 s | Presión temprana (cuarteles y tropas, una sola granja), casi sin errores | ×1,15 |
+
+- Las ventajas y desventajas de ingresos están declaradas (`AIDifficulty.EASY_INCOME` / `HARD_INCOME`) y solo cambian el oro que llega por ingreso base y granjas (`EconomyManager.add_income`); ventas y reembolsos no se multiplican. Las decisiones siguen pasando por los mismos comandos que las de un jugador.
+- Medido con `tools/BalanceSim` (`--profiles=easy,normal,hard --matches=12`): Normal gana ≈88 % al Fácil, y el Difícil gana ≈71 % al Normal y el 100 % al Fácil. Para reajustar, cambia los multiplicadores y los campos del perfil `PROFILE_EASY` / `PROFILE_HARD` en `RuleBasedStrategy.create`.
+- El modo espectador y el simulador siguen enfrentando estilos (`economy`, `rush`, `turtle`…), no niveles; con `--profiles=easy,normal,hard` el simulador también acepta los niveles.

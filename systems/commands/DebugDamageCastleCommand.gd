@@ -18,10 +18,10 @@ func get_type() -> StringName:
 
 func validate(processor: CommandProcessor) -> String:
 	if source != GameCommand.Source.DEBUG:
-		return "Comando exclusivo de debug"
+		return Reason.make("Comando exclusivo de debug")
 	if processor.get_lane() == null:
-		return "Carril no encontrado"
-	return "" if amount > 0.0 else "Cantidad inválida"
+		return Reason.make("Carril no encontrado")
+	return "" if amount > 0.0 else Reason.make("Cantidad inválida")
 
 
 func apply(processor: CommandProcessor) -> bool:

@@ -78,6 +78,8 @@ func _ready() -> void:
 	var ai_player: int = MatchTypes.opponent_of(GameManager.local_player_id)
 	_ai.setup(ai_player, _draft, _enemy_grid if ai_player == _enemy_grid.player_id else _player_grid, _lane)
 	_ai.enabled = mode == MatchTypes.GameMode.VS_AI or mode == MatchTypes.GameMode.SPECTATE
+	if mode == MatchTypes.GameMode.VS_AI:
+		AIDifficulty.apply(_ai, GameManager.ai_difficulty)
 	# Los comandos debug no existen online.
 	if mode == MatchTypes.GameMode.ONLINE and is_instance_valid(_debug_panel):
 		_debug_panel.visible = false

@@ -17,6 +17,7 @@ config/icon="res://icon.svg"
 
 [autoload]
 
+Localization="*res://autoload/Localization.gd"
 EventBus="*res://autoload/EventBus.gd"
 GameManager="*res://autoload/GameManager.gd"
 EconomyManager="*res://autoload/EconomyManager.gd"
@@ -45,9 +46,15 @@ pointing/emulate_touch_from_mouse=true
 [physics]
 
 3d/physics_engine="Jolt Physics"
+common/max_physics_steps_per_frame=4
 
 [rendering]
 
 rendering_device/driver.windows="d3d12"
 renderer/rendering_method="gl_compatibility"
 renderer/rendering_method.mobile="gl_compatibility"
+textures/vram_compression/import_etc2_astc=true
+
+[internationalization]
+
+locale/fallback="es"

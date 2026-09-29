@@ -17,8 +17,8 @@ func _refresh() -> void:
 		counts[buff.display_name] = counts.get(buff.display_name, 0) + 1
 	var parts: PackedStringArray = PackedStringArray()
 	for buff_name: String in order:
-		parts.append(buff_name if counts[buff_name] == 1 else "%s ×%d" % [buff_name, counts[buff_name]])
-	text = "Mejoras: " + ", ".join(parts) if not parts.is_empty() else ""
+		parts.append(tr(buff_name) if counts[buff_name] == 1 else "%s ×%d" % [tr(buff_name), counts[buff_name]])
+	text = tr("Mejoras: %s") % ", ".join(parts) if not parts.is_empty() else ""
 	visible = not parts.is_empty()
 
 

@@ -62,7 +62,7 @@ func _init(kind: Kind = Kind.LOCAL) -> void:
 	layout.add_child(button_row)
 	if kind == Kind.LIVE:
 		var live_label: Label = Label.new()
-		live_label.text = "● EN DIRECTO"
+		live_label.text = tr("● EN DIRECTO")
 		live_label.add_theme_font_size_override("font_size", 34)
 		live_label.add_theme_color_override("font_color", Color(1.0, 0.35, 0.3))
 		live_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -70,7 +70,7 @@ func _init(kind: Kind = Kind.LOCAL) -> void:
 		live_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 		button_row.add_child(live_label)
 	if show_controls:
-		_pause_button = _make_button("Pausa", button_row)
+		_pause_button = _make_button(tr("Pausa"), button_row)
 		_pause_button.toggle_mode = true
 		_pause_button.toggled.connect(_on_pause_toggled)
 		for speed: float in SPEEDS:
@@ -80,8 +80,8 @@ func _init(kind: Kind = Kind.LOCAL) -> void:
 			button.pressed.connect(_on_speed_pressed.bind(speed))
 			_speed_buttons.append(button)
 	if show_progress:
-		_make_button("Reiniciar", button_row).pressed.connect(func() -> void: restart_requested.emit())
-	var exit_button: Button = _make_button("Salir", button_row)
+		_make_button(tr("Reiniciar"), button_row).pressed.connect(func() -> void: restart_requested.emit())
+	var exit_button: Button = _make_button(tr("Salir"), button_row)
 	exit_button.pressed.connect(func() -> void: exit_requested.emit())
 
 
@@ -101,13 +101,13 @@ func reset_controls() -> void:
 	if _pause_button == null:
 		return
 	_pause_button.set_pressed_no_signal(false)
-	_pause_button.text = "Pausa"
+	_pause_button.text = tr("Pausa")
 	for index: int in _speed_buttons.size():
 		_speed_buttons[index].set_pressed_no_signal(SPEEDS[index] == 1.0)
 
 
 func _on_pause_toggled(paused: bool) -> void:
-	_pause_button.text = "Seguir" if paused else "Pausa"
+	_pause_button.text = tr("Seguir") if paused else tr("Pausa")
 	pause_toggled.emit(paused)
 
 

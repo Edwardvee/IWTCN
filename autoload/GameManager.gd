@@ -19,6 +19,8 @@ var suppress_effects: bool = false
 ## Repetición pendiente de reproducir (la fija el menú) y última guardada.
 var pending_replay: ReplayData = null
 var last_replay_path: String = ""
+## Dificultad de la IA rival en VS IA (la elige el menú y se recuerda).
+var ai_difficulty: AIDifficulty.Level = AIDifficulty.DEFAULT_LEVEL
 
 var _next_match_id: int = 1
 var _command_processor: CommandProcessor = null
@@ -33,6 +35,7 @@ var _pending_local_player: int = MatchTypes.PLAYER_BOTTOM
 func _ready() -> void:
 	set_physics_process(false)
 	_load_database()
+	ai_difficulty = AIDifficulty.load_saved()
 
 
 func _physics_process(delta: float) -> void:
@@ -69,6 +72,12 @@ func is_authority() -> bool:
 		MatchTypes.GameMode.REPLAY:
 			return false
 	return not NetworkManager.is_client()
+
+
+func set_ai_difficulty(level: AIDifficulty.Level, persist: bool = true) -> void:
+	ai_difficulty = level
+	if persist:
+		AIDifficulty.save(level)
 
 
 ## true si el usuario solo mira: espectador local, repetición o espectador

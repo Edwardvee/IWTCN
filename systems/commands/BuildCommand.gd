@@ -21,21 +21,21 @@ func get_type() -> StringName:
 
 func validate(processor: CommandProcessor) -> String:
 	if source != GameCommand.Source.DEBUG:
-		return "Construye arrastrando una carta de la tienda"
+		return Reason.make("Construye arrastrando una carta de la tienda")
 	var card: CardData = processor.get_database().get_card(card_id)
 	if card == null:
-		return "Carta desconocida"
+		return Reason.make("Carta desconocida")
 	if card.card_type != CardData.CardType.STRUCTURE or card.structure == null:
-		return "La carta no es una estructura"
+		return Reason.make("La carta no es una estructura")
 	var grid: GridManager = processor.get_grid(player_id)
 	if grid == null:
-		return "Grid no encontrado"
+		return Reason.make("Grid no encontrado")
 	var reason: String = grid.can_build(slot_index, card.structure)
 	if reason != "":
 		return reason
 	var cost: int = EconomyManager.get_card_cost(player_id, card)
 	if not EconomyManager.has_gold(player_id, cost):
-		return "Oro insuficiente (%d)" % cost
+		return Reason.make("Oro insuficiente (%d)", [cost])
 	return ""
 
 

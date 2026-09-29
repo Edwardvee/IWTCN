@@ -15,10 +15,10 @@ func get_type() -> StringName:
 func validate(processor: CommandProcessor) -> String:
 	var draft: DraftManager = processor.get_draft()
 	if draft == null:
-		return "Tienda no disponible"
+		return Reason.make("Tienda no disponible")
 	var cost: int = draft.get_reroll_cost(player_id)
 	if not EconomyManager.has_gold(player_id, cost):
-		return "Oro insuficiente para reroll (%d)" % cost
+		return Reason.make("Oro insuficiente para reroll (%d)", [cost])
 	return ""
 
 

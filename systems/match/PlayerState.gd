@@ -16,6 +16,12 @@ var castle_hp: float = 1.0
 var shop: ShopState
 ## Ids de los buffs globales comprados (se acumulan). Solo BuffSystem escribe.
 var buffs: Array[StringName] = []
+## Multiplicador de los ingresos (base y granjas). 1.0 para jugadores; la
+## dificultad de la IA lo cambia (ventaja o desventaja declarada). Solo lo
+## escribe EconomyManager.set_income_multiplier; no viaja en los snapshots.
+var income_multiplier: float = 1.0
+## Fracción de oro de ingresos aún no entregada (evita perder decimales).
+var income_remainder: float = 0.0
 
 
 func _init(p_player_id: int, rules: GameRules) -> void:

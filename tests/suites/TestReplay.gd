@@ -183,7 +183,12 @@ func test_replay_playback_reproduces_recorded_state() -> void:
 	assert_true(data != null, "hay repetición")
 	if data == null:
 		return
-	var final_state: Dictionary = data.frames.back()["s"]["match"]
+	# Estado autoritativo al terminar la partida: lo que la repetición debe reproducir.
+	var expected_gold: Dictionary = {}
+	var expected_grids: Dictionary = {}
+	for player_state: PlayerState in GameManager.match_state.players:
+		expected_gold[player_state.player_id] = player_state.gold
+		expected_grids[player_state.player_id] = str(player_state.grid.to_dict())
 	var player: ReplayPlayer = ReplayPlayer.new()
 	get_root().add_child(player)
 	player.start(data, replicator)
@@ -196,10 +201,10 @@ func test_replay_playback_reproduces_recorded_state() -> void:
 	assert_true(player.is_finished(), "llega al final")
 	assert_eq(GameManager.match_phase, MatchTypes.MatchPhase.ENDED, "la partida acaba")
 	assert_eq(GameManager.match_state.winner_player_id, MatchTypes.PLAYER_BOTTOM, "muestra el ganador grabado")
-	for player_dict: Dictionary in final_state["players"]:
-		var player_state: PlayerState = GameManager.get_player_state(int(player_dict["player_id"]))
-		assert_eq(player_state.gold, int(player_dict["gold"]), "oro final igual (jugador %d)" % player_state.player_id)
-		assert_eq(str(player_state.grid.to_dict()), str(player_dict["grid"]), "cuadrícula final igual (jugador %d)" % player_state.player_id)
+	for player_id: int in expected_gold:
+		var replayed: PlayerState = GameManager.get_player_state(player_id)
+		assert_eq(replayed.gold, expected_gold[player_id], "oro final igual (jugador %d)" % player_id)
+		assert_eq(str(replayed.grid.to_dict()), expected_grids[player_id], "cuadrícula final igual (jugador %d)" % player_id)
 	assert_true(GameManager.get_player_state(0).grid.get_occupied_slots().size() >= 2, "las estructuras construidas se reproducen")
 	player.queue_free()
 

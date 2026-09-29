@@ -53,39 +53,39 @@ func submit(command: GameCommand) -> bool:
 		_reject(command, reason)
 		return false
 	if not command.apply(self):
-		_reject(command, "Error al aplicar")
+		_reject(command, Reason.make("Error al aplicar"))
 		return false
 	return true
 
 
 func _check_permissions(command: GameCommand) -> String:
 	if not GameManager.is_authority():
-		return "Sin autoridad"
+		return Reason.make("Sin autoridad")
 	if not GameManager.is_match_running():
-		return "La partida no está en curso"
+		return Reason.make("La partida no está en curso")
 	if get_database() == null:
-		return "Sin base de datos"
+		return Reason.make("Sin base de datos")
 	if not MatchTypes.is_valid_player_id(command.player_id):
-		return "Jugador inválido"
+		return Reason.make("Jugador inválido")
 	match command.source:
 		GameCommand.Source.LOCAL_PLAYER:
 			if GameManager.is_watching():
-				return "Modo espectador: no puedes actuar"
+				return Reason.make("Modo espectador: no puedes actuar")
 			if command.player_id != GameManager.local_player_id:
-				return "No puedes actuar por otro jugador"
+				return Reason.make("No puedes actuar por otro jugador")
 		GameCommand.Source.AI:
 			var mode: MatchTypes.GameMode = GameManager.game_mode
 			if mode == MatchTypes.GameMode.SPECTATE:
 				pass
 			elif mode != MatchTypes.GameMode.VS_AI or command.player_id == GameManager.local_player_id:
-				return "La IA solo controla al rival en VS AI"
+				return Reason.make("La IA solo controla al rival en VS AI")
 		GameCommand.Source.DEBUG:
 			if not OS.is_debug_build():
-				return "Comandos debug deshabilitados"
+				return Reason.make("Comandos debug deshabilitados")
 		GameCommand.Source.NETWORK:
 			# La correspondencia peer → player_id se validará en la fase online.
 			if GameManager.game_mode != MatchTypes.GameMode.ONLINE:
-				return "Comando de red fuera de partida online"
+				return Reason.make("Comando de red fuera de partida online")
 	return ""
 
 

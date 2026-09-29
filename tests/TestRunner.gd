@@ -19,6 +19,8 @@ const SUITE_PATHS: PackedStringArray = [
 	"res://tests/suites/TestNetwork.gd",
 	"res://tests/suites/TestView.gd",
 	"res://tests/suites/TestReplay.gd",
+	"res://tests/suites/TestLocalization.gd",
+	"res://tests/suites/TestPerformance.gd",
 ]
 
 
@@ -30,6 +32,8 @@ func _run_all() -> void:
 	# Los tests asumen una economía inicial fija; el valor real de balance vive
 	# en data/game_rules.tres y se ajusta sin tocar los tests.
 	TestBalance.apply()
+	# Los tests comparan textos en español (las claves); el idioma real se prueba en TestLocalization.
+	Localization.set_language("es", false)
 	var total: int = 0
 	var failed: int = 0
 	for suite_path: String in SUITE_PATHS:

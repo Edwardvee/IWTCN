@@ -7,7 +7,7 @@ extends Node2D
 ## para que cientos de golpes no creen cientos de nodos. Como reacciona a
 ## unidad_vida_cambiada, funciona igual en local, online y en repeticiones.
 
-const MAX_ENTRIES: int = 90
+const MAX_ENTRIES: int = 64
 const FONT_OUTLINE: int = 8
 const RISE_SPEED: float = 90.0
 const DAMAGE_LIFE: float = 0.8
@@ -26,6 +26,8 @@ class Entry:
 	var age: float = 0.0
 	var life: float = 1.0
 	var ring_radius: float = 0.0
+	## Ancho del texto (medido una sola vez al crearlo).
+	var width: float = 0.0
 
 var _entries: Array[Entry] = []
 var _grids: Dictionary[int, GridManager] = {}
@@ -56,6 +58,7 @@ func add_text(world_position: Vector2, text: String, color: Color, font_size: in
 	var entry: Entry = _new_entry(world_position, color, life)
 	entry.text = text
 	entry.font_size = font_size
+	entry.width = ThemeDB.fallback_font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).x
 
 
 func add_ring(world_position: Vector2, color: Color, radius: float = 90.0) -> void:
@@ -105,15 +108,14 @@ func _draw() -> void:
 			draw_arc(entry.position, entry.ring_radius * (0.4 + 0.6 * progress), 0.0, TAU, 40, color, 6.0)
 			continue
 		var rise: float = RISE_SPEED * entry.age * (1.0 - progress * 0.5)
-		# Pequeño "pop" al aparecer.
+		# Pequeño "pop" al aparecer, con la escala del dibujo (no cambia el tamaño
+		# de la fuente, así no se generan glifos nuevos a cada fotograma).
 		var pop: float = 1.0 + 0.35 * maxf(0.0, 1.0 - progress * 6.0)
-		var size: int = roundi(entry.font_size * pop)
-		var text_width: float = font.get_string_size(entry.text, HORIZONTAL_ALIGNMENT_LEFT, -1, size).x
 		var origin: Vector2 = entry.position + Vector2(0.0, -rise * (-1.0 if upright > 0.0 else 1.0))
-		draw_set_transform(origin, upright, Vector2.ONE)
-		var text_position: Vector2 = Vector2(-text_width * 0.5, 0.0)
-		draw_string_outline(font, text_position, entry.text, HORIZONTAL_ALIGNMENT_LEFT, -1, size, FONT_OUTLINE, Color(0.0, 0.0, 0.0, alpha))
-		draw_string(font, text_position, entry.text, HORIZONTAL_ALIGNMENT_LEFT, -1, size, Color(entry.color, alpha))
+		draw_set_transform(origin, upright, Vector2(pop, pop))
+		var text_position: Vector2 = Vector2(-entry.width * 0.5, 0.0)
+		draw_string_outline(font, text_position, entry.text, HORIZONTAL_ALIGNMENT_LEFT, -1, entry.font_size, FONT_OUTLINE, Color(0.0, 0.0, 0.0, alpha))
+		draw_string(font, text_position, entry.text, HORIZONTAL_ALIGNMENT_LEFT, -1, entry.font_size, Color(entry.color, alpha))
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 
 
@@ -154,7 +156,7 @@ func _on_estructura_construida(player_id: int, slot_index: int, datos: Structure
 		return
 	var position_in_world: Vector2 = grid.get_slot_world_position(slot_index)
 	add_ring(position_in_world, MatchTypes.team_color(player_id).lightened(0.3))
-	add_text(position_in_world + Vector2(0.0, -50.0), "%s Lv%d" % [datos.display_name, nivel], Color.WHITE, 30)
+	add_text(position_in_world + Vector2(0.0, -50.0), "%s Lv%d" % [tr(datos.display_name), nivel], Color.WHITE, 30)
 
 
 func _on_estructura_vendida(player_id: int, slot_index: int, oro_devuelto: int) -> void:
@@ -170,7 +172,7 @@ func _on_plot_desbloqueado(player_id: int, plot_index: int) -> void:
 		return
 	var center: Vector2 = grid.to_global(grid.get_plot_rect(plot_index).get_center())
 	add_ring(center, GOLD_COLOR, 140.0)
-	add_text(center, "¡Plot desbloqueado!", GOLD_COLOR, 32)
+	add_text(center, tr("¡Plot desbloqueado!"), GOLD_COLOR, 32)
 
 
 func _on_partida_iniciada(_modo: int, _semilla: int) -> void:

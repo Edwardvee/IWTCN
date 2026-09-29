@@ -18,13 +18,13 @@ func get_type() -> StringName:
 func validate(processor: CommandProcessor) -> String:
 	var grid: GridManager = processor.get_grid(player_id)
 	if grid == null:
-		return "Grid no encontrado"
+		return Reason.make("Grid no encontrado")
 	var reason: String = grid.can_unlock(plot_index)
 	if reason != "":
 		return reason
 	var cost: int = processor.get_database().rules.get_plot_cost(plot_index)
 	if not EconomyManager.has_gold(player_id, cost):
-		return "Oro insuficiente (%d)" % cost
+		return Reason.make("Oro insuficiente (%d)", [cost])
 	return ""
 
 

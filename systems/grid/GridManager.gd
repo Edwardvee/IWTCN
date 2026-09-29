@@ -114,39 +114,39 @@ func count_structures_with_tag(tag: StringName) -> int:
 func can_build(slot_index: int, structure: StructureData) -> String:
 	var state: GridState = get_state()
 	if state == null:
-		return "No hay partida"
+		return Reason.make("No hay partida")
 	if structure == null:
-		return "Estructura desconocida"
+		return Reason.make("Estructura desconocida")
 	if not GridState.is_valid_slot(slot_index):
-		return "Slot inválido"
+		return Reason.make("Slot inválido")
 	if not state.is_plot_unlocked(GridState.plot_of_slot(slot_index)):
-		return "Plot bloqueado"
+		return Reason.make("Plot bloqueado")
 	if not state.is_slot_free(slot_index):
-		return "Slot ocupado"
+		return Reason.make("Slot ocupado")
 	if state.count_structures(structure.id) >= structure.max_level:
-		return "Máximo de %s alcanzado (Lv%d)" % [structure.display_name, structure.max_level]
+		return Reason.make("Máximo de %s alcanzado (Lv%d)", [structure.display_name, structure.max_level])
 	return ""
 
 
 func can_sell(slot_index: int) -> String:
 	var state: GridState = get_state()
 	if state == null:
-		return "No hay partida"
+		return Reason.make("No hay partida")
 	if not GridState.is_valid_slot(slot_index):
-		return "Slot inválido"
+		return Reason.make("Slot inválido")
 	if state.is_slot_free(slot_index):
-		return "No hay estructura que vender"
+		return Reason.make("No hay estructura que vender")
 	return ""
 
 
 func can_unlock(plot_index: int) -> String:
 	var state: GridState = get_state()
 	if state == null:
-		return "No hay partida"
+		return Reason.make("No hay partida")
 	if not GridState.is_valid_plot(plot_index):
-		return "Plot inválido"
+		return Reason.make("Plot inválido")
 	if state.is_plot_unlocked(plot_index):
-		return "Plot ya desbloqueado"
+		return Reason.make("Plot ya desbloqueado")
 	return ""
 
 

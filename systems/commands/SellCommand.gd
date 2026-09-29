@@ -19,7 +19,7 @@ func get_type() -> StringName:
 func validate(processor: CommandProcessor) -> String:
 	var grid: GridManager = processor.get_grid(player_id)
 	if grid == null:
-		return "Grid no encontrado"
+		return Reason.make("Grid no encontrado")
 	return grid.can_sell(slot_index)
 
 

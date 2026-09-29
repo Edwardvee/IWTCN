@@ -123,7 +123,7 @@ func _on_hammer_toggled(pressed: bool) -> void:
 
 func _on_hammer_mode_changed(active: bool) -> void:
 	_hammer_button.set_pressed_no_signal(active)
-	_hammer_button.text = "Vender: toca" if active else "Martillo"
+	_hammer_button.text = tr("Vender: toca") if active else tr("Martillo")
 
 
 # --- Eventos -------------------------------------------------------------------

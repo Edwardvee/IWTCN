@@ -12,19 +12,42 @@ const MAIN_SCENE: String = "res://scenes/Main.tscn"
 func _ready() -> void:
 	%PlayAI.pressed.connect(_on_play_ai_pressed)
 	%Spectate.pressed.connect(_on_spectate_pressed)
+	# El botón muestra el idioma al que cambiaría (en ese idioma) y no se traduce.
+	%Language.auto_translate_mode = Node.AUTO_TRANSLATE_MODE_DISABLED
+	%Language.text = Localization.get_other_language_name()
+	%Language.pressed.connect(_on_language_pressed)
+	%Difficulty.auto_translate_mode = Node.AUTO_TRANSLATE_MODE_DISABLED
+	%Difficulty.pressed.connect(_on_difficulty_pressed)
+	_refresh_difficulty_button()
 	%Replays.pressed.connect(_on_replays_pressed)
 	%Host.pressed.connect(_on_host_pressed)
 	%Join.pressed.connect(_on_join_pressed)
 	%Watch.pressed.connect(_on_watch_pressed)
 	_code.text_changed.connect(_on_code_changed)
 	NetworkManager.status_changed.connect(_on_status_changed)
-	%LocalIP.text = "Online: el anfitrión crea una sala y comparte el código.\nCon el código también puedes verla como espectador."
+	%LocalIP.text = tr("Online: el anfitrión crea una sala y comparte el código.\nCon el código también puedes verla como espectador.")
 
 
 func _on_play_ai_pressed() -> void:
 	NetworkManager.close()
 	GameManager.configure_next_match(MatchTypes.GameMode.VS_AI, 0, MatchTypes.PLAYER_BOTTOM)
 	get_tree().change_scene_to_file(MAIN_SCENE)
+
+
+## Alterna Fácil → Normal → Difícil para la próxima partida contra la IA.
+func _on_difficulty_pressed() -> void:
+	GameManager.set_ai_difficulty(AIDifficulty.next_level(GameManager.ai_difficulty))
+	_refresh_difficulty_button()
+
+
+func _refresh_difficulty_button() -> void:
+	%Difficulty.text = tr("Dificultad: %s") % AIDifficulty.display_name(GameManager.ai_difficulty)
+
+
+## Cambia el idioma y reconstruye el menú para que todo el texto se actualice.
+func _on_language_pressed() -> void:
+	Localization.toggle_language()
+	get_tree().reload_current_scene()
 
 
 func _on_spectate_pressed() -> void:
@@ -47,15 +70,14 @@ func _on_replays_pressed() -> void:
 	layout.add_theme_constant_override("separation", 20)
 	center.add_child(layout)
 	var title: Label = Label.new()
-	title.text = "Repeticiones"
+	title.text = tr("Repeticiones")
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	title.add_theme_font_size_override("font_size", 60)
 	layout.add_child(title)
 	var replays: Array[Dictionary] = ReplayData.list_replays()
 	if replays.is_empty():
 		var empty: Label = Label.new()
-		empty.text = "Aún no hay partidas grabadas.
-Juega una partida y aparecerá aquí."
+		empty.text = tr("Aún no hay partidas grabadas.\nJuega una partida y aparecerá aquí.")
 		empty.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		empty.add_theme_font_size_override("font_size", 34)
 		layout.add_child(empty)
@@ -67,7 +89,7 @@ Juega una partida y aparecerá aquí."
 		button.pressed.connect(_on_replay_chosen.bind(str(replay_meta["path"])))
 		layout.add_child(button)
 	var close: Button = Button.new()
-	close.text = "Cerrar"
+	close.text = tr("Cerrar")
 	close.custom_minimum_size = Vector2(0.0, 110.0)
 	close.add_theme_font_size_override("font_size", 40)
 	close.pressed.connect(overlay.queue_free)
@@ -78,13 +100,16 @@ static func describe_replay(replay_meta: Dictionary) -> String:
 	var winner: int = int(replay_meta.get("winner", MatchTypes.NO_PLAYER))
 	var local_player: int = int(replay_meta.get("local_player", MatchTypes.PLAYER_BOTTOM))
 	var mode: int = int(replay_meta.get("mode", MatchTypes.GameMode.VS_AI))
-	var result: String = "Empate"
+	var result: String = TranslationServer.translate("Empate")
 	if mode == MatchTypes.GameMode.SPECTATE:
-		result = "Gana abajo" if winner == MatchTypes.PLAYER_BOTTOM else ("Gana arriba" if winner == MatchTypes.PLAYER_TOP else "Empate")
+		if winner == MatchTypes.PLAYER_BOTTOM:
+			result = TranslationServer.translate("Gana abajo")
+		elif winner == MatchTypes.PLAYER_TOP:
+			result = TranslationServer.translate("Gana arriba")
 	elif winner == local_player:
-		result = "Victoria"
+		result = TranslationServer.translate("Victoria")
 	elif winner != MatchTypes.NO_PLAYER:
-		result = "Derrota"
+		result = TranslationServer.translate("Derrota")
 	return "%s · %s · %s · %s" % [
 		str(replay_meta.get("date", "?")).replace("T", " "),
 		MatchTypes.game_mode_name(mode as MatchTypes.GameMode),
@@ -96,7 +121,7 @@ static func describe_replay(replay_meta: Dictionary) -> String:
 func _on_replay_chosen(path: String) -> void:
 	var data: ReplayData = ReplayData.load_from(path)
 	if data == null:
-		_status.text = "No se pudo abrir la repetición"
+		_status.text = tr("No se pudo abrir la repetición")
 		return
 	NetworkManager.close()
 	GameManager.pending_replay = data

@@ -12,6 +12,9 @@ extends Node
 var lane: LaneManager = null
 var grids: Dictionary[int, GridManager] = {}
 
+## Partes del estado de un jugador que rara vez cambian y pueden omitirse.
+const PERSISTENT_KEYS: PackedStringArray = ["grid", "shop", "buffs"]
+
 var _grid_signatures: Dictionary[int, String] = {}
 
 
@@ -26,11 +29,39 @@ func reset() -> void:
 	_grid_signatures.clear()
 
 
+## Snapshot completo. Sin el estado del azar ni los temporizadores internos
+## (ingreso base, bajada del reroll): el cliente no los usa y cambian a cada tick.
 func build_snapshot() -> Dictionary:
+	var match_dict: Dictionary = GameManager.match_state.to_dict() if GameManager.match_state != null else {}
+	match_dict.erase("random")
+	for player_variant: Variant in match_dict.get("players", []):
+		var player_dict: Dictionary = player_variant
+		player_dict.erase("base_income_timer")
+		(player_dict.get("shop", {}) as Dictionary).erase("reroll_decay_timer")
 	return {
-		"match": GameManager.match_state.to_dict() if GameManager.match_state != null else {},
-		"lane": lane.to_dict() if lane != null else {},
+		"match": match_dict,
+		"lane": lane.to_snapshot() if lane != null else {},
 	}
+
+
+## Snapshot que omite la cuadrícula, la tienda y las mejoras de un jugador si no
+## han cambiado desde el último construido con el mismo `cache` (un diccionario
+## que guarda quien lo pide, uno por destino). Con `cache` vacío sale completo:
+## así un espectador o invitado que entra a mitad recibe todo. Quien lo aplica
+## (apply_snapshot) conserva lo que no llega.
+func build_delta_snapshot(cache: Dictionary) -> Dictionary:
+	var snapshot: Dictionary = build_snapshot()
+	for player_variant: Variant in (snapshot["match"] as Dictionary).get("players", []):
+		var player_dict: Dictionary = player_variant
+		var player_id: int = int(player_dict["player_id"])
+		for key: String in PERSISTENT_KEYS:
+			var cache_key: String = "%d/%s" % [player_id, key]
+			var signature: int = hash(player_dict[key])
+			if cache.get(cache_key, 0) == signature:
+				player_dict.erase(key)
+			else:
+				cache[cache_key] = signature
+	return snapshot
 
 
 func apply_snapshot(snapshot: Dictionary) -> void:
@@ -61,10 +92,14 @@ func _apply_player(data: Dictionary) -> void:
 		player_state.castle_max_hp = castle_max_hp
 		EventBus.castillo_danado.emit(player_id, castle_hp, castle_max_hp)
 
-	_apply_shop(player_id, player_state, data.get("shop", {}))
-	_apply_buffs(player_id, player_state, data.get("buffs", []))
-
-	var grid_dict: Dictionary = data.get("grid", {})
+	# Los snapshots incrementales omiten lo que no cambió: solo se aplica lo que llega.
+	if data.has("shop"):
+		_apply_shop(player_id, player_state, data["shop"])
+	if data.has("buffs"):
+		_apply_buffs(player_id, player_state, data["buffs"])
+	if not data.has("grid"):
+		return
+	var grid_dict: Dictionary = data["grid"]
 	var signature: String = str(grid_dict)
 	if signature != _grid_signatures.get(player_id, ""):
 		_grid_signatures[player_id] = signature

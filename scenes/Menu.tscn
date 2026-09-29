@@ -40,6 +40,19 @@ text = "I Want That
 Castle Now!"
 horizontal_alignment = 1
 
+[node name="Language" type="Button" parent="Center/Layout"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 80)
+layout_mode = 2
+theme_override_font_sizes/font_size = 36
+text = "English"
+
+[node name="Difficulty" type="Button" parent="Center/Layout"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 80)
+layout_mode = 2
+theme_override_font_sizes/font_size = 36
+
 [node name="PlayAI" type="Button" parent="Center/Layout"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 130)

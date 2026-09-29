@@ -24,14 +24,18 @@ var speed: float = 900.0
 var _direction: Vector2 = Vector2.UP
 
 
+## También reinicia un proyectil reutilizado del pool de LaneManager.
 func setup(p_projectile_id: int, p_source_id: int, p_team: int, p_target_id: int, p_damage: float, p_speed: float) -> void:
 	projectile_id = p_projectile_id
 	source_id = p_source_id
-	team = p_team
+	if team != p_team:
+		team = p_team
+		queue_redraw()
 	target_id = p_target_id
+	target_castle_owner = MatchTypes.NO_PLAYER
+	target_point = Vector2.ZERO
 	damage = p_damage
 	speed = p_speed
-	name = "Projectile_%d" % projectile_id
 	set_physics_process(false)
 
 

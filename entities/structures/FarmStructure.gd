@@ -25,4 +25,4 @@ func get_income_per_cycle() -> int:
 
 
 func _on_production_cycle() -> void:
-	EconomyManager.add_gold(owner_id, get_income_per_cycle())
+	EconomyManager.add_income(owner_id, get_income_per_cycle())

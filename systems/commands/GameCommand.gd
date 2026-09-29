@@ -21,7 +21,7 @@ func get_type() -> StringName:
 ## Las subclases lo sobrescriben; la base rechaza para que un comando
 ## sin validación nunca se ejecute.
 func validate(_processor: CommandProcessor) -> String:
-	return "Comando '%s' sin validación" % get_type()
+	return Reason.make("Comando '%s' sin validación", [get_type()])
 
 
 ## Aplica el comando ya validado. Devuelve false si algo falló al aplicarlo.

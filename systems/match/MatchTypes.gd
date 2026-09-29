@@ -60,7 +60,7 @@ static func game_mode_name(mode: GameMode) -> String:
 		GameMode.ONLINE:
 			return "ONLINE"
 		GameMode.SPECTATE:
-			return "ESPECTADOR"
+			return TranslationServer.translate("ESPECTADOR")
 		GameMode.REPLAY:
-			return "REPETICIÓN"
+			return TranslationServer.translate("REPETICIÓN")
 	return "UNKNOWN"

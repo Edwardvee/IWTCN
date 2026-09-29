@@ -31,35 +31,35 @@ func get_type() -> StringName:
 func validate(processor: CommandProcessor) -> String:
 	var draft: DraftManager = processor.get_draft()
 	if draft == null:
-		return "Tienda no disponible"
+		return Reason.make("Tienda no disponible")
 	if card_id == &"" or draft.get_offer_card_id(player_id, offer_index) != card_id:
-		return "La carta ya no está en la tienda"
+		return Reason.make("La carta ya no está en la tienda")
 	var card: CardData = processor.get_database().get_card(card_id)
 	if card == null:
-		return "Carta desconocida"
+		return Reason.make("Carta desconocida")
 	var cost: int = EconomyManager.get_card_cost(player_id, card)
 	if not EconomyManager.has_gold(player_id, cost):
-		return "Oro insuficiente (%d)" % cost
+		return Reason.make("Oro insuficiente (%d)", [cost])
 	match card.card_type:
 		CardData.CardType.STRUCTURE:
 			var grid: GridManager = processor.get_grid(player_id)
 			if grid == null:
-				return "Grid no encontrado"
+				return Reason.make("Grid no encontrado")
 			if slot_index < 0:
-				return "Suelta la estructura en un plot desbloqueado con espacio"
+				return Reason.make("Suelta la estructura en un plot desbloqueado con espacio")
 			return grid.can_build(slot_index, card.structure)
 		CardData.CardType.DIRECT_UNIT:
 			var lane: LaneManager = processor.get_lane()
 			if lane == null:
-				return "Carril no encontrado"
+				return Reason.make("Carril no encontrado")
 			if not lane.is_valid_deploy_position(player_id, deploy_position):
-				return "Suelta las unidades en tu mitad del carril"
+				return Reason.make("Suelta las unidades en tu mitad del carril")
 			if lane.get_alive_count(player_id) + card.unit_count > lane.get_unit_cap():
-				return "Límite de tropas alcanzado (%d)" % lane.get_unit_cap()
+				return Reason.make("Límite de tropas alcanzado (%d)", [lane.get_unit_cap()])
 			return ""
 		CardData.CardType.GLOBAL_BUFF:
-			return "" if card.buff != null else "Mejora sin datos"
-	return "Tipo de carta desconocido"
+			return "" if card.buff != null else Reason.make("Mejora sin datos")
+	return Reason.make("Tipo de carta desconocido")
 
 
 func apply(processor: CommandProcessor) -> bool:

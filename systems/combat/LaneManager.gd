@@ -84,6 +84,41 @@ var _pending_conversions: Array[Vector2i] = []
 ## Nº de grupos aparecidos por equipo (para el escalonado lateral).
 var _group_counter: Array[int] = [0, 0]
 
+## --- Rendimiento ---
+## Índice espacial: unidades vivas de cada equipo ordenadas por Y (con sus Y en
+## un array plano para buscar por bisección). Se reconstruye/reordena al empezar
+## cada tick y solo se usa durante simulate_step; fuera de ahí (tests, IA) las
+## consultas recorren todas las unidades. Como el combate es 1D en Y, buscar
+## objetivos pasa de O(n) a O(log n + vecinos).
+var _team_lists: Array[Array] = []
+var _team_ys: Array[PackedFloat32Array] = []
+## Desactivarlo (tests, depuración) hace que todas las consultas recorran las
+## unidades enteras; el resultado debe ser idéntico.
+var use_spatial_index: bool = true
+var _index_dirty: bool = true
+var _index_active: bool = false
+var _index_margin: float = 0.0
+var _index_age: int = 0
+## Resultado de _select_candidates: lista y tramo [lo, hi) a examinar.
+var _query_list: Array[UnitBase] = []
+var _query_lo: int = 0
+var _query_hi: int = 0
+## Candidatos en rango de la consulta en curso (reutilizados: sin asignaciones).
+var _scratch_units: Array[UnitBase] = []
+var _scratch_distances: PackedFloat64Array = PackedFloat64Array()
+## Unidades vivas por equipo (se recalcula solo cuando cambia el registro).
+var _alive_counts: Array[int] = [0, 0]
+var _counts_dirty: bool = true
+## Proyectiles ya usados, listos para reutilizar (evita crear/liberar nodos).
+var _projectile_pool: Array[Projectile] = []
+
+
+func _init() -> void:
+	for _team: int in MatchTypes.PLAYER_COUNT:
+		var list: Array[UnitBase] = []
+		_team_lists.append(list)
+		_team_ys.append(PackedFloat32Array())
+
 
 func _ready() -> void:
 	EventBus.partida_iniciada.connect(_on_partida_iniciada)
@@ -93,6 +128,15 @@ func _ready() -> void:
 const PROJECTILE_RETARGET_RANGE: float = 160.0
 ## Margen sobre el enemigo más cercano dentro del cual se reparten los blancos.
 const TARGET_SPREAD_DISTANCE: float = 70.0
+
+## Radio de cuerpo máximo de cualquier unidad y velocidad máxima posible: acotan
+## cuánto se puede mover una unidad respecto al índice del inicio del tick.
+const MAX_BODY_RADIUS: float = 48.0
+const MAX_UNIT_SPEED: float = 400.0
+## Cada cuántos ticks se reordena el índice (si nada cambia antes).
+const INDEX_REFRESH_TICKS: int = 3
+## Proyectiles reutilizables que se conservan.
+const PROJECTILE_POOL_LIMIT: int = 96
 
 ## Velocidad de interpolación hacia la posición replicada (clientes online).
 const NETWORK_LERP_SPEED: float = 12.0
@@ -108,15 +152,39 @@ func _physics_process(delta: float) -> void:
 func simulate_step(delta: float) -> void:
 	if delta <= 0.0 or not GameManager.is_authority() or not GameManager.is_match_running():
 		return
+	_lap(&"")
+	_refresh_index(delta)
+	_lap(&"indice")
 	for unit: UnitBase in _units:
 		unit.simulate(delta)
+	_lap(&"unidades")
 	_simulate_projectiles(delta)
+	_lap(&"proyectiles")
+	_index_active = false
 	_resolve_hits()
 	_resolve_heals()
 	_resolve_conversions()
+	_lap(&"golpes_y_curas")
 	_process_deaths()
 	_update_dying(delta)
 	_check_castles()
+	_lap(&"muertes")
+
+
+## Medición por fases de simulate_step (tools/PerfBench). Desactivado por
+## defecto: cuando está en false _lap() no hace nada.
+var profiling_enabled: bool = false
+var profile_us: Dictionary = {}
+var _lap_started: int = 0
+
+
+func _lap(phase: StringName) -> void:
+	if not profiling_enabled:
+		return
+	var now: int = Time.get_ticks_usec()
+	if phase != &"":
+		profile_us[phase] = int(profile_us.get(phase, 0)) + now - _lap_started
+	_lap_started = now
 
 
 # --- Aparición -------------------------------------------------------------
@@ -270,37 +338,123 @@ func get_unit_cap() -> int:
 
 
 func get_alive_count(team: int) -> int:
-	var count: int = 0
-	for unit: UnitBase in _units:
-		if unit.team == team:
-			count += 1
-	return count
+	if _counts_dirty:
+		_alive_counts = [0, 0]
+		for unit: UnitBase in _units:
+			if MatchTypes.is_valid_player_id(unit.team):
+				_alive_counts[unit.team] += 1
+		_counts_dirty = false
+	return _alive_counts[team] if MatchTypes.is_valid_player_id(team) else 0
+
+
+## El registro de unidades cambió (aparece, muere, se convierte): el índice
+## espacial y los contadores se rehacen en la próxima consulta.
+func _mark_units_changed() -> void:
+	_index_dirty = true
+	_counts_dirty = true
+
+
+## Deja el índice listo para este tick: membresía (solo si hubo cambios) y
+## orden por Y (inserción: casi siempre ya está ordenado).
+func _refresh_index(delta: float) -> void:
+	# Reordenar cada INDEX_REFRESH_TICKS ticks basta: el margen de búsqueda cubre
+	# lo que una unidad se mueve entre reordenaciones. Un cambio de registro
+	# (aparece/muere/se convierte) fuerza reordenar ya.
+	if not use_spatial_index:
+		_index_active = false
+		return
+	_index_age += 1
+	if not _index_dirty and _index_age < INDEX_REFRESH_TICKS:
+		_index_active = true
+		return
+	_index_age = 0
+	if _index_dirty:
+		for team: int in MatchTypes.PLAYER_COUNT:
+			_team_lists[team].clear()
+		for unit: UnitBase in _units:
+			if not unit.is_dead and MatchTypes.is_valid_player_id(unit.team):
+				_team_lists[unit.team].append(unit)
+		_index_dirty = false
+	for team: int in MatchTypes.PLAYER_COUNT:
+		var list: Array[UnitBase] = _team_lists[team]
+		var ys: PackedFloat32Array = _team_ys[team]
+		ys.resize(list.size())
+		for index: int in list.size():
+			var unit: UnitBase = list[index]
+			var y: float = unit.global_position.y
+			var slot: int = index - 1
+			while slot >= 0 and ys[slot] > y:
+				list[slot + 1] = list[slot]
+				ys[slot + 1] = ys[slot]
+				slot -= 1
+			list[slot + 1] = unit
+			ys[slot + 1] = y
+		_team_ys[team] = ys
+	_index_margin = MAX_UNIT_SPEED * maxf(delta, 0.0) * INDEX_REFRESH_TICKS + 2.0
+	_index_active = true
+
+
+## Prepara en _query_list/_query_lo/_query_hi las unidades que PODRÍAN estar a
+## menos de `half_window` en Y de `y`. `team` = -1 para todas. Sin índice
+## activo devuelve todas las unidades. Quien lo llame sigue filtrando por
+## equipo y distancia exacta, así que el resultado es idéntico al recorrido
+## completo: el índice solo descarta candidatos imposibles.
+func _select_candidates(team: int, y: float, half_window: float) -> void:
+	if not _index_active or team < 0:
+		_query_list = _units
+		_query_lo = 0
+		_query_hi = _units.size()
+		return
+	var ys: PackedFloat32Array = _team_ys[team]
+	var reach: float = half_window + _index_margin
+	_query_list = _team_lists[team]
+	_query_lo = ys.bsearch(y - reach, true)
+	_query_hi = ys.bsearch(y + reach, false)
 
 
 ## Enemigo vivo cercano (distancia de borde a borde) dentro de max_range.
-## Entre los que están a menos de TARGET_SPREAD_DISTANCE del más cercano se
-## reparte por unit_id del buscador, para que un ejército no concentre todos
-## los golpes en un único blanco (sobredaño). Determinista.
+## Entre los que están a menos de TARGET_SPREAD_DISTANCE del más cercano el
+## buscador elige uno según un hash de su unit_id y el del candidato: los
+## blancos se reparten y un ejército no concentra todos los golpes en uno solo
+## (sobredaño). Determinista y independiente del orden en que se recorran.
 func find_nearest_enemy_in_range(seeker: UnitBase, max_range: float) -> UnitBase:
-	var best: UnitBase = null
+	var seeker_team: int = seeker.team
+	var seeker_y: float = seeker.global_position.y
+	var seeker_radius: float = seeker.body_radius
+	_select_candidates(MatchTypes.opponent_of(seeker_team), seeker_y, max_range + seeker_radius + MAX_BODY_RADIUS)
+	var list: Array[UnitBase] = _query_list
+	_scratch_units.clear()
+	_scratch_distances.clear()
 	var best_distance: float = INF
-	for candidate: UnitBase in _units:
-		if candidate.team == seeker.team or candidate.is_dead:
+	for index: int in range(_query_lo, _query_hi):
+		var candidate: UnitBase = list[index]
+		if candidate.team == seeker_team or candidate.is_dead:
 			continue
-		var distance: float = seeker.edge_distance_to(candidate)
+		var distance: float = absf(candidate.global_position.y - seeker_y) - (seeker_radius + candidate.body_radius)
 		if distance > max_range:
 			continue
-		if distance < best_distance or (is_equal_approx(distance, best_distance) and candidate.unit_id < best.unit_id):
-			best = candidate
+		_scratch_units.append(candidate)
+		_scratch_distances.append(distance)
+		if distance < best_distance:
 			best_distance = distance
-	if best == null:
+	if _scratch_units.is_empty():
 		return null
-	var close_enemies: Array[UnitBase] = []
 	var limit: float = minf(best_distance + TARGET_SPREAD_DISTANCE, max_range)
-	for candidate: UnitBase in _units:
-		if candidate.team != seeker.team and not candidate.is_dead and seeker.edge_distance_to(candidate) <= limit:
-			close_enemies.append(candidate)
-	return close_enemies[seeker.unit_id % close_enemies.size()]
+	var chosen: UnitBase = null
+	var chosen_key: int = 0
+	for index: int in _scratch_units.size():
+		if _scratch_distances[index] > limit:
+			continue
+		var candidate: UnitBase = _scratch_units[index]
+		var key: int = ((candidate.unit_id * 73856093) ^ (seeker.unit_id * 19349663)) & 0x7FFFFFFF
+		if chosen == null or key < chosen_key or (key == chosen_key and candidate.unit_id < chosen.unit_id):
+			chosen = candidate
+			chosen_key = key
+	return chosen
+
+
+static func _compare_unit_ids(a: UnitBase, b: UnitBase) -> bool:
+	return a.unit_id < b.unit_id
 
 
 ## Enemigo vivo de `team` más cercano a la coordenada `origin_y` (distancia en
@@ -309,7 +463,12 @@ func find_nearest_enemy_in_range(seeker: UnitBase, max_range: float) -> UnitBase
 func find_nearest_enemy_to_y(team: int, origin_y: float, max_range: float) -> UnitBase:
 	var best: UnitBase = null
 	var best_distance: float = INF
-	for candidate: UnitBase in _units:
+	_select_candidates(MatchTypes.opponent_of(team), origin_y, max_range + MAX_BODY_RADIUS)
+	var list: Array[UnitBase] = _query_list
+	var lo: int = _query_lo
+	var hi: int = _query_hi
+	for index: int in range(lo, hi):
+		var candidate: UnitBase = list[index]
 		if candidate.team == team or candidate.is_dead:
 			continue
 		var distance: float = absf(candidate.global_position.y - origin_y) - candidate.body_radius
@@ -326,12 +485,19 @@ func find_nearest_enemy_to_y(team: int, origin_y: float, max_range: float) -> Un
 func find_lowest_hp_ally_in_range(seeker: UnitBase, max_range: float) -> UnitBase:
 	var best: UnitBase = null
 	var best_ratio: float = INF
-	for candidate: UnitBase in _units:
-		if candidate == seeker or candidate.team != seeker.team or not candidate.is_injured():
+	var seeker_y: float = seeker.global_position.y
+	var seeker_radius: float = seeker.body_radius
+	_select_candidates(seeker.team, seeker_y, max_range + seeker_radius + MAX_BODY_RADIUS)
+	var list: Array[UnitBase] = _query_list
+	var lo: int = _query_lo
+	var hi: int = _query_hi
+	for index: int in range(lo, hi):
+		var candidate: UnitBase = list[index]
+		if candidate == seeker or candidate.team != seeker.team or candidate.is_dead or candidate.current_hp >= candidate.max_hp:
 			continue
-		if seeker.edge_distance_to(candidate) > max_range:
+		if absf(candidate.global_position.y - seeker_y) - (seeker_radius + candidate.body_radius) > max_range:
 			continue
-		var ratio: float = candidate.get_hp_ratio()
+		var ratio: float = candidate.current_hp / candidate.max_hp
 		if ratio < best_ratio or (is_equal_approx(ratio, best_ratio) and candidate.unit_id < best.unit_id):
 			best = candidate
 			best_ratio = ratio
@@ -375,13 +541,31 @@ func spawn_castle_projectile(source_id: int, team: int, origin: Vector2, amount:
 
 
 func _create_projectile(source_id: int, team: int, origin: Vector2, target_id: int, amount: float, speed: float) -> Projectile:
-	var projectile: Projectile = Projectile.new()
+	var projectile: Projectile = _acquire_projectile()
 	projectile.setup(GameManager.match_state.allocate_entity_id(), source_id, team, target_id, amount, speed)
-	var container: Node = projectiles_container if projectiles_container != null else self
-	container.add_child(projectile)
 	projectile.global_position = origin
 	_projectiles.append(projectile)
 	return projectile
+
+
+## Un proyectil listo para usar: reutiliza uno del pool o crea uno nuevo.
+func _acquire_projectile() -> Projectile:
+	var projectile: Projectile = _projectile_pool.pop_back() if not _projectile_pool.is_empty() else null
+	if projectile == null:
+		projectile = Projectile.new()
+		var container: Node = projectiles_container if projectiles_container != null else self
+		container.add_child(projectile)
+	projectile.visible = true
+	return projectile
+
+
+## Devuelve el proyectil al pool (oculto) o lo libera si el pool está lleno.
+func _release_projectile(projectile: Projectile) -> void:
+	if _projectile_pool.size() >= PROJECTILE_POOL_LIMIT:
+		projectile.queue_free()
+		return
+	projectile.visible = false
+	_projectile_pool.append(projectile)
 
 
 func _simulate_projectiles(delta: float) -> void:
@@ -400,14 +584,14 @@ func _simulate_projectiles(delta: float) -> void:
 				target = find_nearest_enemy_to_y(projectile.team, projectile.global_position.y, PROJECTILE_RETARGET_RANGE)
 				if target == null:
 					_projectiles.remove_at(index)
-					projectile.queue_free()
+					_release_projectile(projectile)
 					continue
 				projectile.target_id = target.unit_id
 			destination = target.global_position
 		if projectile.simulate_towards(destination, delta):
 			_pending_hits.append(PendingHit.new(projectile.source_id, projectile.target_id, projectile.damage, projectile.target_castle_owner))
 			_projectiles.remove_at(index)
-			projectile.queue_free()
+			_release_projectile(projectile)
 			continue
 		index += 1
 
@@ -434,7 +618,12 @@ func queue_conversion(converter: UnitBase, target: UnitBase) -> void:
 func find_nearest_convertible_enemy(seeker: UnitBase, max_range: float, max_target_hp: float) -> UnitBase:
 	var best: UnitBase = null
 	var best_distance: float = INF
-	for candidate: UnitBase in _units:
+	_select_candidates(MatchTypes.opponent_of(seeker.team), seeker.global_position.y, max_range + seeker.body_radius + MAX_BODY_RADIUS)
+	var list: Array[UnitBase] = _query_list
+	var lo: int = _query_lo
+	var hi: int = _query_hi
+	for index: int in range(lo, hi):
+		var candidate: UnitBase = list[index]
 		if candidate.team == seeker.team or candidate.is_dead or candidate.max_hp > max_target_hp:
 			continue
 		var distance: float = seeker.edge_distance_to(candidate)
@@ -452,6 +641,7 @@ func convert_unit(unit: UnitBase, new_team: int) -> void:
 		return
 	var old_team: int = unit.team
 	unit.change_team(new_team)
+	_mark_units_changed()
 	var container: Node = _get_container(new_team)
 	if unit.get_parent() != container:
 		# Diferido: el cambio de padre es solo organizativo/visual.
@@ -488,6 +678,7 @@ func _process_deaths() -> void:
 		_units.remove_at(index)
 		_units_by_id.erase(unit.unit_id)
 		_dying.append(unit)
+		_mark_units_changed()
 		EventBus.unidad_eliminada.emit(unit, unit.team)
 
 
@@ -509,6 +700,7 @@ func _register(unit: UnitBase) -> void:
 	# Los ids se asignan crecientes, así que añadir al final mantiene el orden.
 	_units.append(unit)
 	_units_by_id[unit.unit_id] = unit
+	_mark_units_changed()
 
 
 func _get_container(team: int) -> Node:
@@ -523,6 +715,10 @@ func clear_units() -> void:
 		unit.queue_free()
 	for projectile: Projectile in _projectiles:
 		projectile.queue_free()
+	for projectile: Projectile in _projectile_pool:
+		projectile.queue_free()
+	_projectile_pool.clear()
+	_mark_units_changed()
 	_units.clear()
 	_units_by_id.clear()
 	_dying.clear()
@@ -550,26 +746,69 @@ func to_dict() -> Dictionary:
 	return {"units": unit_dicts, "projectiles": projectile_dicts}
 
 
+## Estado del carril para red y repeticiones, en arrays planos (unas 8 veces
+## más pequeño que to_dict, que queda para depuración y tests de determinismo):
+##   ui: [unit_id, team, índice en ut] por unidad     ut: tipos de unidad presentes
+##   uf: [x, y, vida, vida_máx] por unidad
+##   pi: [projectile_id, source_id, team] por proyectil   pf: [x, y] por proyectil
+func to_snapshot() -> Dictionary:
+	var unit_ids: PackedInt32Array = PackedInt32Array()
+	var unit_floats: PackedFloat32Array = PackedFloat32Array()
+	var types: PackedStringArray = PackedStringArray()
+	unit_ids.resize(_units.size() * 3)
+	unit_floats.resize(_units.size() * 4)
+	for index: int in _units.size():
+		var unit: UnitBase = _units[index]
+		var type_index: int = types.find(str(unit.data.id))
+		if type_index < 0:
+			type_index = types.size()
+			types.append(str(unit.data.id))
+		unit_ids[index * 3] = unit.unit_id
+		unit_ids[index * 3 + 1] = unit.team
+		unit_ids[index * 3 + 2] = type_index
+		var position_now: Vector2 = unit.global_position
+		unit_floats[index * 4] = position_now.x
+		unit_floats[index * 4 + 1] = position_now.y
+		unit_floats[index * 4 + 2] = unit.current_hp
+		unit_floats[index * 4 + 3] = unit.max_hp
+	var projectile_ids: PackedInt32Array = PackedInt32Array()
+	var projectile_floats: PackedFloat32Array = PackedFloat32Array()
+	projectile_ids.resize(_projectiles.size() * 3)
+	projectile_floats.resize(_projectiles.size() * 2)
+	for index: int in _projectiles.size():
+		var projectile: Projectile = _projectiles[index]
+		projectile_ids[index * 3] = projectile.projectile_id
+		projectile_ids[index * 3 + 1] = projectile.source_id
+		projectile_ids[index * 3 + 2] = projectile.team
+		projectile_floats[index * 2] = projectile.global_position.x
+		projectile_floats[index * 2 + 1] = projectile.global_position.y
+	return {"ui": unit_ids, "uf": unit_floats, "ut": types, "pi": projectile_ids, "pf": projectile_floats}
+
+
 func _on_partida_iniciada(_modo: int, _semilla: int) -> void:
 	clear_units()
 
 
 # --- Cliente online (solo presentación) ------------------------------------------
 
-## Aplica el estado replicado: crea, actualiza o retira unidades y proyectiles
-## por id lógico. El cliente nunca simula combate: solo presenta.
+## Aplica el estado replicado (formato de to_snapshot): crea, actualiza o retira
+## unidades y proyectiles por id lógico. El cliente nunca simula combate: solo
+## presenta.
 func apply_snapshot(data: Dictionary) -> void:
+	var unit_ids: PackedInt32Array = data.get("ui", PackedInt32Array())
+	var unit_floats: PackedFloat32Array = data.get("uf", PackedFloat32Array())
+	var types: PackedStringArray = data.get("ut", PackedStringArray())
 	var seen_units: Dictionary[int, bool] = {}
-	for unit_variant: Variant in data.get("units", []):
-		var unit_data_dict: Dictionary = unit_variant
-		var unit_id: int = int(unit_data_dict.get("unit_id", 0))
-		var team: int = int(unit_data_dict.get("team", MatchTypes.NO_PLAYER))
-		var network_pos: Vector2 = unit_data_dict.get("position", Vector2.ZERO)
+	for index: int in unit_ids.size() / 3:
+		var unit_id: int = unit_ids[index * 3]
+		var team: int = unit_ids[index * 3 + 1]
+		var network_pos: Vector2 = Vector2(unit_floats[index * 4], unit_floats[index * 4 + 1])
 		seen_units[unit_id] = true
 		var unit: UnitBase = get_unit(unit_id)
 		var announce_health: bool = false
 		if unit == null:
-			unit = _create_replicated_unit(unit_id, team, StringName(str(unit_data_dict.get("unit_type", ""))), network_pos)
+			var type_index: int = unit_ids[index * 3 + 2]
+			unit = _create_replicated_unit(unit_id, team, StringName(types[type_index]) if type_index < types.size() else &"", network_pos)
 			if unit == null:
 				continue
 		else:
@@ -577,7 +816,7 @@ func apply_snapshot(data: Dictionary) -> void:
 			if unit.team != team:
 				convert_unit(unit, team)
 		unit.network_position = network_pos
-		unit.apply_network_health(float(unit_data_dict.get("hp", unit.current_hp)), float(unit_data_dict.get("max_hp", unit.max_hp)), announce_health)
+		unit.apply_network_health(unit_floats[index * 4 + 2], unit_floats[index * 4 + 3], announce_health)
 	var index: int = 0
 	while index < _units.size():
 		var existing: UnitBase = _units[index]
@@ -588,7 +827,8 @@ func apply_snapshot(data: Dictionary) -> void:
 		_units.remove_at(index)
 		_units_by_id.erase(existing.unit_id)
 		_dying.append(existing)
-	_apply_projectile_snapshot(data.get("projectiles", []))
+		_mark_units_changed()
+	_apply_projectile_snapshot(data.get("pi", PackedInt32Array()), data.get("pf", PackedFloat32Array()))
 
 
 func _create_replicated_unit(unit_id: int, team: int, unit_type: StringName, network_pos: Vector2) -> UnitBase:
@@ -601,32 +841,32 @@ func _create_replicated_unit(unit_id: int, team: int, unit_type: StringName, net
 	unit.global_position = network_pos
 	unit.network_position = network_pos
 	_units.append(unit)
-	_units.sort_custom(func(a: UnitBase, b: UnitBase) -> bool: return a.unit_id < b.unit_id)
+	# Los ids llegan casi siempre crecientes: solo se reordena si no es así.
+	if _units.size() > 1 and _units[_units.size() - 2].unit_id > unit_id:
+		_units.sort_custom(_compare_unit_ids)
 	_units_by_id[unit_id] = unit
+	_mark_units_changed()
 	return unit
 
 
-func _apply_projectile_snapshot(projectile_list: Array) -> void:
+func _apply_projectile_snapshot(projectile_ids: PackedInt32Array, projectile_floats: PackedFloat32Array) -> void:
 	var by_id: Dictionary[int, Projectile] = {}
 	for projectile: Projectile in _projectiles:
 		by_id[projectile.projectile_id] = projectile
 	var kept: Array[Projectile] = []
-	for projectile_variant: Variant in projectile_list:
-		var projectile_dict: Dictionary = projectile_variant
-		var projectile_id: int = int(projectile_dict.get("projectile_id", 0))
-		var network_pos: Vector2 = projectile_dict.get("position", Vector2.ZERO)
+	for index: int in projectile_ids.size() / 3:
+		var projectile_id: int = projectile_ids[index * 3]
+		var network_pos: Vector2 = Vector2(projectile_floats[index * 2], projectile_floats[index * 2 + 1])
 		var projectile: Projectile = by_id.get(projectile_id, null)
 		if projectile == null:
-			projectile = Projectile.new()
-			projectile.setup(projectile_id, int(projectile_dict.get("source_id", 0)), int(projectile_dict.get("team", MatchTypes.NO_PLAYER)), 0, 0.0, 0.0)
-			var container: Node = projectiles_container if projectiles_container != null else self
-			container.add_child(projectile)
+			projectile = _acquire_projectile()
+			projectile.setup(projectile_id, projectile_ids[index * 3 + 1], projectile_ids[index * 3 + 2], 0, 0.0, 0.0)
 			projectile.global_position = network_pos
 		by_id.erase(projectile_id)
 		projectile.target_point = network_pos
 		kept.append(projectile)
 	for leftover: Projectile in by_id.values():
-		leftover.queue_free()
+		_release_projectile(leftover)
 	_projectiles = kept
 
 

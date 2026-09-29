@@ -18,9 +18,9 @@ func get_type() -> StringName:
 
 func validate(_processor: CommandProcessor) -> String:
 	if source != GameCommand.Source.DEBUG:
-		return "Comando exclusivo de debug"
+		return Reason.make("Comando exclusivo de debug")
 	if amount <= 0:
-		return "Cantidad inválida"
+		return Reason.make("Cantidad inválida")
 	return ""
 
 

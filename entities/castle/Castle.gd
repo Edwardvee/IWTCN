@@ -12,6 +12,7 @@ const HP_BAR_HEIGHT: float = 14.0
 var _hp: float = 1.0
 var _max_hp: float = 1.0
 var _label: Label = null
+var _dirty: bool = false
 
 
 func _ready() -> void:
@@ -59,7 +60,16 @@ func _draw() -> void:
 
 func _on_castillo_danado(player_id: int, vida_actual: float, vida_maxima: float) -> void:
 	if player_id == owner_id:
-		_show(vida_actual, vida_maxima)
+		# Se guarda el último valor y se dibuja una vez por fotograma.
+		_hp = vida_actual
+		_max_hp = maxf(vida_maxima, 1.0)
+		_dirty = true
+
+
+func _process(_delta: float) -> void:
+	if _dirty:
+		_dirty = false
+		_show(_hp, _max_hp)
 
 
 func _on_partida_iniciada(_modo: int, _semilla: int) -> void:

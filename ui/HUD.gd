@@ -47,10 +47,10 @@ func _process(delta: float) -> void:
 func _refresh() -> void:
 	var state: MatchState = GameManager.match_state
 	if state == null:
-		_match_info.text = "Sin partida"
+		_match_info.text = tr("Sin partida")
 		return
 	if GameManager.is_watching():
-		_match_info.text = "%s · %s · oro abajo %d / arriba %d%s" % [
+		_match_info.text = tr("%s · %s · oro abajo %d / arriba %d%s") % [
 			MatchTypes.game_mode_name(GameManager.game_mode),
 			format_time(state.match_time),
 			EconomyManager.get_gold(MatchTypes.PLAYER_BOTTOM),
@@ -60,7 +60,7 @@ func _refresh() -> void:
 		return
 	# Oro rival visible solo como información de desarrollo (VS AI).
 	var opponent_id: int = MatchTypes.opponent_of(GameManager.local_player_id)
-	_match_info.text = "%s · seed %d · %.1f s · rival: %d oro" % [
+	_match_info.text = tr("%s · seed %d · %.1f s · rival: %d oro") % [
 		MatchTypes.game_mode_name(GameManager.game_mode),
 		state.match_seed,
 		state.match_time,
@@ -80,7 +80,7 @@ func _describe_ai_profiles() -> String:
 			names[ai.player_id] = str(rule_based.profile_name)
 	if names.size() < MatchTypes.PLAYER_COUNT:
 		return ""
-	return " · abajo: %s · arriba: %s" % [names[MatchTypes.PLAYER_BOTTOM], names[MatchTypes.PLAYER_TOP]]
+	return tr(" · abajo: %s · arriba: %s") % [names[MatchTypes.PLAYER_BOTTOM], names[MatchTypes.PLAYER_TOP]]
 
 
 static func format_time(seconds: float) -> String:
@@ -115,17 +115,17 @@ func _is_local_event(player_id: int) -> bool:
 
 func _on_estructura_construida(player_id: int, _slot_index: int, datos: StructureData, nivel: int) -> void:
 	if _is_local_event(player_id):
-		show_toast("%s construida · Lv%d" % [datos.display_name, nivel], true)
+		show_toast(tr("%s construida · Lv%d") % [tr(datos.display_name), nivel], true)
 
 
 func _on_estructura_vendida(player_id: int, _slot_index: int, oro_devuelto: int) -> void:
 	if _is_local_event(player_id):
-		show_toast("Estructura vendida · +%d oro" % oro_devuelto, true)
+		show_toast(tr("Estructura vendida · +%d oro") % oro_devuelto, true)
 
 
 func _on_plot_desbloqueado(player_id: int, _plot_index: int) -> void:
 	if _is_local_event(player_id):
-		show_toast("Plot desbloqueado", true)
+		show_toast(tr("Plot desbloqueado"), true)
 
 
 func _on_carta_elegida(player_id: int, carta: CardData) -> void:
@@ -133,9 +133,9 @@ func _on_carta_elegida(player_id: int, carta: CardData) -> void:
 		return
 	match carta.card_type:
 		CardData.CardType.DIRECT_UNIT:
-			show_toast("%s desplegadas" % carta.display_name if carta.unit_count > 1 else "%s desplegado" % carta.display_name, true)
+			show_toast((tr("%s desplegadas") if carta.unit_count > 1 else tr("%s desplegado")) % tr(carta.display_name), true)
 		CardData.CardType.GLOBAL_BUFF:
-			show_toast("Mejora activada · %s" % carta.display_name, true)
+			show_toast(tr("Mejora activada · %s") % tr(carta.display_name), true)
 
 
 func _on_partida_iniciada(_modo: int, _semilla: int) -> void:
@@ -152,4 +152,4 @@ func _on_comando_rechazado(player_id: int, _tipo_comando: StringName, motivo: St
 		return
 	if player_id != GameManager.local_player_id and not OS.is_debug_build():
 		return
-	show_toast(motivo)
+	show_toast(Reason.text(motivo))

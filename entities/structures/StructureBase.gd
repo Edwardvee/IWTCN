@@ -122,7 +122,7 @@ func _create_visuals() -> void:
 func _update_label() -> void:
 	if _label == null or data == null:
 		return
-	var short_name: String = data.short_label if data.short_label != "" else data.display_name
+	var short_name: String = tr(data.short_label) if data.short_label != "" else tr(data.display_name)
 	_label.text = "%s\nLv%d" % [short_name, level]
 
 

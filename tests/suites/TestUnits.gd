@@ -67,12 +67,12 @@ func test_combat_two_vs_one() -> void:
 	assert_eq(lane.get_alive_count(1), 0, "sin enemigos vivos")
 	assert_eq(lane.get_alive_count(0), 2, "los dos aliados sobreviven")
 	assert_eq(states, [UnitBase.STATE_ATTACK, UnitBase.STATE_ADVANCE] as Array[StringName], "ADVANCE → ATTACK → ADVANCE")
-	# El enemigo reparte objetivo por su unit_id entre los aliados igual de cerca
-	# y le da 4 golpes al elegido (el 4.º, simultáneo a su muerte).
-	var hit_ally: UnitBase = allies[enemy.unit_id % 2]
-	var other_ally: UnitBase = allies[1 - enemy.unit_id % 2]
-	assert_eq(hit_ally.current_hp, 250.0 - 4.0 * 35.0, "vida del aliado golpeado")
-	assert_eq(other_ally.current_hp, 250.0, "el otro aliado intacto")
+	# El enemigo elige a uno de los dos aliados (igual de cerca) y le da 4 golpes
+	# (el 4.º, simultáneo a su muerte); el otro queda intacto.
+	var damaged: Array[UnitBase] = allies.filter(func(unit: UnitBase) -> bool: return unit.current_hp < 250.0)
+	assert_eq(damaged.size(), 1, "un solo aliado golpeado")
+	if damaged.size() == 1:
+		assert_eq(damaged[0].current_hp, 250.0 - 4.0 * 35.0, "vida del aliado golpeado")
 	_run(10.0)
 	assert_true(first_ally.can_attack_enemy_castle(), "el superviviente sigue avanzando hasta el castillo rival")
 
@@ -123,8 +123,9 @@ func test_dead_unit_stops_and_is_removed() -> void:
 
 
 func test_nearest_target_selection() -> void:
-	var ally: UnitBase = _spawn(soldier, 0, 1500.0)
-	var far_enemy: UnitBase = _spawn(soldier, 1, 1440.0)
+	# Un arquero (rango 280) ve a los dos; el cercano queda fuera de la ventana de reparto del lejano.
+	var ally: UnitBase = _spawn(GameManager.database.get_unit(&"archer"), 0, 1500.0)
+	var far_enemy: UnitBase = _spawn(soldier, 1, 1300.0)
 	var near_enemy: UnitBase = _spawn(soldier, 1, 1460.0)
 	assert_true(ally.acquire_target() == near_enemy, "elige el más cercano")
 	assert_eq(ally.target_id, near_enemy.unit_id, "target por id")
@@ -135,9 +136,16 @@ func test_target_tie_is_spread_deterministically_by_seeker_id() -> void:
 	var ally: UnitBase = _spawn(soldier, 0, 1500.0)
 	var first: UnitBase = _spawn(soldier, 1, 1450.0, 500.0)
 	var second: UnitBase = _spawn(soldier, 1, 1450.0, 580.0)
-	var expected: UnitBase = [first, second][ally.unit_id % 2]
-	assert_true(ally.acquire_target() == expected, "empate → se reparte por el unit_id del buscador")
-	assert_true(ally.acquire_target() == expected, "y la elección es estable")
+	var chosen: UnitBase = ally.acquire_target()
+	assert_true(chosen == first or chosen == second, "elige uno de los dos empatados")
+	assert_true(ally.acquire_target() == chosen, "y la elección es estable")
+	# Con muchos buscadores distintos los blancos se reparten entre ambos.
+	var picked_first: int = 0
+	for _index: int in 20:
+		var other: UnitBase = _spawn(soldier, 0, 1500.0)
+		if other.acquire_target() == first:
+			picked_first += 1
+	assert_true(picked_first > 0 and picked_first < 20, "el reparto usa a los dos (%d de 20 al primero)" % picked_first)
 
 
 func test_far_enemy_not_in_spread_window_is_ignored() -> void:

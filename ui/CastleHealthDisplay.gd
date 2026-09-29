@@ -3,6 +3,9 @@ extends Label
 ## Solo lee: escucha castillo_danado y partida_iniciada.
 
 
+var _dirty: bool = false
+
+
 func _ready() -> void:
 	EventBus.castillo_danado.connect(_on_castillo_danado)
 	EventBus.partida_iniciada.connect(_on_partida_iniciada)
@@ -16,13 +19,21 @@ func _refresh() -> void:
 		text = ""
 		return
 	if GameManager.is_watching():
-		text = "Castillo abajo: %d   ·   arriba: %d" % [ceili(own.castle_hp), ceili(rival.castle_hp)]
+		text = tr("Castillo abajo: %d   ·   arriba: %d") % [ceili(own.castle_hp), ceili(rival.castle_hp)]
 		return
-	text = "Tu castillo: %d   ·   Rival: %d" % [ceili(own.castle_hp), ceili(rival.castle_hp)]
+	text = tr("Tu castillo: %d   ·   Rival: %d") % [ceili(own.castle_hp), ceili(rival.castle_hp)]
 
 
+## Cada golpe al castillo emite una señal; se agrupan y el texto se rehace una
+## vez por fotograma como máximo (con muchas unidades pegando son decenas por segundo).
 func _on_castillo_danado(_player_id: int, _vida_actual: float, _vida_maxima: float) -> void:
-	_refresh()
+	_dirty = true
+
+
+func _process(_delta: float) -> void:
+	if _dirty:
+		_dirty = false
+		_refresh()
 
 
 func _on_partida_iniciada(_modo: int, _semilla: int) -> void:
