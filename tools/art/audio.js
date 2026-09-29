@@ -50,6 +50,21 @@ function noiseClick(dur, gain, seed = 7) {
   return out;
 }
 
+/** Ruido con envolvente rápida (soplido de espada). */
+function sweptNoise(dur, gain, seed = 11) {
+  const r = L.rng(seed);
+  const n = Math.floor(dur * RATE);
+  const out = new Array(n).fill(0);
+  let lp = 0;
+  for (let i = 0; i < n; i++) {
+    const t = i / n;
+    const k = 0.15 + 0.7 * t; // el filtro se abre: suena "ssshh" ascendente
+    lp += ((r() * 2 - 1) - lp) * k;
+    out[i] = lp * Math.sin(Math.PI * Math.pow(t, 0.6)) * gain;
+  }
+  return out;
+}
+
 function mix(...tracks) {
   const n = Math.max(...tracks.map((t) => t.length));
   const out = new Array(n).fill(0);
@@ -68,6 +83,8 @@ function generate() {
   const files = {
     // "toc" de madera: golpe grave corto + chasquido
     click: mix(tone(0.11, 520, 210, 34, 0.9), noiseClick(0.012, 0.5)),
+    // tajo: soplido de ruido que sube de tono + chasquido
+    slash: mix(sweptNoise(0.13, 0.9), tone(0.09, 900, 260, 40, 0.5), noiseClick(0.008, 0.6, 3)),
     // confirmación: dos notas ascendentes
     confirm: mix(tone(0.16, 660, 660, 16, 0.7), delayed(tone(0.2, 990, 990, 14, 0.7), 0.07), noiseClick(0.01, 0.3)),
     // error: dos golpes graves descendentes

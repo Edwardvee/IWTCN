@@ -170,6 +170,8 @@ func acquire_target() -> UnitBase:
 
 
 func perform_attack(target: UnitBase) -> void:
+	if not data.uses_projectile:
+		EventBus.golpe_cuerpo_a_cuerpo.emit(target.global_position, team)
 	if data.uses_projectile:
 		lane.spawn_projectile(unit_id, team, global_position, target.unit_id, damage, data.projectile_speed)
 	else:
@@ -186,6 +188,8 @@ func can_attack_enemy_castle() -> bool:
 
 func perform_castle_attack() -> void:
 	target_id = 0
+	if not data.uses_projectile:
+		EventBus.golpe_cuerpo_a_cuerpo.emit(Vector2(global_position.x, lane.get_castle_front_y(MatchTypes.opponent_of(team))), team)
 	if data.uses_projectile:
 		lane.spawn_castle_projectile(unit_id, team, global_position, damage, data.projectile_speed)
 	else:

@@ -70,6 +70,7 @@ func _ready() -> void:
 	var floating_text: FloatingTextLayer = FloatingTextLayer.new()
 	$World.add_child(floating_text)
 	floating_text.setup(grids)
+	$World.add_child(SlashEffects.new())
 	_recorder = ReplayRecorder.new()
 	_recorder.replicator = _replicator
 	_systems.add_child(_recorder)

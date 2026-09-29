@@ -46,6 +46,8 @@ signal buff_aplicado(player_id: int, buff: BuffData)
 signal castillo_danado(player_id: int, vida_actual: float, vida_maxima: float)
 
 # --- Comandos ---
+## Golpe cuerpo a cuerpo: dónde impacta y el equipo atacante (efecto de tajo).
+signal golpe_cuerpo_a_cuerpo(position: Vector2, attacker_team: int)
 signal comando_rechazado(player_id: int, tipo_comando: StringName, motivo: String)
 
 @warning_ignore_restore("unused_signal")

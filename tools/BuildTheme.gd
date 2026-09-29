@@ -18,6 +18,7 @@ const PALETTES: Dictionary[String, Array] = {
 
 func _init() -> void:
 	var theme: Theme = Theme.new()
+	theme.default_font = load("res://assets/LilitaOne-Regular.ttf") as Font
 	_build_buttons(theme)
 	_build_labels(theme)
 	_build_panels(theme)
