@@ -15,6 +15,11 @@ enum Hint { NONE, VALID, INVALID }
 const HINT_VALID_FILL: Color = Color(0.3, 1.0, 0.4, 0.22)
 const HINT_INVALID_BORDER: Color = Color(1.0, 0.3, 0.25)
 const HINT_VALID_BORDER: Color = Color(0.4, 1.0, 0.5)
+const PAD_COLOR: Color = Color(0.0, 0.0, 0.0, 0.22)
+const BRACKET_COLOR: Color = Color(1.0, 0.95, 0.8, 0.32)
+const BRACKET_LENGTH: float = 20.0
+
+static var _border_style: StyleBoxFlat = null
 
 var _selected: bool = false
 var _hint: Hint = Hint.NONE
@@ -66,15 +71,33 @@ func set_hint(hint: Hint) -> void:
 
 func _draw() -> void:
 	var rect: Rect2 = Rect2(Vector2.ZERO, size)
-	draw_rect(rect, Color(0.0, 0.0, 0.0, 0.3))
-	draw_rect(rect, Color(1.0, 1.0, 1.0, 0.25), false, 2.0)
+	draw_rect(rect, PAD_COLOR)
+	_draw_brackets(rect.grow(-4.0))
 	if _hint == Hint.VALID:
 		draw_rect(rect, HINT_VALID_FILL)
-		draw_rect(rect, HINT_VALID_BORDER, false, 3.0)
+		_draw_border(rect, HINT_VALID_BORDER, 3)
 	if _selected:
 		var border: Color = SELECTED_COLOR
 		if _hint == Hint.VALID:
 			border = HINT_VALID_BORDER
 		elif _hint == Hint.INVALID:
 			border = HINT_INVALID_BORDER
-		draw_rect(rect, border, false, 6.0)
+		_draw_border(rect, border, 6)
+
+
+## Esquinas de "aquí se construye" en lugar de un recuadro completo.
+func _draw_brackets(rect: Rect2) -> void:
+	for corner: Vector2 in [rect.position, Vector2(rect.end.x, rect.position.y), rect.end, Vector2(rect.position.x, rect.end.y)]:
+		var dx: float = BRACKET_LENGTH if corner.x <= rect.position.x else -BRACKET_LENGTH
+		var dy: float = BRACKET_LENGTH if corner.y <= rect.position.y else -BRACKET_LENGTH
+		draw_polyline(PackedVector2Array([corner + Vector2(dx, 0.0), corner, corner + Vector2(0.0, dy)]), BRACKET_COLOR, 3.0)
+
+
+func _draw_border(rect: Rect2, color: Color, width: int) -> void:
+	if _border_style == null:
+		_border_style = StyleBoxFlat.new()
+		_border_style.bg_color = Color(0.0, 0.0, 0.0, 0.0)
+		_border_style.set_corner_radius_all(10)
+	_border_style.set_border_width_all(width)
+	_border_style.border_color = color
+	draw_style_box(_border_style, rect)

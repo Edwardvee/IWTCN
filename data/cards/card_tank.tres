@@ -1,6 +1,7 @@
 [gd_resource type="Resource" script_class="CardData" format=3]
 
 [ext_resource type="Script" path="res://resources/CardData.gd" id="1_sy4qj"]
+[ext_resource type="Texture2D" path="res://assets/cards/tank.svg" id="9_icon"]
 [ext_resource type="Resource" path="res://data/units/tank.tres" id="2_2hr8m"]
 
 [resource]
@@ -15,3 +16,4 @@ unit = ExtResource("2_2hr8m")
 required_structure_tag = &"barracks"
 required_structure_count = 3
 color = Color(0.6, 0.6, 0.7, 1)
+icon = ExtResource("9_icon")

@@ -35,7 +35,9 @@ func _init(kind: Kind = Kind.LOCAL) -> void:
 	anchor_bottom = 1.0
 	grow_vertical = Control.GROW_DIRECTION_BEGIN
 	var style: StyleBoxFlat = StyleBoxFlat.new()
-	style.bg_color = Color(0.1, 0.1, 0.12, 0.92)
+	style.bg_color = Color(0.13, 0.08, 0.06, 0.95)
+	style.border_color = Color(0.89, 0.66, 0.23)
+	style.border_width_top = 4
 	style.set_content_margin_all(14.0)
 	add_theme_stylebox_override("panel", style)
 	var layout: VBoxContainer = VBoxContainer.new()

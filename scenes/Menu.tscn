@@ -1,6 +1,7 @@
 [gd_scene format=3]
 
 [ext_resource type="Script" path="res://ui/MainMenu.gd" id="1_menu"]
+[ext_resource type="Texture2D" path="res://assets/ui/menu_bg.svg" id="2_bg"]
 
 [node name="Menu" type="Control"]
 layout_mode = 3
@@ -11,113 +12,146 @@ grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_menu")
 
-[node name="Background" type="ColorRect" parent="."]
+[node name="Background" type="TextureRect" parent="."]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-color = Color(0.12, 0.12, 0.16, 1)
+mouse_filter = 2
+texture = ExtResource("2_bg")
+expand_mode = 1
+stretch_mode = 6
 
-[node name="Center" type="CenterContainer" parent="."]
+[node name="Title" type="Label" parent="."]
 layout_mode = 1
-anchors_preset = 15
+anchors_preset = 10
 anchor_right = 1.0
-anchor_bottom = 1.0
+offset_top = 48.0
+offset_bottom = 300.0
 grow_horizontal = 2
-grow_vertical = 2
-
-[node name="Layout" type="VBoxContainer" parent="Center"]
-custom_minimum_size = Vector2(800, 0)
-layout_mode = 2
-theme_override_constants/separation = 36
-
-[node name="Title" type="Label" parent="Center/Layout"]
-layout_mode = 2
-theme_override_font_sizes/font_size = 72
+theme_override_colors/font_color = Color(1, 0.85, 0.35, 1)
+theme_override_colors/font_outline_color = Color(0.09, 0.07, 0.12, 1)
+theme_override_constants/outline_size = 22
+theme_override_constants/line_spacing = -6
+theme_override_font_sizes/font_size = 96
 text = "I Want That
 Castle Now!"
 horizontal_alignment = 1
+vertical_alignment = 1
 
-[node name="Language" type="Button" parent="Center/Layout"]
-unique_name_in_owner = true
-custom_minimum_size = Vector2(0, 80)
+[node name="Margin" type="MarginContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 90
+theme_override_constants/margin_top = 690
+theme_override_constants/margin_right = 90
+theme_override_constants/margin_bottom = 40
+
+[node name="Panel" type="PanelContainer" parent="Margin"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 36
-text = "English"
+size_flags_vertical = 4
 
-[node name="Difficulty" type="Button" parent="Center/Layout"]
-unique_name_in_owner = true
-custom_minimum_size = Vector2(0, 80)
-layout_mode = 2
-theme_override_font_sizes/font_size = 36
-
-[node name="PlayAI" type="Button" parent="Center/Layout"]
-unique_name_in_owner = true
-custom_minimum_size = Vector2(0, 130)
-layout_mode = 2
-theme_override_font_sizes/font_size = 48
-text = "Jugar contra la IA"
-
-[node name="Spectate" type="Button" parent="Center/Layout"]
-unique_name_in_owner = true
-custom_minimum_size = Vector2(0, 110)
-layout_mode = 2
-theme_override_font_sizes/font_size = 44
-text = "Modo espectador (IA vs IA)"
-
-[node name="Replays" type="Button" parent="Center/Layout"]
-unique_name_in_owner = true
-custom_minimum_size = Vector2(0, 110)
-layout_mode = 2
-theme_override_font_sizes/font_size = 44
-text = "Repeticiones"
-
-[node name="Host" type="Button" parent="Center/Layout"]
-unique_name_in_owner = true
-custom_minimum_size = Vector2(0, 130)
-layout_mode = 2
-theme_override_font_sizes/font_size = 48
-text = "Crear sala online"
-
-[node name="JoinRow" type="HBoxContainer" parent="Center/Layout"]
+[node name="Layout" type="VBoxContainer" parent="Margin/Panel"]
 layout_mode = 2
 theme_override_constants/separation = 20
 
-[node name="Address" type="LineEdit" parent="Center/Layout/JoinRow"]
+[node name="Options" type="HBoxContainer" parent="Margin/Panel/Layout"]
+layout_mode = 2
+theme_override_constants/separation = 20
+
+[node name="Language" type="Button" parent="Margin/Panel/Layout/Options"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(0, 110)
+custom_minimum_size = Vector2(0, 76)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_type_variation = &"StoneButton"
+theme_override_font_sizes/font_size = 34
+text = "English"
+
+[node name="Difficulty" type="Button" parent="Margin/Panel/Layout/Options"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 76)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_type_variation = &"StoneButton"
+theme_override_font_sizes/font_size = 34
+
+[node name="PlayAI" type="Button" parent="Margin/Panel/Layout"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 124)
+layout_mode = 2
+theme_type_variation = &"PrimaryButton"
+theme_override_font_sizes/font_size = 50
+text = "Jugar contra la IA"
+
+[node name="Spectate" type="Button" parent="Margin/Panel/Layout"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 100)
+layout_mode = 2
+theme_type_variation = &"WoodButton"
+theme_override_font_sizes/font_size = 42
+text = "Modo espectador (IA vs IA)"
+
+[node name="Replays" type="Button" parent="Margin/Panel/Layout"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 100)
+layout_mode = 2
+theme_type_variation = &"WoodButton"
+theme_override_font_sizes/font_size = 42
+text = "Repeticiones"
+
+[node name="Host" type="Button" parent="Margin/Panel/Layout"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 116)
+layout_mode = 2
+theme_override_font_sizes/font_size = 46
+text = "Crear sala online"
+
+[node name="JoinRow" type="HBoxContainer" parent="Margin/Panel/Layout"]
+layout_mode = 2
+theme_override_constants/separation = 20
+
+[node name="Address" type="LineEdit" parent="Margin/Panel/Layout/JoinRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 100)
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_font_sizes/font_size = 40
-max_length = 8
 placeholder_text = "Código de sala"
+max_length = 8
 
-[node name="Join" type="Button" parent="Center/Layout/JoinRow"]
+[node name="Join" type="Button" parent="Margin/Panel/Layout/JoinRow"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(260, 110)
+custom_minimum_size = Vector2(240, 100)
 layout_mode = 2
-theme_override_font_sizes/font_size = 44
+theme_override_font_sizes/font_size = 42
 text = "Unirse"
 
-[node name="Watch" type="Button" parent="Center/Layout"]
+[node name="Watch" type="Button" parent="Margin/Panel/Layout"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(0, 110)
+custom_minimum_size = Vector2(0, 100)
 layout_mode = 2
-theme_override_font_sizes/font_size = 44
+theme_type_variation = &"WoodButton"
+theme_override_font_sizes/font_size = 40
 text = "Ver sala como espectador"
 
-[node name="LocalIP" type="Label" parent="Center/Layout"]
+[node name="LocalIP" type="Label" parent="Margin/Panel/Layout"]
 unique_name_in_owner = true
 layout_mode = 2
-theme_override_font_sizes/font_size = 30
+theme_override_font_sizes/font_size = 27
 horizontal_alignment = 1
+autowrap_mode = 3
 
-[node name="Status" type="Label" parent="Center/Layout"]
+[node name="Status" type="Label" parent="Margin/Panel/Layout"]
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_colors/font_color = Color(1, 0.85, 0.3, 1)
-theme_override_font_sizes/font_size = 34
+theme_override_font_sizes/font_size = 32
 horizontal_alignment = 1
 autowrap_mode = 3

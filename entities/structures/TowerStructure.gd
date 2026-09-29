@@ -34,5 +34,5 @@ func _draw() -> void:
 	var reach: float = data.get_tower_range(level)
 	var toward_lane: float = -1.0 if owner_id == MatchTypes.PLAYER_BOTTOM else 1.0
 	var tip: Vector2 = Vector2(0.0, toward_lane * reach)
-	draw_dashed_line(Vector2(0.0, toward_lane * body_size.y * 0.5), tip, Color(1.0, 1.0, 1.0, 0.25), 3.0, 14.0)
-	draw_line(tip + Vector2(-30.0, 0.0), tip + Vector2(30.0, 0.0), Color(1.0, 1.0, 1.0, 0.35), 3.0)
+	draw_dashed_line(Vector2(0.0, toward_lane * body_size.y * 0.5), tip, Color(1.0, 1.0, 1.0, 0.16), 3.0, 14.0)
+	draw_line(tip + Vector2(-30.0, 0.0), tip + Vector2(30.0, 0.0), Color(1.0, 1.0, 1.0, 0.24), 3.0)

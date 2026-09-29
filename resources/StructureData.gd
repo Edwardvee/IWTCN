@@ -47,6 +47,12 @@ enum Kind { FARM, SPAWNER, TOWER }
 @export_group("Visual")
 ## Sprite animado opcional. Si es null se dibuja un rectángulo de `color`.
 @export var sprite_frames: SpriteFrames
+## Arte estático del edificio y capa de "color de equipo" (blanca/gris, se
+## tiñe con el bando). Tienen prioridad sobre el rectángulo de `color`.
+@export var texture: Texture2D
+@export var team_texture: Texture2D
+## Ajuste fino del tamaño del arte respecto al hueco del slot.
+@export var art_scale: float = 1.0
 @export var anim_idle: StringName = &"idle"
 @export var color: Color = Color.WHITE
 ## Texto corto para el placeholder visual (p.ej. "FARM").

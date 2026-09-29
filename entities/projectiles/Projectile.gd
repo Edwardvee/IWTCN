@@ -10,7 +10,9 @@ extends Node2D
 ## - castillo (target_castle_owner): vuela a un punto fijo del frente del castillo.
 
 const RADIUS: float = 8.0
-const TRAIL_LENGTH: float = 40.0
+const TRAIL_LENGTH: float = 44.0
+const OUTLINE_COLOR: Color = Color(0.09, 0.07, 0.12)
+const SHAFT_COLOR: Color = Color(0.72, 0.5, 0.3)
 
 var projectile_id: int = 0
 var source_id: int = 0
@@ -63,7 +65,12 @@ func simulate_towards(destination: Vector2, delta: float) -> bool:
 
 
 func _draw() -> void:
+	# Flecha que apunta hacia -Y (la rotación la orienta al objetivo): estela del
+	# color del bando, asta de madera, plumas y punta de acero.
 	var color: Color = MatchTypes.team_color(team).lightened(0.4)
-	draw_line(Vector2(0.0, TRAIL_LENGTH), Vector2.ZERO, color, 6.0)
-	draw_circle(Vector2.ZERO, RADIUS, Color.WHITE)
-	draw_circle(Vector2.ZERO, RADIUS * 0.6, color)
+	draw_line(Vector2(0.0, TRAIL_LENGTH), Vector2(0.0, 14.0), Color(color, 0.5), 5.0)
+	draw_line(Vector2(0.0, 22.0), Vector2(0.0, -10.0), OUTLINE_COLOR, 6.0)
+	draw_line(Vector2(0.0, 22.0), Vector2(0.0, -10.0), SHAFT_COLOR, 3.0)
+	draw_colored_polygon(PackedVector2Array([Vector2(0.0, -21.0), Vector2(-7.0, -8.0), Vector2(7.0, -8.0)]), OUTLINE_COLOR)
+	draw_colored_polygon(PackedVector2Array([Vector2(0.0, -17.0), Vector2(-4.0, -9.0), Vector2(4.0, -9.0)]), Color(0.9, 0.95, 1.0))
+	draw_colored_polygon(PackedVector2Array([Vector2(0.0, 22.0), Vector2(-6.0, 30.0), Vector2(0.0, 26.0), Vector2(6.0, 30.0)]), color)

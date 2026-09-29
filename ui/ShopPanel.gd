@@ -11,8 +11,17 @@ signal card_drag_finished
 
 var local_input: LocalInputController = null
 
+const DICE: Texture2D = preload("res://assets/ui/dice.svg")
+const COIN: Texture2D = preload("res://assets/ui/coin.svg")
+const HAMMER: Texture2D = preload("res://assets/ui/hammer.svg")
+const BUTTON_TEXT: Color = Color("3b2410")
+
 var _card_views: Array[CardView] = []
-var _drag_preview: Label = null
+var _drag_preview: PanelContainer = null
+var _drag_style: StyleBoxFlat = null
+var _drag_icon: TextureRect = null
+var _drag_label: Label = null
+var _reroll_cost_label: Label = null
 ## Carta que el jugador soltó por última vez (para sacudirla si se rechaza).
 var _last_played_view: CardView = null
 var _reroll_cost: int = 0
@@ -32,6 +41,11 @@ func _ready() -> void:
 		_card_row.add_child(view)
 		_card_views.append(view)
 	_create_drag_preview()
+	_build_reroll_content()
+	_hammer_button.icon = HAMMER
+	_hammer_button.expand_icon = true
+	_hammer_button.add_theme_constant_override("icon_max_width", 52)
+	_hammer_button.add_theme_constant_override("h_separation", 10)
 	_reroll_button.pressed.connect(_on_reroll_pressed)
 	_hammer_button.toggle_mode = true
 	_hammer_button.toggled.connect(_on_hammer_toggled)
@@ -50,21 +64,71 @@ func connect_input(input: LocalInputController) -> void:
 	local_input.hammer_mode_changed.connect(_on_hammer_mode_changed)
 
 
+## Contenido del botón de reroll: dado, texto y precio con moneda.
+func _build_reroll_content() -> void:
+	_reroll_button.text = ""
+	var row: HBoxContainer = HBoxContainer.new()
+	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	row.set_anchors_preset(Control.PRESET_FULL_RECT)
+	row.alignment = BoxContainer.ALIGNMENT_CENTER
+	row.add_theme_constant_override("separation", 8)
+	row.offset_bottom = -3.0
+	_reroll_button.add_child(row)
+	row.add_child(_make_icon(DICE, 52.0))
+	var title: Label = Label.new()
+	title.text = tr("Reroll")
+	_style_button_label(title)
+	row.add_child(title)
+	row.add_child(_make_icon(COIN, 36.0))
+	_reroll_cost_label = Label.new()
+	_style_button_label(_reroll_cost_label)
+	row.add_child(_reroll_cost_label)
+
+
+func _make_icon(texture: Texture2D, icon_size: float) -> TextureRect:
+	var icon: TextureRect = TextureRect.new()
+	icon.texture = texture
+	icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	icon.custom_minimum_size = Vector2(icon_size, icon_size)
+	icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	icon.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	return icon
+
+
+func _style_button_label(label: Label) -> void:
+	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	label.add_theme_font_size_override("font_size", 34)
+	label.add_theme_color_override("font_color", BUTTON_TEXT)
+	label.add_theme_constant_override("outline_size", 0)
+
+
+## Miniatura que sigue al dedo mientras se arrastra una carta.
 func _create_drag_preview() -> void:
-	_drag_preview = Label.new()
+	_drag_preview = PanelContainer.new()
 	_drag_preview.top_level = true
 	_drag_preview.visible = false
 	_drag_preview.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_drag_preview.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_drag_preview.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	_drag_preview.custom_minimum_size = Vector2(220.0, 90.0)
-	_drag_preview.add_theme_font_size_override("font_size", 32)
-	var style: StyleBoxFlat = StyleBoxFlat.new()
-	style.bg_color = Color(0.1, 0.1, 0.1, 0.8)
-	style.set_corner_radius_all(14)
-	style.set_border_width_all(3)
-	style.border_color = Color.WHITE
-	_drag_preview.add_theme_stylebox_override("normal", style)
+	_drag_style = StyleBoxFlat.new()
+	_drag_style.bg_color = Color(0.13, 0.09, 0.07, 0.92)
+	_drag_style.set_corner_radius_all(18)
+	_drag_style.set_border_width_all(5)
+	_drag_style.set_content_margin_all(8.0)
+	_drag_style.shadow_color = Color(0.0, 0.0, 0.0, 0.4)
+	_drag_style.shadow_size = 8
+	_drag_style.shadow_offset = Vector2(0.0, 5.0)
+	_drag_preview.add_theme_stylebox_override("panel", _drag_style)
+	var row: HBoxContainer = HBoxContainer.new()
+	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	row.add_theme_constant_override("separation", 10)
+	_drag_preview.add_child(row)
+	_drag_icon = _make_icon(null, 72.0)
+	row.add_child(_drag_icon)
+	_drag_label = Label.new()
+	_drag_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_drag_label.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	_drag_label.add_theme_font_size_override("font_size", 32)
+	row.add_child(_drag_label)
 	add_child(_drag_preview)
 
 
@@ -74,7 +138,7 @@ func _refresh_affordability() -> void:
 		if view.card != null:
 			var cost: int = EconomyManager.get_card_cost(GameManager.local_player_id, view.card)
 			view.set_affordable(gold >= cost, maxi(0, cost - gold))
-	_reroll_button.modulate = Color.WHITE if gold >= _reroll_cost else Color(1.0, 1.0, 1.0, 0.5)
+	_reroll_button.modulate = Color.WHITE if gold >= _reroll_cost else Color(1.0, 1.0, 1.0, 0.55)
 
 
 # --- Arrastre --------------------------------------------------------------------
@@ -82,7 +146,10 @@ func _refresh_affordability() -> void:
 func _on_card_drag_started(view: CardView, screen_position: Vector2) -> void:
 	if local_input == null:
 		return
-	_drag_preview.text = view.card.display_name
+	_drag_label.text = tr(view.card.display_name)
+	_drag_icon.texture = CardView.icon_for(view.card)
+	_drag_style.border_color = CardView.type_color(view.card.card_type)
+	_drag_preview.reset_size()
 	_drag_preview.visible = true
 	_move_preview(screen_position)
 	local_input.begin_card_drag(view.card)
@@ -149,7 +216,7 @@ func _on_estructura_cambiada(player_id: int) -> void:
 func _on_coste_reroll_actualizado(player_id: int, coste: int) -> void:
 	if player_id == GameManager.local_player_id:
 		_reroll_cost = coste
-		_reroll_button.text = "Reroll ● %d" % coste
+		_reroll_cost_label.text = "%d" % coste
 		_refresh_affordability()
 
 

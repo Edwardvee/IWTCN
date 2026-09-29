@@ -100,7 +100,8 @@ const EN: Dictionary = {
 	"ESTRUCTURA": "STRUCTURE",
 	"UNIDADES": "UNITS",
 	"MEJORA": "UPGRADE",
-	"● %d  (faltan %d)": "● %d  (%d short)",
+	"(faltan %d)": "(%d short)",
+	"Reroll": "Reroll",
 	# --- Fin de partida ---
 	"Jugar de nuevo": "Play again",
 	"Ver repetición": "Watch replay",

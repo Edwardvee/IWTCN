@@ -17,48 +17,66 @@
 [ext_resource type="Script" path="res://ui/GameOverPanel.gd" id="15_game_over"]
 [ext_resource type="Script" path="res://systems/ai/AIController.gd" id="16_ai"]
 [ext_resource type="Script" path="res://systems/network/StateReplicator.gd" id="17_replicator"]
+[ext_resource type="Texture2D" path="res://assets/bgShopPanel.png" id="18_shopbg"]
+[ext_resource type="Script" path="res://scenes/WorldBackground.gd" id="19_world"]
+[ext_resource type="Texture2D" path="res://assets/ui/coin.svg" id="20_coin"]
 
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_bar"]
-bg_color = Color(0.1, 0.1, 0.12, 0.92)
+[sub_resource type="StyleBoxTexture" id="StyleBoxTexture_bar"]
+content_margin_left = 20.0
+content_margin_top = 18.0
+content_margin_right = 20.0
+content_margin_bottom = 14.0
+texture = ExtResource("18_shopbg")
+texture_margin_left = 24.0
+texture_margin_top = 20.0
+texture_margin_right = 24.0
+texture_margin_bottom = 24.0
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_gold"]
-bg_color = Color(0.18, 0.16, 0.12, 1)
-border_width_left = 3
-border_width_top = 3
-border_width_right = 3
-border_width_bottom = 3
-border_color = Color(0.85, 0.7, 0.2, 1)
-corner_radius_top_left = 16
-corner_radius_top_right = 16
-corner_radius_bottom_right = 16
-corner_radius_bottom_left = 16
-content_margin_left = 24.0
-content_margin_top = 12.0
-content_margin_right = 24.0
-content_margin_bottom = 12.0
-
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_coin"]
-bg_color = Color(0.98, 0.82, 0.25, 1)
-corner_radius_top_left = 28
-corner_radius_top_right = 28
-corner_radius_bottom_right = 28
-corner_radius_bottom_left = 28
+bg_color = Color(0.13, 0.08, 0.06, 1)
+border_width_left = 4
+border_width_top = 4
+border_width_right = 4
+border_width_bottom = 4
+border_color = Color(0.95, 0.76, 0.3, 1)
+corner_radius_top_left = 20
+corner_radius_top_right = 20
+corner_radius_bottom_right = 20
+corner_radius_bottom_left = 20
+content_margin_left = 22.0
+content_margin_top = 8.0
+content_margin_right = 26.0
+content_margin_bottom = 8.0
+shadow_color = Color(0, 0, 0, 0.35)
+shadow_size = 6
+shadow_offset = Vector2(0, 4)
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_toast"]
-bg_color = Color(0.45, 0.1, 0.1, 0.9)
-corner_radius_top_left = 12
-corner_radius_top_right = 12
-corner_radius_bottom_right = 12
-corner_radius_bottom_left = 12
+bg_color = Color(0.55, 0.13, 0.11, 0.95)
+border_width_left = 4
+border_width_top = 4
+border_width_right = 4
+border_width_bottom = 4
+border_color = Color(0.09, 0.07, 0.12, 1)
+corner_radius_top_left = 20
+corner_radius_top_right = 20
+corner_radius_bottom_right = 20
+corner_radius_bottom_left = 20
 content_margin_left = 24.0
 content_margin_top = 10.0
 content_margin_right = 24.0
 content_margin_bottom = 10.0
+shadow_color = Color(0, 0, 0, 0.35)
+shadow_size = 6
+shadow_offset = Vector2(0, 4)
 
 [node name="Main" type="Node"]
 script = ExtResource("1_main")
 
 [node name="World" type="Node2D" parent="."]
+
+[node name="Ground" type="Node2D" parent="World"]
+script = ExtResource("19_world")
 
 [node name="EnemyGrid" type="Node2D" parent="World"]
 position = Vector2(30, 40)
@@ -77,14 +95,6 @@ enemy_spawn = NodePath("../EnemySpawn")
 player_units_container = NodePath("../../Entities/PlayerUnits")
 enemy_units_container = NodePath("../../Entities/EnemyUnits")
 projectiles_container = NodePath("../../Entities/Projectiles")
-
-[node name="Background" type="ColorRect" parent="World/Lane"]
-offset_left = 390.0
-offset_top = 900.0
-offset_right = 690.0
-offset_bottom = 2300.0
-mouse_filter = 2
-color = Color(0.36, 0.32, 0.24, 1)
 
 [node name="PlayerCastle" type="Node2D" parent="World"]
 position = Vector2(540, 2380)
@@ -142,6 +152,7 @@ script = ExtResource("3_hud")
 
 [node name="TopBar" type="PanelContainer" parent="UI/HUD"]
 layout_mode = 1
+theme_type_variation = &"TopBar"
 anchors_preset = 10
 anchor_right = 1.0
 offset_bottom = 120.0
@@ -211,7 +222,7 @@ anchor_bottom = 1.0
 offset_top = -420.0
 grow_horizontal = 2
 grow_vertical = 0
-theme_override_styles/panel = SubResource("StyleBoxFlat_bar")
+theme_override_styles/panel = SubResource("StyleBoxTexture_bar")
 script = ExtResource("12_shop")
 
 [node name="Layout" type="VBoxContainer" parent="UI/HUD/BottomBar"]
@@ -229,12 +240,12 @@ alignment = 1
 [node name="ActionRow" type="HBoxContainer" parent="UI/HUD/BottomBar/Layout"]
 custom_minimum_size = Vector2(0, 110)
 layout_mode = 2
-theme_override_constants/separation = 24
+theme_override_constants/separation = 20
 alignment = 1
 
 [node name="RerollButton" type="Button" parent="UI/HUD/BottomBar/Layout/ActionRow"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(260, 96)
+custom_minimum_size = Vector2(320, 96)
 layout_mode = 2
 size_flags_vertical = 4
 theme_override_font_sizes/font_size = 34
@@ -250,12 +261,14 @@ script = ExtResource("4_gold")
 layout_mode = 2
 theme_override_constants/separation = 16
 
-[node name="Coin" type="Panel" parent="UI/HUD/BottomBar/Layout/ActionRow/GoldDisplay/Content"]
-custom_minimum_size = Vector2(56, 56)
+[node name="Coin" type="TextureRect" parent="UI/HUD/BottomBar/Layout/ActionRow/GoldDisplay/Content"]
+custom_minimum_size = Vector2(64, 64)
 layout_mode = 2
 size_flags_vertical = 4
 mouse_filter = 2
-theme_override_styles/panel = SubResource("StyleBoxFlat_coin")
+texture = ExtResource("20_coin")
+expand_mode = 1
+stretch_mode = 5
 
 [node name="GoldAmount" type="Label" parent="UI/HUD/BottomBar/Layout/ActionRow/GoldDisplay/Content"]
 unique_name_in_owner = true
@@ -267,9 +280,10 @@ vertical_alignment = 1
 
 [node name="HammerButton" type="Button" parent="UI/HUD/BottomBar/Layout/ActionRow"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(260, 96)
+custom_minimum_size = Vector2(300, 96)
 layout_mode = 2
 size_flags_vertical = 4
+theme_type_variation = &"WoodButton"
 theme_override_font_sizes/font_size = 34
 text = "Martillo"
 

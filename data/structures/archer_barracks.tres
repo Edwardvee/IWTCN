@@ -1,6 +1,8 @@
 [gd_resource type="Resource" script_class="StructureData" format=3]
 
 [ext_resource type="Script" path="res://resources/StructureData.gd" id="1_8hega"]
+[ext_resource type="Texture2D" path="res://assets/structures/archer_barracks.svg" id="9_art"]
+[ext_resource type="Texture2D" path="res://assets/structures/archer_barracks_team.svg" id="10_team"]
 [ext_resource type="Resource" path="res://data/units/archer.tres" id="2_0pi7j"]
 
 [resource]
@@ -20,3 +22,5 @@ tower_damage_per_level = PackedFloat32Array()
 tower_cooldown_per_level = PackedFloat32Array()
 color = Color(0.3, 0.6, 0.3, 1)
 short_label = "ARCH"
+texture = ExtResource("9_art")
+team_texture = ExtResource("10_team")

@@ -13,13 +13,16 @@ const STATE_ADVANCE: StringName = &"advance"
 const STATE_ATTACK: StringName = &"attack"
 const STATE_HEAL: StringName = &"heal"
 const STATE_DEAD: StringName = &"dead"
+const ANIM_IDLE: StringName = &"idle"
 const HEAL_FLASH_COLOR: Color = Color(0.45, 1.0, 0.45)
 const HEAL_FLASH_DURATION: float = 0.3
 ## Segundos que el cadáver permanece visible antes de liberarse.
 const DEATH_DURATION: float = 0.5
 ## Bit de collision_layer por equipo (capas 2 y 3, ver project.godot).
 const TEAM_LAYER_BITS: Array[int] = [2, 4]
-const HP_BAR_HEIGHT: float = 7.0
+const HP_BAR_HEIGHT: float = 8.0
+const HP_BAR_BACK: Color = Color(0.09, 0.07, 0.12, 0.9)
+const SHADOW_COLOR: Color = Color(0.0, 0.0, 0.0, 0.28)
 
 signal health_changed(current_hp: float, max_hp: float)
 
@@ -362,28 +365,47 @@ func _create_visuals() -> void:
 	_sprite = AnimatedSprite2D.new()
 	_sprite.sprite_frames = data.sprite_frames
 	_sprite.scale = data.sprite_scale
+	_sprite.animation_finished.connect(_on_animation_finished)
 	add_child(_sprite)
+	_sprite.play(data.anim_walk)
+
+
+## Tras un ataque el sprite vuelve a la pose de reposo hasta el siguiente.
+func _on_animation_finished() -> void:
+	if _sprite.animation == data.anim_attack and _sprite.sprite_frames.has_animation(ANIM_IDLE):
+		_sprite.play(ANIM_IDLE)
 
 
 func _apply_team() -> void:
 	collision_layer = TEAM_LAYER_BITS[team] if MatchTypes.is_valid_player_id(team) else 0
 	collision_mask = 0
+	if _sprite != null and MatchTypes.is_valid_player_id(team):
+		_sprite.material = TeamArt.outline_material(team)
+		_sprite.rotation = TeamArt.facing_rotation(team)
 	queue_redraw()
 
 
 func _draw() -> void:
 	if data == null:
 		return
+	# Sombra en el suelo (no gira con el sprite).
+	draw_set_transform(Vector2(0.0, body_radius * 0.55), 0.0, Vector2(1.0, 0.55))
+	draw_circle(Vector2.ZERO, body_radius * 1.05, SHADOW_COLOR)
+	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 	if _sprite == null:
 		_draw_shape(data.fallback_shape, body_radius, MatchTypes.team_color(team))
 		_draw_shape(data.fallback_shape, body_radius * 0.45, data.fallback_color)
-	var bar_width: float = body_radius * 2.0 + 10.0
+	if is_dead or current_hp >= max_hp:
+		return
+	# Barra de vida solo cuando la unidad está herida (menos ruido con ejércitos grandes).
+	var bar_width: float = body_radius * 2.0 + 8.0
 	# Con la vista girada la barra se dibuja "debajo" para verse encima en pantalla.
-	var bar_y: float = body_radius + 9.0 if ViewOrientation.is_flipped() else -body_radius - 16.0
+	var bar_y: float = body_radius + 8.0 if ViewOrientation.is_flipped() else -body_radius - 16.0
 	var bar_rect: Rect2 = Rect2(-bar_width * 0.5, bar_y, bar_width, HP_BAR_HEIGHT)
-	draw_rect(bar_rect, Color(0.0, 0.0, 0.0, 0.75))
+	draw_rect(bar_rect.grow(2.0), HP_BAR_BACK)
 	var ratio: float = get_hp_ratio()
-	draw_rect(Rect2(bar_rect.position, Vector2(bar_width * ratio, HP_BAR_HEIGHT)), Color.RED.lerp(Color.LIME_GREEN, ratio))
+	draw_rect(Rect2(bar_rect.position, Vector2(bar_width * ratio, HP_BAR_HEIGHT)), Color(0.95, 0.25, 0.2).lerp(Color(0.45, 0.85, 0.3), ratio))
+	draw_rect(Rect2(bar_rect.position, Vector2(bar_width * ratio, 2.5)), Color(1.0, 1.0, 1.0, 0.3))
 
 
 func _draw_shape(shape: UnitData.Shape, radius: float, color: Color) -> void:

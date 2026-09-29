@@ -90,6 +90,7 @@ func _on_replays_pressed() -> void:
 		layout.add_child(button)
 	var close: Button = Button.new()
 	close.text = tr("Cerrar")
+	close.theme_type_variation = &"WoodButton"
 	close.custom_minimum_size = Vector2(0.0, 110.0)
 	close.add_theme_font_size_override("font_size", 40)
 	close.pressed.connect(overlay.queue_free)

@@ -14,19 +14,28 @@ func _ready() -> void:
 	visible = false
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	var style: StyleBoxFlat = StyleBoxFlat.new()
-	style.bg_color = Color(0.0, 0.0, 0.0, 0.75)
+	style.bg_color = Color(0.03, 0.02, 0.05, 0.72)
 	add_theme_stylebox_override("panel", style)
+	var center: CenterContainer = CenterContainer.new()
+	add_child(center)
+	# Placa de madera con los resultados y los botones.
+	var card: PanelContainer = PanelContainer.new()
+	card.custom_minimum_size = Vector2(820.0, 0.0)
+	center.add_child(card)
 	var layout: VBoxContainer = VBoxContainer.new()
 	layout.alignment = BoxContainer.ALIGNMENT_CENTER
-	layout.add_theme_constant_override("separation", 40)
-	add_child(layout)
-	_title = _make_label(110, layout)
+	layout.add_theme_constant_override("separation", 34)
+	card.add_child(layout)
+	_title = _make_label(108, layout)
 	_subtitle = _make_label(40, layout)
 	_restart_button = _make_button(tr("Jugar de nuevo"), layout)
+	_restart_button.theme_type_variation = &"PrimaryButton"
 	_restart_button.pressed.connect(_on_restart_pressed)
 	_replay_button = _make_button(tr("Ver repetición"), layout)
+	_replay_button.theme_type_variation = &"WoodButton"
 	_replay_button.pressed.connect(_on_replay_pressed)
 	_menu_button = _make_button(tr("Menú"), layout)
+	_menu_button.theme_type_variation = &"StoneButton"
 	_menu_button.pressed.connect(_on_menu_pressed)
 	EventBus.partida_terminada.connect(_on_partida_terminada)
 	EventBus.partida_iniciada.connect(_on_partida_iniciada)
@@ -35,7 +44,7 @@ func _ready() -> void:
 func _make_button(text: String, parent: Control) -> Button:
 	var button: Button = Button.new()
 	button.text = text
-	button.custom_minimum_size = Vector2(520.0, 130.0)
+	button.custom_minimum_size = Vector2(560.0, 120.0)
 	button.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	button.add_theme_font_size_override("font_size", 48)
 	parent.add_child(button)
@@ -46,7 +55,7 @@ func _make_label(font_size: int, parent: Control) -> Label:
 	var label: Label = Label.new()
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	label.add_theme_font_size_override("font_size", font_size)
-	label.add_theme_constant_override("outline_size", 12)
+	label.add_theme_constant_override("outline_size", 20)
 	label.add_theme_color_override("font_outline_color", Color.BLACK)
 	parent.add_child(label)
 	return label

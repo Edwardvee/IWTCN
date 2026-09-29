@@ -198,3 +198,29 @@ Botón *Dificultad* en el menú (Fácil → Normal → Difícil); se recuerda en
 - Las ventajas y desventajas de ingresos están declaradas (`AIDifficulty.EASY_INCOME` / `HARD_INCOME`) y solo cambian el oro que llega por ingreso base y granjas (`EconomyManager.add_income`); ventas y reembolsos no se multiplican. Las decisiones siguen pasando por los mismos comandos que las de un jugador.
 - Medido con `tools/BalanceSim` (`--profiles=easy,normal,hard --matches=12`): Normal gana ≈88 % al Fácil, y el Difícil gana ≈71 % al Normal y el 100 % al Fácil. Para reajustar, cambia los multiplicadores y los campos del perfil `PROFILE_EASY` / `PROFILE_HARD` en `RuleBasedStrategy.create`.
 - El modo espectador y el simulador siguen enfrentando estilos (`economy`, `rush`, `turtle`…), no niveles; con `--profiles=easy,normal,hard` el simulador también acepta los niveles.
+
+
+# Arte y efectos
+
+Todo el arte es procedural y se regenera con Node (sin dependencias):
+
+```
+node tools/art/generate.js            # todo
+node tools/art/generate.js unidades   # unidades | estructuras | mundo | ui | audio
+godot --headless --path . --import    # reimportar los SVG/WAV nuevos
+godot --headless --path . --script res://tools/BuildTheme.gd   # regenera ui/theme.tres
+```
+
+| Qué | Dónde se edita | Dónde se usa |
+|---|---|---|
+| Unidades (caminar, atacar, reposo) | `tools/art/units.js` → `assets/units/*` y `data/units/*_frames.tres` | `UnitData.sprite_frames`; el contorno del bando lo dibuja `assets/shaders/team_outline.gdshader` (material compartido en `entities/base/TeamArt.gd`) |
+| Estructuras y castillo | `tools/art/structures.js` → `assets/structures/<id>.svg` + `<id>_team.svg` (capa de estandartes teñida con el color del bando) | `StructureData.texture` / `team_texture`, `Castle.gd` |
+| Hierba, camino, árboles, suelo de plots, fondo del menú | `tools/art/world.js` | `scenes/WorldBackground.gd` (densidad y opacidad de la decoración), `Plot.gd` |
+| Iconos, cartas de mejoras y de unidades, icono de la app | `tools/art/ui.js` | `CardData.icon`, `CardView.gd`, `ShopPanel.gd` |
+| Tema de la UI (botones, paneles, campos) | `tools/BuildTheme.gd` → `ui/theme.tres` | tema global (`project.godot`); variaciones `PrimaryButton`, `WoodButton`, `DangerButton`, `StoneButton`, `TopBar` |
+| Efectos de botón (hundir/rebote, destello, sonido) | `autoload/UIFeedback.gd` | se engancha solo a todo `BaseButton`; `sound_enabled` lo silencia |
+| Sonidos (clic, confirmar, error) | `tools/art/audio.js` | `UIFeedback.gd` |
+
+Colores de las cartas por tipo (borde): estructuras amarillo, unidades azul, mejoras violeta (`CardView.TYPE_COLORS`).
+
+Para revisar el arte sin jugar: `godot --path . res://tools/ArtGallery.tscn -- --page=units --unit=soldier` (páginas `units`, `structures`, `cards`, `ui`) y `res://tools/GameShot.tscn` (partida con cámara fija; `--vs`, `--top`, `--cam-y=N`).

@@ -10,7 +10,14 @@ extends Node2D
 ## a _on_production_cycle(). Farm y Spawner lo usan; Tower tiene su propio
 ## ciclo de disparo. Un intervalo de 0 significa "sin ciclo".
 
-const PROGRESS_BAR_HEIGHT: float = 8.0
+const PROGRESS_BAR_HEIGHT: float = 9.0
+## Ancho del arte de referencia (px de mundo) que ocupa el hueco del slot.
+const ART_REFERENCE_WIDTH: float = 126.0
+## Los SVG se rasterizan a 2x.
+const ART_RASTER_SCALE: float = 0.5
+## El arte se centra visualmente en el hueco (tiene más techo que suelo).
+const ART_OFFSET_Y: float = 10.0
+const BADGE_SIZE: Vector2 = Vector2(58.0, 34.0)
 ## Cambio mínimo de progreso para redibujar la barra (evita redibujar cada tick).
 const PROGRESS_REDRAW_STEP: float = 0.02
 
@@ -26,6 +33,8 @@ var production_timer: float = 0.0
 
 var _label: Label = null
 var _sprite: AnimatedSprite2D = null
+var _art: Sprite2D = null
+var _team_layer: Sprite2D = null
 var _drawn_progress: float = -1.0
 
 
@@ -99,28 +108,79 @@ func _refresh_progress(progress: float) -> void:
 func _create_visuals() -> void:
 	if data == null:
 		return
-	if data.sprite_frames != null:
+	if data.texture != null:
+		_create_art()
+	elif data.sprite_frames != null:
 		_sprite = AnimatedSprite2D.new()
 		_sprite.sprite_frames = data.sprite_frames
 		if data.sprite_frames.has_animation(data.anim_idle):
 			_sprite.play(data.anim_idle)
 		add_child(_sprite)
 	_label = Label.new()
-	_label.position = -body_size * 0.5
-	_label.size = body_size
-	_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	_label.add_theme_font_size_override("font_size", 30)
-	_label.add_theme_constant_override("outline_size", 8)
-	_label.add_theme_color_override("font_outline_color", Color.BLACK)
+	if has_art():
+		_setup_level_badge()
+	else:
+		_label.position = -body_size * 0.5
+		_label.size = body_size
+		_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		_label.add_theme_font_size_override("font_size", 30)
+		_label.add_theme_constant_override("outline_size", 8)
+		_label.add_theme_color_override("font_outline_color", Color.BLACK)
 	add_child(_label)
 	ViewOrientation.orient(_label)
 	_update_label()
 	queue_redraw()
 
 
+func has_art() -> bool:
+	return _art != null
+
+
+## Arte estático: el edificio y encima la capa de color de equipo. Con la vista
+## girada 180° se contrarrota para que el edificio se vea siempre derecho.
+func _create_art() -> void:
+	var art_scale: float = body_size.x / ART_REFERENCE_WIDTH * ART_RASTER_SCALE * data.art_scale
+	var upright: float = PI if ViewOrientation.is_flipped() else 0.0
+	_art = Sprite2D.new()
+	_art.texture = data.texture
+	_art.scale = Vector2.ONE * art_scale
+	_art.rotation = upright
+	_art.position = Vector2(0.0, -ART_OFFSET_Y if upright != 0.0 else ART_OFFSET_Y)
+	add_child(_art)
+	if data.team_texture != null:
+		_team_layer = Sprite2D.new()
+		_team_layer.texture = data.team_texture
+		_team_layer.modulate = MatchTypes.team_color(owner_id)
+		_art.add_child(_team_layer)
+
+
+## Insignia de nivel en la esquina inferior derecha (en pantalla).
+func _setup_level_badge() -> void:
+	var style: StyleBoxFlat = StyleBoxFlat.new()
+	style.bg_color = Color(0.09, 0.07, 0.12, 0.92)
+	style.set_corner_radius_all(14)
+	style.set_border_width_all(3)
+	style.border_color = Color(0.95, 0.76, 0.3)
+	style.content_margin_left = 4.0
+	style.content_margin_right = 4.0
+	style.content_margin_top = 0.0
+	style.content_margin_bottom = 0.0
+	_label.add_theme_stylebox_override("normal", style)
+	_label.size = BADGE_SIZE
+	_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_label.add_theme_font_size_override("font_size", 24)
+	_label.add_theme_color_override("font_color", Color(1.0, 0.93, 0.7))
+	var corner: Vector2 = body_size * 0.5 - BADGE_SIZE + Vector2(6.0, 8.0)
+	_label.position = -corner - BADGE_SIZE if ViewOrientation.is_flipped() else corner
+
+
 func _update_label() -> void:
 	if _label == null or data == null:
+		return
+	if has_art():
+		_label.text = "Lv%d" % level
 		return
 	var short_name: String = tr(data.short_label) if data.short_label != "" else tr(data.display_name)
 	_label.text = "%s\nLv%d" % [short_name, level]
@@ -130,10 +190,14 @@ func _draw() -> void:
 	if data == null:
 		return
 	var rect: Rect2 = Rect2(-body_size * 0.5, body_size)
-	if _sprite == null:
-		draw_rect(rect, data.color)
-	draw_rect(rect, MatchTypes.team_color(owner_id), false, 6.0)
+	if not has_art():
+		if _sprite == null:
+			draw_rect(rect, data.color)
+		draw_rect(rect, MatchTypes.team_color(owner_id), false, 6.0)
 	if get_production_interval() > 0.0:
-		var bar: Rect2 = Rect2(rect.position.x + 6.0, rect.end.y - PROGRESS_BAR_HEIGHT - 6.0, rect.size.x - 12.0, PROGRESS_BAR_HEIGHT)
-		draw_rect(bar, Color(0.0, 0.0, 0.0, 0.6))
-		draw_rect(Rect2(bar.position, Vector2(bar.size.x * get_progress(), bar.size.y)), Color(1.0, 1.0, 1.0, 0.9))
+		var bar: Rect2 = Rect2(rect.position.x + 14.0, rect.end.y - PROGRESS_BAR_HEIGHT - 4.0, rect.size.x - 28.0, PROGRESS_BAR_HEIGHT)
+		draw_rect(bar.grow(2.0), Color(0.09, 0.07, 0.12, 0.85))
+		var fill: float = bar.size.x * get_progress()
+		if fill > 0.5:
+			draw_rect(Rect2(bar.position, Vector2(fill, bar.size.y)), Color(0.98, 0.8, 0.3))
+			draw_rect(Rect2(bar.position, Vector2(fill, 3.0)), Color(1.0, 1.0, 1.0, 0.35))

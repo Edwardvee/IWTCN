@@ -1,6 +1,7 @@
 [gd_resource type="Resource" script_class="CardData" format=3]
 
 [ext_resource type="Script" path="res://resources/CardData.gd" id="1_agoch"]
+[ext_resource type="Texture2D" path="res://assets/cards/soldiers.svg" id="9_icon"]
 [ext_resource type="Resource" path="res://data/units/soldier.tres" id="2_e7suc"]
 
 [resource]
@@ -13,3 +14,4 @@ cost = 45
 unit = ExtResource("2_e7suc")
 unit_count = 3
 color = Color(0.9, 0.9, 0.9, 1)
+icon = ExtResource("9_icon")

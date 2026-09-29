@@ -2,6 +2,7 @@
 
 [ext_resource type="Resource" path="res://data/buffs/buff_tower_fire_rate.tres" id="1_towbuff"]
 [ext_resource type="Script" path="res://resources/CardData.gd" id="2_towcard"]
+[ext_resource type="Texture2D" path="res://assets/cards/buff_tower_fire_rate.svg" id="9_icon"]
 
 [resource]
 script = ExtResource("2_towcard")
@@ -15,3 +16,4 @@ buff = ExtResource("1_towbuff")
 required_structure_tag = &"defense"
 required_structure_count = 1
 color = Color(0.7, 0.4, 0.9, 1)
+icon = ExtResource("9_icon")
