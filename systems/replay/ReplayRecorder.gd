@@ -56,6 +56,7 @@ func _on_partida_iniciada(mode: int, seed_value: int) -> void:
 		"seed": seed_value,
 		"mode": mode,
 		"local_player": GameManager.local_player_id,
+		"races": GameManager.match_races.duplicate(),
 		"date": Time.get_datetime_string_from_system(),
 	})
 	_next_capture_time = 0.0

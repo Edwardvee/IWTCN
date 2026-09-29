@@ -9,11 +9,13 @@ extends Resource
 @export var structures: Array[StructureData] = []
 @export var buffs: Array[BuffData] = []
 @export var cards: Array[CardData] = []
+@export var races: Array[RaceData] = []
 
 var _units_by_id: Dictionary[StringName, UnitData] = {}
 var _structures_by_id: Dictionary[StringName, StructureData] = {}
 var _buffs_by_id: Dictionary[StringName, BuffData] = {}
 var _cards_by_id: Dictionary[StringName, CardData] = {}
+var _races_by_id: Dictionary[StringName, RaceData] = {}
 
 
 func build_index() -> void:
@@ -21,6 +23,10 @@ func build_index() -> void:
 	_structures_by_id.clear()
 	_buffs_by_id.clear()
 	_cards_by_id.clear()
+	_races_by_id.clear()
+	for race: RaceData in races:
+		if race != null:
+			_races_by_id[race.id] = race
 	for unit: UnitData in units:
 		if unit != null:
 			_units_by_id[unit.id] = unit
@@ -49,6 +55,14 @@ func get_buff(buff_id: StringName) -> BuffData:
 
 func get_card(card_id: StringName) -> CardData:
 	return _cards_by_id.get(card_id, null)
+
+
+## Raza por id; si no existe, la primera (humanos) para que nunca falte una.
+func get_race(race_id: StringName) -> RaceData:
+	var race: RaceData = _races_by_id.get(race_id, null)
+	if race == null and not races.is_empty():
+		return races[0]
+	return race
 
 
 func get_validation_errors() -> PackedStringArray:
@@ -93,6 +107,23 @@ func get_validation_errors() -> PackedStringArray:
 			errors.append("CardData '%s': buff no está en buffs" % card.id)
 		if card.unit != null and not units.has(card.unit):
 			errors.append("CardData '%s': unit no está en units" % card.id)
+	if races.is_empty():
+		errors.append("GameDatabase: hace falta al menos una raza")
+	for race: RaceData in races:
+		if race == null:
+			errors.append("GameDatabase: entrada nula en races")
+			continue
+		_check_duplicate(errors, seen_ids, race.id)
+		errors.append_array(race.get_validation_errors())
+		for unit_override: RaceUnitOverride in race.unit_overrides:
+			if unit_override != null and get_unit(unit_override.unit_id) == null:
+				errors.append("RaceData '%s': unit_override de una unidad desconocida '%s'" % [race.id, unit_override.unit_id])
+		for structure_override: RaceStructureOverride in race.structure_overrides:
+			if structure_override != null and get_structure(structure_override.structure_id) == null:
+				errors.append("RaceData '%s': structure_override de una estructura desconocida '%s'" % [race.id, structure_override.structure_id])
+		for card_key: Variant in race.card_names:
+			if get_card(StringName(str(card_key))) == null:
+				errors.append("RaceData '%s': card_names con una carta desconocida '%s'" % [race.id, card_key])
 	if rules != null and cards.size() < rules.shop_offer_size:
 		errors.append("GameDatabase: hay menos cartas que shop_offer_size")
 	return errors

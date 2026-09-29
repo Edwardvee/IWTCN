@@ -35,6 +35,16 @@ func get_seed() -> int:
 	return int(meta.get("seed", 0))
 
 
+## Razas de los dos asientos [abajo, arriba] (humanos si la repetición no las guardó).
+func get_races() -> Array[StringName]:
+	var result: Array[StringName] = []
+	for race_variant: Variant in meta.get("races", []):
+		result.append(StringName(str(race_variant)))
+	while result.size() < MatchTypes.PLAYER_COUNT:
+		result.append(&"human")
+	return result
+
+
 func get_winner() -> int:
 	return int(meta.get("winner", MatchTypes.NO_PLAYER))
 

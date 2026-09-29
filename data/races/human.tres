@@ -1,0 +1,10 @@
+[gd_resource type="Resource" script_class="RaceData" format=3]
+
+[ext_resource type="Script" path="res://resources/RaceData.gd" id="1_race"]
+
+[resource]
+script = ExtResource("1_race")
+id = &"human"
+display_name = "Humans"
+description = "Balanced kingdom: solid soldiers, reliable archers and steady prices."
+accent_color = Color(0.3, 0.55, 1, 1)

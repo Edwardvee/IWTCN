@@ -84,6 +84,9 @@ func _apply_player(data: Dictionary) -> void:
 	var player_state: PlayerState = GameManager.get_player_state(player_id)
 	if player_state == null:
 		return
+	var race_id: StringName = StringName(str(data.get("race", player_state.race_id)))
+	if race_id != player_state.race_id:
+		player_state.race_id = race_id
 	var gold: int = int(data.get("gold", player_state.gold))
 	if gold != player_state.gold:
 		player_state.gold = gold

@@ -15,6 +15,7 @@ var damage_multiplier: float = 1.0
 ## Ritmo de ataque respecto al base (2.0 = ataca el doble de rápido). Solo lo fija el
 ## cuartel al aparecer la unidad.
 var attack_speed_multiplier: float = 1.0
+var attack_range_multiplier: float = 1.0
 var move_speed_multiplier: float = 1.0
 
 
@@ -32,6 +33,27 @@ static func from_barracks(player_id: int, unit_data: UnitData) -> UnitStatModifi
 		modifiers.bonus_max_hp += structure.unit_bonus_hp_per_extra_building * extra_buildings
 		modifiers.bonus_damage += structure.unit_bonus_damage_per_extra_building * extra_buildings
 		modifiers.attack_speed_multiplier = structure.get_unit_attack_speed(player_state.grid.count_structures(structure.id))
+	return modifiers
+
+
+## Efectos de la raza del jugador sobre una unidad: multiplicadores generales de
+## RaceData por los específicos de esa unidad (RaceUnitOverride).
+static func from_race(player_id: int, unit_data: UnitData) -> UnitStatModifiers:
+	var modifiers: UnitStatModifiers = UnitStatModifiers.new()
+	var race: RaceData = GameManager.get_race(player_id)
+	if race == null or unit_data == null:
+		return modifiers
+	var unit_override: RaceUnitOverride = race.get_unit_override(unit_data.id)
+	var override_hp: float = unit_override.hp_multiplier if unit_override != null else 1.0
+	var override_damage: float = unit_override.damage_multiplier if unit_override != null else 1.0
+	var override_speed: float = unit_override.move_speed_multiplier if unit_override != null else 1.0
+	var override_attack: float = unit_override.attack_speed_multiplier if unit_override != null else 1.0
+	var override_range: float = unit_override.attack_range_multiplier if unit_override != null else 1.0
+	modifiers.max_hp_multiplier = race.hp_multiplier * override_hp
+	modifiers.damage_multiplier = race.damage_multiplier * override_damage
+	modifiers.move_speed_multiplier = race.move_speed_multiplier * override_speed
+	modifiers.attack_speed_multiplier = race.attack_speed_multiplier * override_attack
+	modifiers.attack_range_multiplier = race.attack_range_multiplier * override_range
 	return modifiers
 
 
@@ -74,5 +96,6 @@ func combined_with(other: UnitStatModifiers) -> UnitStatModifiers:
 	result.max_hp_multiplier = max_hp_multiplier + other.max_hp_multiplier - 1.0
 	result.damage_multiplier = damage_multiplier + other.damage_multiplier - 1.0
 	result.attack_speed_multiplier = attack_speed_multiplier * other.attack_speed_multiplier
+	result.attack_range_multiplier = attack_range_multiplier * other.attack_range_multiplier
 	result.move_speed_multiplier = move_speed_multiplier + other.move_speed_multiplier - 1.0
 	return result

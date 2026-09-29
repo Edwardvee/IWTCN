@@ -127,4 +127,14 @@ func _process(_delta: float) -> void:
 
 
 func _on_partida_iniciada(_modo: int, _semilla: int) -> void:
+	_apply_race_art()
 	_refresh_from_state()
+
+
+## El castillo usa el arte de la raza del dueño (data/races) si lo define.
+func _apply_race_art() -> void:
+	var race: RaceData = GameManager.get_race(owner_id)
+	if race == null or _art == null:
+		return
+	_art.texture = race.castle_texture if race.castle_texture != null else ART
+	_team_layer.texture = race.castle_team_texture if race.castle_team_texture != null else ART_TEAM

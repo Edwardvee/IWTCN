@@ -8,9 +8,10 @@ extends Node
 ##   godot --headless --path <proyecto> res://tools/BalanceSim.tscn -- \
 ##       [--matches=4] [--profiles=balanced,rush,...] [--max-time=900] \
 ##       [--seed=1000] [--csv=ruta.csv] [--quiet] [--verbose] ##       [--set=rules.castle_max_hp=10000] [--set=unit.soldier.damage=30] ...
+## Los perfiles admiten "@raza" (balanced@goblin, rush@elf): así se enfrentan razas.
 ## --set sustituye un valor de los datos solo en esta ejecución (no toca los
 ## .tres), para probar cambios de equilibrio sin editar archivos. Rutas:
-## rules.<campo> · unit.<id>.<campo> · structure.<id>.<campo> · card.<id>.<campo>.
+## rules.<campo> · unit.<id>.<campo> · structure.<id>.<campo> · card.<id>.<campo> · race.<id>.<campo>.
 ## Las listas se escriben con "/" (structure.farm.income_per_level=25/40/60/80/100).
 ## Termina con código 0. El informe sale por stdout.
 
@@ -125,7 +126,7 @@ func _apply_override(override: String) -> bool:
 				return false
 			resource = GameManager.get_rules()
 			field = path[1]
-		"unit", "structure", "card":
+		"unit", "structure", "card", "race":
 			if path.size() != 3:
 				return false
 			var database: GameDatabase = GameManager.database
@@ -137,6 +138,8 @@ func _apply_override(override: String) -> bool:
 					resource = database.get_structure(entity_id)
 				"card":
 					resource = database.get_card(entity_id)
+				"race":
+					resource = database.get_race(entity_id)
 			field = path[2]
 		_:
 			return false
@@ -217,8 +220,12 @@ func _play_match(bottom: StringName, top: StringName, seed_value: int) -> MatchR
 	_current.seed_value = seed_value
 	_current.profiles = [bottom, top]
 	_last_gold = [0, 0]
-	AIDifficulty.apply_by_name(_ais[0], bottom)
-	AIDifficulty.apply_by_name(_ais[1], top)
+	# "estilo@raza" (p. ej. rush@goblin) fija la raza de ese lado; sin raza, humanos.
+	var bottom_parts: PackedStringArray = str(bottom).split("@")
+	var top_parts: PackedStringArray = str(top).split("@")
+	AIDifficulty.apply_by_name(_ais[0], StringName(bottom_parts[0]))
+	AIDifficulty.apply_by_name(_ais[1], StringName(top_parts[0]))
+	GameManager.match_races = [StringName(bottom_parts[1]) if bottom_parts.size() > 1 else &"human", StringName(top_parts[1]) if top_parts.size() > 1 else &"human"]
 	GameManager.start_match(MatchTypes.GameMode.SPECTATE, seed_value)
 	GameManager.set_physics_process(false)
 	var sample_timer: float = 0.0

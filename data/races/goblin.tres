@@ -1,0 +1,91 @@
+[gd_resource type="Resource" script_class="RaceData" load_steps=29 format=3]
+
+[ext_resource type="Script" path="res://resources/RaceData.gd" id="r1"]
+[ext_resource type="Script" path="res://resources/RaceUnitOverride.gd" id="r2"]
+[ext_resource type="Script" path="res://resources/RaceStructureOverride.gd" id="r3"]
+[ext_resource type="SpriteFrames" path="res://data/races/goblin/soldier_frames.tres" id="r4"]
+[ext_resource type="SpriteFrames" path="res://data/races/goblin/archer_frames.tres" id="r5"]
+[ext_resource type="SpriteFrames" path="res://data/races/goblin/priest_frames.tres" id="r6"]
+[ext_resource type="SpriteFrames" path="res://data/races/goblin/tank_frames.tres" id="r7"]
+[ext_resource type="Texture2D" path="res://assets/structures/goblin/farm.svg" id="r8"]
+[ext_resource type="Texture2D" path="res://assets/structures/goblin/farm_team.svg" id="r9"]
+[ext_resource type="Texture2D" path="res://assets/structures/goblin/soldier_barracks.svg" id="r10"]
+[ext_resource type="Texture2D" path="res://assets/structures/goblin/soldier_barracks_team.svg" id="r11"]
+[ext_resource type="Texture2D" path="res://assets/structures/goblin/archer_barracks.svg" id="r12"]
+[ext_resource type="Texture2D" path="res://assets/structures/goblin/archer_barracks_team.svg" id="r13"]
+[ext_resource type="Texture2D" path="res://assets/structures/goblin/church.svg" id="r14"]
+[ext_resource type="Texture2D" path="res://assets/structures/goblin/church_team.svg" id="r15"]
+[ext_resource type="Texture2D" path="res://assets/structures/goblin/tower.svg" id="r16"]
+[ext_resource type="Texture2D" path="res://assets/structures/goblin/tower_team.svg" id="r17"]
+[ext_resource type="Texture2D" path="res://assets/structures/goblin/castle.svg" id="r18"]
+[ext_resource type="Texture2D" path="res://assets/structures/goblin/castle_team.svg" id="r19"]
+
+[sub_resource type="Resource" id="unit_soldier"]
+script = ExtResource("r2")
+unit_id = &"soldier"
+sprite_frames = ExtResource("r4")
+sprite_scale = Vector2(0.42, 0.42)
+
+[sub_resource type="Resource" id="unit_archer"]
+script = ExtResource("r2")
+unit_id = &"archer"
+sprite_frames = ExtResource("r5")
+sprite_scale = Vector2(0.42, 0.42)
+
+[sub_resource type="Resource" id="unit_priest"]
+script = ExtResource("r2")
+unit_id = &"priest"
+sprite_frames = ExtResource("r6")
+sprite_scale = Vector2(0.42, 0.42)
+
+[sub_resource type="Resource" id="unit_tank"]
+script = ExtResource("r2")
+unit_id = &"tank"
+sprite_frames = ExtResource("r7")
+sprite_scale = Vector2(0.42, 0.42)
+
+[sub_resource type="Resource" id="struct_farm"]
+script = ExtResource("r3")
+structure_id = &"farm"
+texture = ExtResource("r8")
+team_texture = ExtResource("r9")
+
+[sub_resource type="Resource" id="struct_soldier_barracks"]
+script = ExtResource("r3")
+structure_id = &"soldier_barracks"
+texture = ExtResource("r10")
+team_texture = ExtResource("r11")
+
+[sub_resource type="Resource" id="struct_archer_barracks"]
+script = ExtResource("r3")
+structure_id = &"archer_barracks"
+texture = ExtResource("r12")
+team_texture = ExtResource("r13")
+
+[sub_resource type="Resource" id="struct_church"]
+script = ExtResource("r3")
+structure_id = &"church"
+texture = ExtResource("r14")
+team_texture = ExtResource("r15")
+
+[sub_resource type="Resource" id="struct_tower"]
+script = ExtResource("r3")
+structure_id = &"tower"
+texture = ExtResource("r16")
+team_texture = ExtResource("r17")
+
+[resource]
+script = ExtResource("r1")
+id = &"goblin"
+display_name = "Goblins"
+description = "Cheap, fragile and fast: their units cost less, have less health and strike faster."
+accent_color = Color(0.56, 0.82, 0.35, 1)
+unit_card_cost_multiplier = 0.8
+hp_multiplier = 0.7
+attack_speed_multiplier = 1.3
+move_speed_multiplier = 1.1
+unit_overrides = Array[ExtResource("r2")]([SubResource("unit_soldier"), SubResource("unit_archer"), SubResource("unit_priest"), SubResource("unit_tank")])
+structure_overrides = Array[ExtResource("r3")]([SubResource("struct_farm"), SubResource("struct_soldier_barracks"), SubResource("struct_archer_barracks"), SubResource("struct_church"), SubResource("struct_tower")])
+castle_texture = ExtResource("r18")
+castle_team_texture = ExtResource("r19")
+card_names = {"card_farm": "Mushroom Farm", "card_soldier_barracks": "Goblin Den", "card_archer_barracks": "Sniper Nest", "card_church": "Shaman Hut", "card_tower": "Spike Tower", "card_soldiers": "Goblin Soldiers", "card_archers": "Goblin Archers", "card_tank": "Goblin Brute"}

@@ -9,7 +9,8 @@ extends RefCounted
 
 ## SPECTATE: IA contra IA en local. REPLAY: reproduce una partida grabada.
 enum GameMode { VS_AI, ONLINE, SPECTATE, REPLAY }
-enum MatchPhase { IDLE, RUNNING, ENDED }
+## COUNTDOWN: partida creada pero aún no empezada (cuenta atrás 3·2·1); nada se simula.
+enum MatchPhase { IDLE, COUNTDOWN, RUNNING, ENDED }
 
 const PLAYER_BOTTOM: int = 0
 const PLAYER_TOP: int = 1

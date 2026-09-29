@@ -85,14 +85,53 @@ func _ready() -> void:
 	if mode == MatchTypes.GameMode.ONLINE and is_instance_valid(_debug_panel):
 		_debug_panel.visible = false
 
+	# Atajo de desarrollo: `-- --seed=16` fija la semilla (y con ella las razas del rival).
+	for argument: String in OS.get_cmdline_user_args():
+		if argument.begins_with("--seed=") and argument.trim_prefix("--seed=").is_valid_int():
+			seed_value = argument.trim_prefix("--seed=").to_int()
 	if seed_value == 0:
 		seed_value = _generate_seed()
+	_assign_races(mode, seed_value, replay)
 	if GameManager.is_watching():
 		_setup_watch_mode(mode, seed_value)
 	if replay != null:
 		_replay_player.start(replay, _replicator)
 	else:
-		GameManager.start_match(mode, seed_value)
+		# Cuenta atrás 3·2·1 antes de jugar (no para quien entra a mirar una partida online en curso).
+		var with_countdown: bool = not (mode == MatchTypes.GameMode.ONLINE and GameManager.is_watching())
+		GameManager.start_match(mode, seed_value, with_countdown)
+		if with_countdown:
+			_start_intro()
+
+
+## Razas de cada asiento [abajo, arriba]. Online las fija NetworkManager; una repetición
+## usa las que grabó.
+func _assign_races(mode: MatchTypes.GameMode, seed_value: int, replay: ReplayData) -> void:
+	if mode == MatchTypes.GameMode.ONLINE:
+		return
+	if replay != null:
+		GameManager.match_races = replay.get_races()
+		return
+	var races: Array[RaceData] = GameManager.database.races
+	# El rival (o ambos bandos al mirar IA contra IA) usa una raza según la semilla.
+	var rival: StringName = races[(seed_value / 7) % races.size()].id
+	if mode == MatchTypes.GameMode.SPECTATE:
+		GameManager.match_races = [races[seed_value % races.size()].id, rival]
+	elif GameManager.local_player_id == MatchTypes.PLAYER_BOTTOM:
+		GameManager.match_races = [GameManager.player_race, rival]
+	else:
+		GameManager.match_races = [rival, GameManager.player_race]
+
+
+func _start_intro() -> void:
+	var layer: CanvasLayer = CanvasLayer.new()
+	layer.layer = 60
+	add_child(layer)
+	var intro: MatchIntro = MatchIntro.new()
+	layer.add_child(intro)
+	intro.finished.connect(func() -> void:
+		GameManager.begin_play()
+		layer.queue_free())
 
 
 func _exit_tree() -> void:

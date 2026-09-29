@@ -21,6 +21,10 @@ var pending_replay: ReplayData = null
 var last_replay_path: String = ""
 ## Dificultad de la IA rival en VS IA (la elige el menú y se recuerda).
 var ai_difficulty: AIDifficulty.Level = AIDifficulty.DEFAULT_LEVEL
+## Raza que elige el jugador local (se recuerda) y razas de la próxima partida por
+## asiento [abajo, arriba]. Vacío = humanos para ambos.
+var player_race: StringName = RaceSettings.load_saved()
+var match_races: Array[StringName] = []
 
 var _next_match_id: int = 1
 var _command_processor: CommandProcessor = null
@@ -44,13 +48,55 @@ func _physics_process(delta: float) -> void:
 	match_state.match_time += delta
 
 
-func start_match(mode: MatchTypes.GameMode, match_seed: int) -> void:
+## with_countdown: la partida queda en COUNTDOWN (estado creado, tiendas ofrecidas,
+## pero sin simular) hasta que MatchIntro llame a begin_play().
+func start_match(mode: MatchTypes.GameMode, match_seed: int, with_countdown: bool = false) -> void:
 	game_mode = mode
 	match_state = MatchState.new(_next_match_id, match_seed, MatchTypes.PLAYER_COUNT, get_rules())
 	_next_match_id += 1
+	_apply_races()
+	match_phase = MatchTypes.MatchPhase.COUNTDOWN if with_countdown else MatchTypes.MatchPhase.RUNNING
+	set_physics_process(not with_countdown)
+	EventBus.partida_iniciada.emit(mode, match_seed)
+
+
+## Termina la cuenta atrás: desde aquí la partida se simula.
+func begin_play() -> void:
+	if match_phase != MatchTypes.MatchPhase.COUNTDOWN:
+		return
 	match_phase = MatchTypes.MatchPhase.RUNNING
 	set_physics_process(true)
-	EventBus.partida_iniciada.emit(mode, match_seed)
+	EventBus.partida_comenzada.emit()
+
+
+## Asigna a cada jugador su raza (match_races) y sus efectos de partida.
+func _apply_races() -> void:
+	for player_state: PlayerState in match_state.players:
+		var race_id: StringName = match_races[player_state.player_id] if player_state.player_id < match_races.size() else &"human"
+		var race: RaceData = database.get_race(race_id) if database != null else null
+		player_state.race_id = race.id if race != null else &"human"
+		if race != null:
+			player_state.race_income_multiplier = race.income_multiplier
+			player_state.castle_max_hp *= race.castle_hp_multiplier
+			player_state.castle_hp = player_state.castle_max_hp
+
+
+## Raza de un jugador de la partida en curso (humanos si no hay partida).
+func get_race(player_id: int) -> RaceData:
+	if database == null:
+		return null
+	var player_state: PlayerState = get_player_state(player_id)
+	return database.get_race(player_state.race_id if player_state != null else &"human")
+
+
+func set_player_race(race_id: StringName, persist: bool = true) -> void:
+	player_race = race_id
+	if persist:
+		RaceSettings.save(race_id)
+
+
+func is_in_countdown() -> bool:
+	return match_phase == MatchTypes.MatchPhase.COUNTDOWN
 
 
 ## winner_player_id puede ser MatchTypes.NO_PLAYER (empate).

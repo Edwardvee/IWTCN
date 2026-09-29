@@ -1,6 +1,10 @@
 [gd_resource type="Resource" script_class="GameDatabase" format=3]
 
 [ext_resource type="Script" path="res://resources/BuffData.gd" id="1_kib3y"]
+[ext_resource type="Script" path="res://resources/RaceData.gd" id="90_racescript"]
+[ext_resource type="Resource" path="res://data/races/human.tres" id="91_human"]
+[ext_resource type="Resource" path="res://data/races/goblin.tres" id="92_goblin"]
+[ext_resource type="Resource" path="res://data/races/elf.tres" id="93_elf"]
 [ext_resource type="Resource" path="res://data/buffs/buff_move_speed.tres" id="2_br8rk"]
 [ext_resource type="Resource" path="res://data/buffs/buff_armor.tres" id="3_t3hgm"]
 [ext_resource type="Resource" path="res://data/buffs/buff_max_hp.tres" id="4_ins62"]
@@ -41,3 +45,4 @@ units = Array[ExtResource("27_7h56u")]([ExtResource("28_aolhs"), ExtResource("29
 structures = Array[ExtResource("21_q0fyq")]([ExtResource("22_m1ws1"), ExtResource("23_ap1wn"), ExtResource("24_2oi3a"), ExtResource("25_jm8uu"), ExtResource("26_wpomh")])
 buffs = Array[ExtResource("1_kib3y")]([ExtResource("2_br8rk"), ExtResource("3_t3hgm"), ExtResource("4_ins62"), ExtResource("5_mg05e"), ExtResource("40_towbuff")])
 cards = Array[ExtResource("6_bm8cc")]([ExtResource("7_wdau7"), ExtResource("8_bs1kh"), ExtResource("9_y4ny8"), ExtResource("10_0rfu2"), ExtResource("11_hq7mt"), ExtResource("12_6nn2q"), ExtResource("13_gcs4y"), ExtResource("14_yo4sn"), ExtResource("15_h6kyv"), ExtResource("16_7kpo8"), ExtResource("17_dsgde"), ExtResource("18_a2emy"), ExtResource("41_towcard")])
+races = Array[ExtResource("90_racescript")]([ExtResource("91_human"), ExtResource("92_goblin"), ExtResource("93_elf")])

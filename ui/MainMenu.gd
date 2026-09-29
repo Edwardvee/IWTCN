@@ -16,6 +16,9 @@ func _ready() -> void:
 	%Language.auto_translate_mode = Node.AUTO_TRANSLATE_MODE_DISABLED
 	%Language.text = Localization.get_other_language_name()
 	%Language.pressed.connect(_on_language_pressed)
+	%Race.auto_translate_mode = Node.AUTO_TRANSLATE_MODE_DISABLED
+	%Race.pressed.connect(_on_race_pressed)
+	_refresh_race_button()
 	%Difficulty.auto_translate_mode = Node.AUTO_TRANSLATE_MODE_DISABLED
 	%Difficulty.pressed.connect(_on_difficulty_pressed)
 	_refresh_difficulty_button()
@@ -32,6 +35,23 @@ func _on_play_ai_pressed() -> void:
 	NetworkManager.close()
 	GameManager.configure_next_match(MatchTypes.GameMode.VS_AI, 0, MatchTypes.PLAYER_BOTTOM)
 	get_tree().change_scene_to_file(MAIN_SCENE)
+
+
+## Alterna entre las razas del juego (data/races) para tus próximas partidas.
+func _on_race_pressed() -> void:
+	var races: Array[RaceData] = GameManager.database.races
+	var current: int = 0
+	for index: int in races.size():
+		if races[index].id == GameManager.player_race:
+			current = index
+	GameManager.set_player_race(races[(current + 1) % races.size()].id)
+	_refresh_race_button()
+
+
+func _refresh_race_button() -> void:
+	var race: RaceData = GameManager.database.get_race(GameManager.player_race)
+	%Race.text = tr("Raza: %s") % tr(race.display_name)
+	%Race.add_theme_color_override("font_color", race.accent_color.lightened(0.35))
 
 
 ## Alterna Fácil → Normal → Difícil para la próxima partida contra la IA.

@@ -9,6 +9,13 @@ const modules = {
   mundo: () => require('./world').generate(),
   ui: () => require('./ui').generate(),
   audio: () => require('./audio').generate(),
+  // Unidades y estructuras de las razas (goblin, elf). Ver tools/art/races.js.
+  razas: () => {
+    for (const race of Object.keys(require('./races').RACES)) {
+      require('./units').generate(race);
+      require('./structures').generate(race);
+    }
+  },
 };
 
 const wanted = process.argv.slice(2);

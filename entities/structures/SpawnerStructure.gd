@@ -8,7 +8,9 @@ extends StructureBase
 
 ## Intervalo del nivel con los buffs de producción del dueño aplicados.
 func get_production_interval() -> float:
-	return BuffSystem.get_production_interval(owner_id, data.get_spawn_interval(level))
+	var race: RaceData = GameManager.get_race(owner_id)
+	var race_multiplier: float = race.production_interval_multiplier if race != null else 1.0
+	return BuffSystem.get_production_interval(owner_id, data.get_spawn_interval(level) * race_multiplier)
 
 
 func _on_production_cycle() -> void:

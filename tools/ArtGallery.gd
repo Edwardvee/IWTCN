@@ -8,12 +8,19 @@ const UNIT_IDS: Array[String] = ["soldier", "archer", "priest", "tank"]
 const STRUCTURE_IDS: Array[String] = ["farm", "soldier_barracks", "archer_barracks", "church", "tower", "castle"]
 
 
+var _units_dir: String = "res://data/units"
+var _structures_prefix: String = ""
+
+
 func _ready() -> void:
 	var page: String = "units"
 	var unit_id: String = "soldier"
 	for arg: String in OS.get_cmdline_user_args():
 		if arg.begins_with("--page="):
 			page = arg.substr(7)
+		elif arg.begins_with("--race="):
+			_units_dir = "res://data/races/%s" % arg.substr(7)
+			_structures_prefix = "%s/" % arg.substr(7)
 		elif arg.begins_with("--unit="):
 			unit_id = arg.substr(7)
 	var background: ColorRect = ColorRect.new()
@@ -49,7 +56,7 @@ func _add_sprite(texture: Texture2D, team: int, at: Vector2, zoom: float) -> voi
 
 
 func _page_units(unit_id: String) -> void:
-	var frames: SpriteFrames = load("res://data/units/%s_frames.tres" % unit_id) as SpriteFrames
+	var frames: SpriteFrames = load("%s/%s_frames.tres" % [_units_dir, unit_id]) as SpriteFrames
 	if frames == null:
 		return
 	# Grande (2x): idle + marcha y ataque, por equipo.
@@ -68,7 +75,7 @@ func _page_units(unit_id: String) -> void:
 	# Tamaño real de juego: todas las unidades en fila.
 	var real_x: float = 80.0
 	for id: String in UNIT_IDS:
-		var unit_frames: SpriteFrames = load("res://data/units/%s_frames.tres" % id) as SpriteFrames
+		var unit_frames: SpriteFrames = load("%s/%s_frames.tres" % [_units_dir, id]) as SpriteFrames
 		for team: int in 2:
 			_add_sprite(unit_frames.get_frame_texture(&"walk", 0), team, Vector2(real_x, 1000.0 + team * 110.0), 1.0)
 		real_x += 120.0
@@ -78,8 +85,8 @@ func _page_structures() -> void:
 	var x: float = 100.0
 	var y: float = 140.0
 	for id: String in STRUCTURE_IDS:
-		var base: Texture2D = load("res://assets/structures/%s.svg" % id) as Texture2D
-		var team_layer: Texture2D = load("res://assets/structures/%s_team.svg" % id) as Texture2D
+		var base: Texture2D = load("res://assets/structures/%s%s.svg" % [_structures_prefix, id]) as Texture2D
+		var team_layer: Texture2D = load("res://assets/structures/%s%s_team.svg" % [_structures_prefix, id]) as Texture2D
 		if base == null:
 			continue
 		for team: int in 2:

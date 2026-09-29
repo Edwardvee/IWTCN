@@ -4,7 +4,7 @@
 
 [resource]
 script = ExtResource("1_u45a7")
-starting_gold = 50
+starting_gold = 65
 castle_max_hp = 10000.0
 plot_costs = PackedInt32Array(40, 30, 20, 50, 0, 10)
 initial_unlocked_plots = PackedInt32Array(4)

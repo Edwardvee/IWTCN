@@ -5,6 +5,7 @@
 // que el juego tiñe con el color del bando (banderas, estandartes, toldos).
 
 const L = require('./lib');
+const { withRace, recolor } = require('./races');
 const { C, OUT, ellipse, circle, path, rect, poly, line, g, rot, tr, sparkle, doc } = L;
 
 const W = 150;
@@ -415,12 +416,16 @@ const STRUCTURES = {
   castle: { fn: castle, w: CASTLE_W, h: CASTLE_H },
 };
 
-function generate() {
-  for (const [id, s] of Object.entries(STRUCTURES)) {
-    const parts = s.fn();
-    L.write(`structures/${id}.svg`, doc(s.w, s.h, parts.base));
-    L.write(`structures/${id}_team.svg`, doc(s.w, s.h, parts.team));
-  }
+/** Genera las estructuras de los humanos (raceId null) o de una raza (ver races.js). */
+function generate(raceId = null) {
+  withRace(raceId, (race) => {
+    const dir = raceId ? `structures/${raceId}` : 'structures';
+    for (const [id, s] of Object.entries(STRUCTURES)) {
+      const parts = s.fn();
+      L.write(`${dir}/${id}.svg`, recolor(doc(s.w, s.h, parts.base), race));
+      L.write(`${dir}/${id}_team.svg`, doc(s.w, s.h, parts.team));
+    }
+  });
 }
 
 module.exports = { STRUCTURES, generate, castleParts: castle };

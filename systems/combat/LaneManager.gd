@@ -197,7 +197,7 @@ func spawn_unit(unit_data: UnitData, team: int, world_position: Vector2) -> Unit
 	if get_alive_count(team) >= get_unit_cap(team):
 		return null
 	var unit: UnitBase = UnitBase.new()
-	unit.setup(GameManager.match_state.allocate_entity_id(), team, unit_data, self, UnitStatModifiers.from_barracks(team, unit_data))
+	unit.setup(GameManager.match_state.allocate_entity_id(), team, unit_data, self, UnitStatModifiers.from_barracks(team, unit_data).combined_with(UnitStatModifiers.from_race(team, unit_data)))
 	_get_container(team).add_child(unit)
 	unit.global_position = world_position
 	_register(unit)

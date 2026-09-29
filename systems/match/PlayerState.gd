@@ -20,6 +20,9 @@ var buffs: Array[StringName] = []
 ## dificultad de la IA lo cambia (ventaja o desventaja declarada). Solo lo
 ## escribe EconomyManager.set_income_multiplier; no viaja en los snapshots.
 var income_multiplier: float = 1.0
+## Raza del jugador (data/races) y su multiplicador de ingresos, fijado al empezar.
+var race_id: StringName = &"human"
+var race_income_multiplier: float = 1.0
 ## Fracción de oro de ingresos aún no entregada (evita perder decimales).
 var income_remainder: float = 0.0
 
@@ -47,4 +50,5 @@ func to_dict() -> Dictionary:
 		"grid": grid.to_dict(),
 		"shop": shop.to_dict(),
 		"buffs": buffs.duplicate(),
+		"race": race_id,
 	}

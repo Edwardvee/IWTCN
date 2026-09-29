@@ -56,7 +56,7 @@ func _refresh() -> void:
 			EconomyManager.get_gold(MatchTypes.PLAYER_BOTTOM),
 			EconomyManager.get_gold(MatchTypes.PLAYER_TOP),
 			_describe_ai_profiles(),
-		]
+		] + _describe_races()
 		return
 	# Oro rival visible solo como información de desarrollo (VS AI).
 	var opponent_id: int = MatchTypes.opponent_of(GameManager.local_player_id)
@@ -65,7 +65,16 @@ func _refresh() -> void:
 		state.match_seed,
 		state.match_time,
 		EconomyManager.get_gold(opponent_id),
-	] + _describe_troops()
+	] + _describe_troops() + _describe_races()
+
+
+## " · Humanos vs Goblins": las razas de esta partida.
+func _describe_races() -> String:
+	var own: RaceData = GameManager.get_race(GameManager.local_player_id)
+	var rival: RaceData = GameManager.get_race(MatchTypes.opponent_of(GameManager.local_player_id))
+	if own == null or rival == null:
+		return ""
+	return " · %s vs %s" % [tr(own.display_name), tr(rival.display_name)]
 
 
 ## " · tropas 5/12": ejército vivo y tope actual (depende de las granjas).

@@ -183,8 +183,14 @@ func set_card(p_offer_index: int, p_card: CardData) -> void:
 ## "3 × Soldados" en las cartas de unidades (la cantidad depende del cuartel).
 func _display_name() -> String:
 	if card.card_type == CardData.CardType.DIRECT_UNIT:
-		return tr("%d × %s") % [card.get_unit_count_for(GameManager.local_player_id), tr(card.display_name)]
-	return tr(card.display_name)
+		return tr("%d × %s") % [card.get_unit_count_for(GameManager.local_player_id), tr(_race_card_name())]
+	return tr(_race_card_name())
+
+
+## Nombre de la carta en la raza del jugador (data/races/*.tres → card_names).
+func _race_card_name() -> String:
+	var race: RaceData = GameManager.get_race(GameManager.local_player_id)
+	return race.get_card_name(card) if race != null else card.display_name
 
 
 ## Actualiza el nombre cuando cambia la cantidad de unidades (subió el cuartel).

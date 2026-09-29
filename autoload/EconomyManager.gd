@@ -48,13 +48,16 @@ func get_gold(player_id: int) -> int:
 func get_card_cost(player_id: int, card: CardData) -> int:
 	if card == null:
 		return 0
-	if card.card_type != CardData.CardType.STRUCTURE or card.structure == null:
-		return card.cost
+	var base_cost: int = card.cost
 	var rules: GameRules = GameManager.get_rules()
 	var player_state: PlayerState = GameManager.get_player_state(player_id)
-	if rules == null or player_state == null:
-		return card.cost
-	return rules.get_scaled_structure_cost(card.cost, player_state.grid.count_structures(card.structure.id))
+	if card.card_type == CardData.CardType.STRUCTURE and card.structure != null and rules != null and player_state != null:
+		base_cost = rules.get_scaled_structure_cost(card.cost, player_state.grid.count_structures(card.structure.id))
+	# La raza abarata o encarece cada tipo de carta.
+	var race: RaceData = GameManager.get_race(player_id)
+	if race == null:
+		return base_cost
+	return roundi(float(base_cost) * race.get_card_cost_multiplier(card))
 
 
 func has_gold(player_id: int, amount: int) -> bool:
@@ -67,9 +70,12 @@ func has_gold(player_id: int, amount: int) -> bool:
 ## ingresos del jugador. Los reembolsos, ventas y oro debug NO pasan por aquí.
 func add_income(player_id: int, amount: int) -> bool:
 	var player_state: PlayerState = GameManager.get_player_state(player_id)
-	if player_state == null or is_equal_approx(player_state.income_multiplier, 1.0):
+	if player_state == null:
+		return false
+	var multiplier: float = player_state.income_multiplier * player_state.race_income_multiplier
+	if is_equal_approx(multiplier, 1.0):
 		return add_gold(player_id, amount)
-	var exact: float = float(amount) * player_state.income_multiplier + player_state.income_remainder
+	var exact: float = float(amount) * multiplier + player_state.income_remainder
 	var whole: int = floori(exact)
 	if not add_gold(player_id, whole):
 		return false

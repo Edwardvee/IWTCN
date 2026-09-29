@@ -6,7 +6,7 @@ Casi todo el balance es **data-driven**: se edita en el Inspector de Godot abrie
 
 | Qué | Campo | Valor actual |
 | :--- | :--- | :--- |
-| Oro inicial | `starting_gold` | 50 |
+| Oro inicial | `starting_gold` | 65 |
 | Oro por ingreso base | `base_income_amount` | 3 |
 | Segundos entre ingresos base | `base_income_interval` | 3.0 (=1 oro/s) |
 | Vida del castillo | `castle_max_hp` | 10000 |

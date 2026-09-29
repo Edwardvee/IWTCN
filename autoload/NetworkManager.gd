@@ -25,7 +25,8 @@ const SNAPSHOT_INTERVAL: float = 0.1
 ## Versión del formato de mensajes (snapshots, comandos). Súbela si cambian:
 ## anfitrión e invitado/espectador con versiones distintas no se entenderían.
 ## 2 = snapshots compactos e incrementales.
-const PROTOCOL_VERSION: int = 2
+## 3 = las razas viajan en el saludo del invitado y en el aviso de inicio.
+const PROTOCOL_VERSION: int = 3
 const KEEPALIVE_INTERVAL: float = 20.0
 const MAIN_SCENE: String = "res://scenes/Main.tscn"
 const MENU_SCENE: String = "res://scenes/Menu.tscn"
@@ -43,6 +44,8 @@ var _spectator_count: int = 0
 ## Qué partes del estado ya se enviaron. Se vacía cuando entra alguien nuevo
 ## para que el siguiente snapshot vaya completo.
 var _snapshot_cache: Dictionary = {}
+## Raza que eligió el invitado (llega en su saludo).
+var _guest_race: StringName = &"human"
 var _replicator: StateReplicator = null
 var _snapshot_timer: float = 0.0
 var _keepalive_timer: float = 0.0
@@ -212,6 +215,8 @@ func _on_socket_open() -> void:
 		status_changed.emit(tr("Conectado como espectador. Esperando la partida…"))
 	else:
 		status_changed.emit(tr("Conectado. Esperando inicio…"))
+		# El anfitrión empieza la partida al recibir este saludo, con la raza elegida.
+		_send({"k": "hello", "v": PROTOCOL_VERSION, "race": str(GameManager.player_race)})
 
 
 func _on_socket_closed(code: int, reason: String) -> void:
@@ -253,9 +258,18 @@ func _on_packet(packet: PackedByteArray, is_text: bool) -> void:
 				close()
 				return
 			if _role == Role.GUEST and target == "guest":
+				GameManager.match_races = _races_from_message(data)
 				_guest_start_match(int(data.get("seed", 0)), int(data.get("player_id", MatchTypes.PLAYER_TOP)))
 			elif _role == Role.SPECTATOR and target == "spectator":
+				GameManager.match_races = _races_from_message(data)
 				_spectator_start_match(int(data.get("seed", 0)))
+		"hello":
+			if _role == Role.HOST:
+				if int(data.get("v", 1)) != PROTOCOL_VERSION:
+					status_changed.emit(tr("Versión del juego incompatible: actualiza"))
+					return
+				_guest_race = StringName(str(data.get("race", "human")))
+				_host_on_guest_joined()
 		"snap":
 			if is_client() and _replicator != null:
 				_replicator.apply_snapshot(data.get("snapshot", {}))
@@ -274,7 +288,8 @@ func _on_relay_notice(text: String) -> void:
 	match str((parsed as Dictionary).get("t", "")):
 		"guest_joined":
 			if _role == Role.HOST:
-				_host_on_guest_joined()
+				_guest_present = true
+				_snapshot_cache.clear()
 		"guest_left":
 			if _role == Role.HOST:
 				_guest_present = false
@@ -296,18 +311,20 @@ func _on_relay_notice(text: String) -> void:
 func _host_on_guest_joined() -> void:
 	_guest_present = true
 	_snapshot_cache.clear()
-	var reconnecting: bool = GameManager.is_match_running() and GameManager.game_mode == MatchTypes.GameMode.ONLINE
+	var reconnecting: bool = (GameManager.is_match_running() or GameManager.is_in_countdown()) and GameManager.game_mode == MatchTypes.GameMode.ONLINE
 	if reconnecting:
-		_send({"k": "start", "v": PROTOCOL_VERSION, "for": "guest", "seed": GameManager.match_state.match_seed, "player_id": MatchTypes.PLAYER_TOP})
+		_send({"k": "start", "v": PROTOCOL_VERSION, "for": "guest", "seed": GameManager.match_state.match_seed, "player_id": MatchTypes.PLAYER_TOP, "races": _current_races()})
 		status_changed.emit(tr("Rival reconectado"))
 		return
 	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
 	rng.randomize()
 	var match_seed: int = maxi(1, rng.randi())
-	_send({"k": "start", "v": PROTOCOL_VERSION, "for": "guest", "seed": match_seed, "player_id": MatchTypes.PLAYER_TOP})
+	var races: Array = [str(GameManager.player_race), str(_guest_race)]
+	_send({"k": "start", "v": PROTOCOL_VERSION, "for": "guest", "seed": match_seed, "player_id": MatchTypes.PLAYER_TOP, "races": races})
 	# Los espectadores que ya esperaban en la sala arrancan con la misma semilla.
 	if _spectator_count > 0:
-		_send({"k": "start", "v": PROTOCOL_VERSION, "for": "spectator", "seed": match_seed})
+		_send({"k": "start", "v": PROTOCOL_VERSION, "for": "spectator", "seed": match_seed, "races": races})
+	GameManager.match_races = [GameManager.player_race, _guest_race]
 	GameManager.configure_next_match(MatchTypes.GameMode.ONLINE, match_seed, MatchTypes.PLAYER_BOTTOM)
 	status_changed.emit(tr("Rival conectado"))
 	get_tree().change_scene_to_file(MAIN_SCENE)
@@ -319,8 +336,23 @@ func _host_on_guest_joined() -> void:
 func _host_on_spectator_joined() -> void:
 	_snapshot_cache.clear()
 	status_changed.emit(tr("Espectadores: %d") % _spectator_count)
-	if GameManager.is_match_running() and GameManager.game_mode == MatchTypes.GameMode.ONLINE:
-		_send({"k": "start", "v": PROTOCOL_VERSION, "for": "spectator", "seed": GameManager.match_state.match_seed})
+	if (GameManager.is_match_running() or GameManager.is_in_countdown()) and GameManager.game_mode == MatchTypes.GameMode.ONLINE:
+		_send({"k": "start", "v": PROTOCOL_VERSION, "for": "spectator", "seed": GameManager.match_state.match_seed, "races": _current_races()})
+
+
+## Razas [abajo, arriba] de la partida en curso, para quien entra a mitad.
+func _current_races() -> Array:
+	var races: Array = []
+	for player_state: PlayerState in GameManager.match_state.players:
+		races.append(str(player_state.race_id))
+	return races
+
+
+func _races_from_message(data: Dictionary) -> Array[StringName]:
+	var races: Array[StringName] = []
+	for race_variant: Variant in data.get("races", []):
+		races.append(StringName(str(race_variant)))
+	return races
 
 
 func _host_receive_command(data: Dictionary) -> void:

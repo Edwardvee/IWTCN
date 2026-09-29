@@ -35,6 +35,13 @@ func _ready() -> void:
 	EventBus.comando_rechazado.connect(func(pid: int, _t: StringName, _m: String) -> void: _play_cue(pid, ERROR_SOUND))
 
 
+## Sonido de confirmación (p. ej. el grito de inicio de partida).
+func play_confirm() -> void:
+	if sound_enabled and _cue_player != null:
+		_cue_player.stream = CONFIRM_SOUND
+		_cue_player.play()
+
+
 ## Avisos sonoros de las acciones del jugador local (no de la IA ni del espectador).
 func _play_cue(player_id: int, stream: AudioStream) -> void:
 	if not sound_enabled or player_id != GameManager.local_player_id or GameManager.is_watching():

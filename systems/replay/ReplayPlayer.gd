@@ -29,6 +29,7 @@ func restart() -> void:
 	_finished = false
 	playing = true
 	replicator.reset()
+	GameManager.match_races = data.get_races()
 	GameManager.start_match(MatchTypes.GameMode.REPLAY, data.get_seed())
 
 

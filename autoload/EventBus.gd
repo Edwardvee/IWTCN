@@ -15,6 +15,8 @@ extends Node
 # --- Partida ---
 signal partida_iniciada(modo: int, semilla: int)
 signal partida_terminada(ganador_player_id: int)
+## Fin de la cuenta atrás: la simulación empieza.
+signal partida_comenzada
 
 # --- Economía ---
 signal oro_actualizado(player_id: int, nuevo_total: int)

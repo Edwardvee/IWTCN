@@ -99,6 +99,7 @@ func refresh_stats(keep_hp_ratio: bool) -> void:
 	damage = (data.damage + modifiers.bonus_damage) * modifiers.damage_multiplier if data.damage > 0.0 else 0.0
 	damage_mitigation = clampf(data.damage_mitigation + modifiers.bonus_mitigation, 0.0, 0.9)
 	attack_cooldown = data.attack_cooldown / maxf(0.1, modifiers.attack_speed_multiplier)
+	attack_range = data.attack_range * modifiers.attack_range_multiplier
 	queue_redraw()
 
 
@@ -365,11 +366,14 @@ func _create_collision() -> void:
 
 
 func _create_visuals() -> void:
-	if data.sprite_frames == null:
+	# El arte depende de la raza del dueño (data/races); sin arte propio, el de la unidad.
+	var race: RaceData = GameManager.get_race(team)
+	var frames: SpriteFrames = race.get_unit_frames(data) if race != null else data.sprite_frames
+	if frames == null:
 		return
 	_sprite = AnimatedSprite2D.new()
-	_sprite.sprite_frames = data.sprite_frames
-	_sprite.scale = data.sprite_scale
+	_sprite.sprite_frames = frames
+	_sprite.scale = race.get_unit_sprite_scale(data) if race != null else data.sprite_scale
 	_sprite.animation_finished.connect(_on_animation_finished)
 	add_child(_sprite)
 	_sprite.play(data.anim_walk)

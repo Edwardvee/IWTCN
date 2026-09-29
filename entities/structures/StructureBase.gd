@@ -36,6 +36,9 @@ var _sprite: AnimatedSprite2D = null
 var _art: Sprite2D = null
 var _team_layer: Sprite2D = null
 var _drawn_progress: float = -1.0
+## Arte según la raza del dueño (ver _create_visuals).
+var _art_texture: Texture2D = null
+var _art_team_texture: Texture2D = null
 
 
 func setup(p_building_id: int, p_owner_id: int, p_data: StructureData, p_slot_index: int, p_body_size: Vector2, p_grid: GridManager) -> void:
@@ -125,7 +128,10 @@ func _refresh_progress(progress: float) -> void:
 func _create_visuals() -> void:
 	if data == null:
 		return
-	if data.texture != null:
+	var race: RaceData = GameManager.get_race(owner_id)
+	_art_texture = race.get_structure_texture(data) if race != null else data.texture
+	_art_team_texture = race.get_structure_team_texture(data) if race != null else data.team_texture
+	if _art_texture != null:
 		_create_art()
 	elif data.sprite_frames != null:
 		_sprite = AnimatedSprite2D.new()
@@ -160,14 +166,14 @@ func _create_art() -> void:
 	var art_scale: float = body_size.x / ART_REFERENCE_WIDTH * ART_RASTER_SCALE * data.art_scale
 	var upright: float = PI if ViewOrientation.is_flipped() else 0.0
 	_art = Sprite2D.new()
-	_art.texture = data.texture
+	_art.texture = _art_texture
 	_art.scale = Vector2.ONE * art_scale
 	_art.rotation = upright
 	_art.position = Vector2(0.0, -ART_OFFSET_Y if upright != 0.0 else ART_OFFSET_Y)
 	add_child(_art)
-	if data.team_texture != null:
+	if _art_team_texture != null:
 		_team_layer = Sprite2D.new()
-		_team_layer.texture = data.team_texture
+		_team_layer.texture = _art_team_texture
 		_team_layer.modulate = MatchTypes.team_color(owner_id)
 		_art.add_child(_team_layer)
 

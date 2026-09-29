@@ -4,6 +4,15 @@
 // dibuja un shader en el juego, aquí solo va el contorno oscuro.
 
 const L = require('./lib');
+const { withRace, recolor } = require('./races');
+
+// Raza que se está dibujando (null = humanos). Añade orejas a las cabezas.
+let raceStyle = null;
+function earShapes(cy, r) {
+  if (!raceStyle || !raceStyle.ears) return [];
+  const e = raceStyle.ears;
+  return [-1, 1].map((s) => `<polygon points="${s * (r - 3)},${cy - 4} ${s * (r + e.len)},${cy - 4 - e.rise} ${s * (r - 2)},${cy + 6}" fill="${e.color}" stroke="${OUT}" stroke-width="2.5" stroke-linejoin="round"/>`);
+}
 const { C, OUT, ellipse, circle, path, rect, poly, line, g, rot, tr, limb, sparkle, doc } = L;
 
 const WALK_FRAMES = 4;
@@ -63,6 +72,7 @@ function drawSoldier(p, arc = 0) {
   const slash = arc > 0 ? path('M-6 -26 Q-40 -30 -44 8 Q-30 -12 -6 -20 Z', '#ffffff', { noStroke: true, opacity: 0.55 * arc, transform: `translate(${arc > 0.9 ? 4 : 12} -14)` }) : '';
   // cabeza: casco con cresta
   const head = [
+    ...earShapes(-5, 14),
     circle(0, -5, 14, C.steel),
     ellipse(-4, -9, 8, 5.5, C.steelLight, { noStroke: true, opacity: 0.8 }),
     path('M-3 -19 L3 -19 L3.5 8 L-3.5 8 Z', C.goldDark, { noStroke: true, opacity: 0.9 }),
@@ -116,6 +126,7 @@ function drawArcher(p, nockY = -22, arrow = false, handY = null) {
   // capucha con punta atrás
   parts.push(g([
     poly([[-9, 4], [0, 19], [9, 4]], C.greenDark),
+    ...earShapes(-5, 13.5),
     circle(0, -5, 13.5, C.green),
     ellipse(-4, -9, 7.5, 5, C.greenLight, { noStroke: true, opacity: 0.8 }),
     path('M-6.5 -13.5 Q0 -17 6.5 -13.5 Q0 -10 -6.5 -13.5Z', C.skin, { sw: 2 }),
@@ -153,6 +164,7 @@ function drawPriest(p, cast = 0) {
   ];
   const handR = [limb(19, 4, 18, -8, 5.5, C.creamDark), circle(18, -8, 4.6, C.skin)];
   const head = [
+    ...earShapes(-9, 12.5),
     circle(0, -9, 12.5, C.cream),
     ellipse(-4, -13, 7, 4.6, C.white, { noStroke: true, opacity: 0.8 }),
     path('M-7 -16 Q0 -22 7 -16 Q0 -11.5 -7 -16Z', C.skin, { sw: 2 }),
@@ -271,18 +283,26 @@ const UNITS = {
   },
 };
 
-function generate() {
-  for (const [id, u] of Object.entries(UNITS)) {
-    L.write(`units/${id}/idle.svg`, doc(u.size, u.size, u.idle()));
-    for (let k = 0; k < WALK_FRAMES; k++) L.write(`units/${id}/walk_${k}.svg`, doc(u.size, u.size, u.walk(k)));
-    for (let k = 0; k < ATTACK_FRAMES; k++) L.write(`units/${id}/attack_${k}.svg`, doc(u.size, u.size, u.attack(k)));
-    const res = (name) => `res://assets/units/${id}/${name}.svg`;
-    L.writeData(`data/units/${id}_frames.tres`, L.spriteFramesTres([
-      { name: 'idle', frames: [res('idle')], speed: 5, loop: true },
-      { name: 'walk', frames: [0, 1, 2, 3].map((k) => res(`walk_${k}`)), speed: 8, loop: true },
-      { name: 'attack', frames: [0, 1, 2, 3].map((k) => res(`attack_${k}`)), speed: 14, loop: false },
-    ]));
-  }
+/** Genera las unidades de los humanos (raceId null) o de una raza (ver races.js). */
+function generate(raceId = null) {
+  withRace(raceId, (race) => {
+    raceStyle = race;
+    const dir = raceId ? `units/${raceId}` : 'units';
+    const dataDir = raceId ? `data/races/${raceId}` : 'data/units';
+    for (const [id, u] of Object.entries(UNITS)) {
+      const svg = (body) => recolor(doc(u.size, u.size, body), race);
+      L.write(`${dir}/${id}/idle.svg`, svg(u.idle()));
+      for (let k = 0; k < WALK_FRAMES; k++) L.write(`${dir}/${id}/walk_${k}.svg`, svg(u.walk(k)));
+      for (let k = 0; k < ATTACK_FRAMES; k++) L.write(`${dir}/${id}/attack_${k}.svg`, svg(u.attack(k)));
+      const res = (name) => `res://assets/${dir}/${id}/${name}.svg`;
+      L.writeData(`${dataDir}/${id}_frames.tres`, L.spriteFramesTres([
+        { name: 'idle', frames: [res('idle')], speed: 5, loop: true },
+        { name: 'walk', frames: [0, 1, 2, 3].map((k) => res(`walk_${k}`)), speed: 8, loop: true },
+        { name: 'attack', frames: [0, 1, 2, 3].map((k) => res(`attack_${k}`)), speed: 14, loop: false },
+      ]));
+    }
+    raceStyle = null;
+  });
 }
 
 module.exports = { UNITS, WALK_FRAMES, ATTACK_FRAMES, generate };
