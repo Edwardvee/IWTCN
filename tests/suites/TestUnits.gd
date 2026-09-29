@@ -67,9 +67,12 @@ func test_combat_two_vs_one() -> void:
 	assert_eq(lane.get_alive_count(1), 0, "sin enemigos vivos")
 	assert_eq(lane.get_alive_count(0), 2, "los dos aliados sobreviven")
 	assert_eq(states, [UnitBase.STATE_ATTACK, UnitBase.STATE_ADVANCE] as Array[StringName], "ADVANCE → ATTACK → ADVANCE")
-	# El enemigo apunta al aliado de menor id y le da 4 golpes (el 4.º, simultáneo a su muerte).
-	assert_eq(first_ally.current_hp, 250.0 - 4.0 * 35.0, "vida del aliado golpeado")
-	assert_eq(allies[1].current_hp, 250.0, "el otro aliado intacto")
+	# El enemigo reparte objetivo por su unit_id entre los aliados igual de cerca
+	# y le da 4 golpes al elegido (el 4.º, simultáneo a su muerte).
+	var hit_ally: UnitBase = allies[enemy.unit_id % 2]
+	var other_ally: UnitBase = allies[1 - enemy.unit_id % 2]
+	assert_eq(hit_ally.current_hp, 250.0 - 4.0 * 35.0, "vida del aliado golpeado")
+	assert_eq(other_ally.current_hp, 250.0, "el otro aliado intacto")
 	_run(10.0)
 	assert_true(first_ally.can_attack_enemy_castle(), "el superviviente sigue avanzando hasta el castillo rival")
 
@@ -128,11 +131,20 @@ func test_nearest_target_selection() -> void:
 	assert_true(far_enemy != null, "el lejano también estaba en rango")
 
 
-func test_target_tie_breaks_by_lowest_id() -> void:
+func test_target_tie_is_spread_deterministically_by_seeker_id() -> void:
 	var ally: UnitBase = _spawn(soldier, 0, 1500.0)
 	var first: UnitBase = _spawn(soldier, 1, 1450.0, 500.0)
-	_spawn(soldier, 1, 1450.0, 580.0)
-	assert_true(ally.acquire_target() == first, "empate → menor unit_id")
+	var second: UnitBase = _spawn(soldier, 1, 1450.0, 580.0)
+	var expected: UnitBase = [first, second][ally.unit_id % 2]
+	assert_true(ally.acquire_target() == expected, "empate → se reparte por el unit_id del buscador")
+	assert_true(ally.acquire_target() == expected, "y la elección es estable")
+
+
+func test_far_enemy_not_in_spread_window_is_ignored() -> void:
+	var ally: UnitBase = _spawn(soldier, 0, 1500.0)
+	var near: UnitBase = _spawn(soldier, 1, 1450.0, 500.0)
+	_spawn(soldier, 1, 1380.0, 500.0)
+	assert_true(ally.acquire_target() == near, "solo se reparte entre enemigos casi igual de cerca")
 
 
 func test_out_of_range_not_targeted() -> void:

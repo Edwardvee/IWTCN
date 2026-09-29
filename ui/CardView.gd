@@ -73,8 +73,29 @@ func refresh_cost() -> void:
 		_cost_label.text = "● %d" % EconomyManager.get_card_cost(GameManager.local_player_id, card)
 
 
-func set_affordable(affordable: bool) -> void:
+func set_affordable(affordable: bool, missing_gold: int = 0) -> void:
 	modulate = Color.WHITE if affordable else Color(1.0, 1.0, 1.0, 0.5)
+	if card == null or _cost_label == null:
+		return
+	var cost: int = EconomyManager.get_card_cost(GameManager.local_player_id, card)
+	if affordable:
+		_cost_label.text = "● %d" % cost
+		_cost_label.add_theme_color_override("font_color", Color.WHITE)
+	else:
+		_cost_label.text = "● %d  (faltan %d)" % [cost, missing_gold]
+		_cost_label.add_theme_color_override("font_color", Color(1.0, 0.5, 0.45))
+
+
+## Sacudida cuando la compra de esta carta fue rechazada.
+func play_reject() -> void:
+	var tween: Tween = create_tween()
+	var base_x: float = position.x
+	for offset: float in [-12.0, 12.0, -8.0, 8.0, 0.0]:
+		tween.tween_property(self, "position:x", base_x + offset, 0.04)
+	_style.border_color = Color(1.0, 0.25, 0.2)
+	var flash: Tween = create_tween()
+	flash.tween_interval(0.4)
+	flash.tween_callback(func() -> void: _style.border_color = card.color if card != null else Color.WHITE)
 
 
 func _gui_input(event: InputEvent) -> void:

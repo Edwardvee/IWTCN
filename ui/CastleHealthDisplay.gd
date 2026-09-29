@@ -15,6 +15,9 @@ func _refresh() -> void:
 	if own == null or rival == null:
 		text = ""
 		return
+	if GameManager.is_watching():
+		text = "Castillo abajo: %d   ·   arriba: %d" % [ceili(own.castle_hp), ceili(rival.castle_hp)]
+		return
 	text = "Tu castillo: %d   ·   Rival: %d" % [ceili(own.castle_hp), ceili(rival.castle_hp)]
 
 

@@ -17,8 +17,8 @@ func test_database_loads_and_validates() -> void:
 	assert_eq(errors.size(), 0, "errores de validación: %s" % ", ".join(errors))
 	assert_eq(db.units.size(), 4, "número de unidades")
 	assert_eq(db.structures.size(), 5, "número de estructuras")
-	assert_eq(db.buffs.size(), 4, "número de buffs")
-	assert_eq(db.cards.size(), 12, "número de cartas")
+	assert_eq(db.buffs.size(), 5, "número de buffs")
+	assert_eq(db.cards.size(), 13, "número de cartas")
 
 
 func test_lookup_by_id() -> void:
@@ -114,7 +114,7 @@ func test_cards_cover_all_types() -> void:
 		assert_true(card.cost > 0, "%s tiene coste" % card.id)
 	assert_eq(counts.get(CardData.CardType.STRUCTURE, 0), 5, "5 cartas de estructura")
 	assert_eq(counts.get(CardData.CardType.DIRECT_UNIT, 0), 3, "3 cartas de unidad")
-	assert_eq(counts.get(CardData.CardType.GLOBAL_BUFF, 0), 4, "4 cartas de buff")
+	assert_eq(counts.get(CardData.CardType.GLOBAL_BUFF, 0), 5, "5 cartas de buff")
 
 
 func test_card_drop_targets() -> void:

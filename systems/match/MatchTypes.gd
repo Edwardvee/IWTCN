@@ -7,7 +7,8 @@ extends RefCounted
 ## Son asientos fijos del mundo, no "jugador local": en online, el cliente
 ## del player 1 verá la cámara invertida, pero la simulación no cambia.
 
-enum GameMode { VS_AI, ONLINE }
+## SPECTATE: IA contra IA en local. REPLAY: reproduce una partida grabada.
+enum GameMode { VS_AI, ONLINE, SPECTATE, REPLAY }
 enum MatchPhase { IDLE, RUNNING, ENDED }
 
 const PLAYER_BOTTOM: int = 0
@@ -47,10 +48,19 @@ static func team_color(player_id: int) -> Color:
 	return Color.GRAY
 
 
+## Modos donde el usuario solo mira: no hay jugador local con control.
+static func is_watch_mode(mode: GameMode) -> bool:
+	return mode == GameMode.SPECTATE or mode == GameMode.REPLAY
+
+
 static func game_mode_name(mode: GameMode) -> String:
 	match mode:
 		GameMode.VS_AI:
 			return "VS AI"
 		GameMode.ONLINE:
 			return "ONLINE"
+		GameMode.SPECTATE:
+			return "ESPECTADOR"
+		GameMode.REPLAY:
+			return "REPETICIÓN"
 	return "UNKNOWN"

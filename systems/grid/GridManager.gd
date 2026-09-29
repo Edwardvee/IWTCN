@@ -62,6 +62,10 @@ func get_state() -> GridState:
 	return player_state.grid if player_state != null else null
 
 
+func get_slot_node(slot_index: int) -> BuildingSlot:
+	return _slots[slot_index] if GridState.is_valid_slot(slot_index) else null
+
+
 func get_slot_count() -> int:
 	return _slots.size()
 
@@ -353,6 +357,25 @@ func _sync_from_state() -> void:
 ## Reconstruye los nodos desde el estado (clientes online tras un snapshot).
 func resync_from_state() -> void:
 	_sync_from_state()
+
+
+## Marca los slots donde se podría construir `structure` (arrastre de carta).
+func show_build_hints(structure: StructureData, affordable: bool = true) -> void:
+	for slot: BuildingSlot in _slots:
+		var valid: bool = affordable and structure != null and can_build(slot.slot_index, structure) == ""
+		slot.set_hint(BuildingSlot.Hint.VALID if valid else BuildingSlot.Hint.NONE)
+
+
+## Marca el slot bajo el puntero como destino válido o inválido.
+func set_hover_hint(slot_index: int, valid: bool) -> void:
+	for slot: BuildingSlot in _slots:
+		if slot.slot_index == slot_index:
+			slot.set_hint(BuildingSlot.Hint.VALID if valid else BuildingSlot.Hint.INVALID)
+
+
+func clear_build_hints() -> void:
+	for slot: BuildingSlot in _slots:
+		slot.set_hint(BuildingSlot.Hint.NONE)
 
 
 func _on_partida_iniciada(_modo: int, _semilla: int) -> void:

@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="CardData" format=3]
+
+[ext_resource type="Resource" path="res://data/buffs/buff_tower_fire_rate.tres" id="1_towbuff"]
+[ext_resource type="Script" path="res://resources/CardData.gd" id="2_towcard"]
+
+[resource]
+script = ExtResource("2_towcard")
+id = &"card_buff_tower_fire_rate"
+display_name = "+10% Cadencia torres"
+description = "Tus torres disparan un 10% más rápido. Requiere una torre."
+card_type = 1
+cost = 90
+shop_weight = 5
+buff = ExtResource("1_towbuff")
+required_structure_tag = &"defense"
+required_structure_count = 1
+color = Color(0.7, 0.4, 0.9, 1)

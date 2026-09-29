@@ -13,6 +13,12 @@ var match_phase: MatchTypes.MatchPhase = MatchTypes.MatchPhase.IDLE
 ## Asiento del jugador que usa este dispositivo (solo lo usan UI/input).
 var local_player_id: int = MatchTypes.PLAYER_BOTTOM
 var match_state: MatchState = null
+## Las repeticiones lo activan al saltar en el tiempo: la presentación (números
+## flotantes, avisos) se silencia mientras se aplican muchos snapshots seguidos.
+var suppress_effects: bool = false
+## Repetición pendiente de reproducir (la fija el menú) y última guardada.
+var pending_replay: ReplayData = null
+var last_replay_path: String = ""
 
 var _next_match_id: int = 1
 var _command_processor: CommandProcessor = null
@@ -54,11 +60,21 @@ func end_match(winner_player_id: int) -> void:
 	EventBus.partida_terminada.emit(winner_player_id)
 
 
-## En VS AI la simulación local es la autoridad. En online solo el anfitrión.
+## En VS AI y espectador la simulación local es la autoridad. En online solo
+## el anfitrión. Una repetición nunca simula: solo presenta snapshots grabados.
 func is_authority() -> bool:
-	if game_mode == MatchTypes.GameMode.VS_AI:
-		return true
-	return not NetworkManager.is_guest()
+	match game_mode:
+		MatchTypes.GameMode.VS_AI, MatchTypes.GameMode.SPECTATE:
+			return true
+		MatchTypes.GameMode.REPLAY:
+			return false
+	return not NetworkManager.is_client()
+
+
+## true si el usuario solo mira: espectador local, repetición o espectador
+## online (una partida ONLINE vista desde una sala como espectador).
+func is_watching() -> bool:
+	return MatchTypes.is_watch_mode(game_mode) or (game_mode == MatchTypes.GameMode.ONLINE and NetworkManager.is_spectator())
 
 
 func is_match_running() -> bool:

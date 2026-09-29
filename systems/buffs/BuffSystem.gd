@@ -26,6 +26,16 @@ static func get_buffs(player_id: int) -> Array[BuffData]:
 	return result
 
 
+## Multiplicador de cadencia de las torres del jugador: 1.0 sin mejoras,
+## 1.1 con una, 1.2 con dos… El cooldown de la torre se divide entre esto.
+static func get_tower_fire_rate_multiplier(player_id: int) -> float:
+	var bonus: float = 0.0
+	for buff: BuffData in get_buffs(player_id):
+		if buff.stat == BuffData.Stat.TOWER_FIRE_RATE:
+			bonus += buff.value
+	return 1.0 + bonus
+
+
 ## Intervalo de producción de unidades con los buffs PRODUCTION_INTERVAL
 ## aplicados, nunca por debajo de rules.min_production_interval.
 static func get_production_interval(player_id: int, base_interval: float) -> float:

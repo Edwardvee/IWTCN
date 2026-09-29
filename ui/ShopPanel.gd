@@ -13,6 +13,9 @@ var local_input: LocalInputController = null
 
 var _card_views: Array[CardView] = []
 var _drag_preview: Label = null
+## Carta que el jugador soltó por última vez (para sacudirla si se rechaza).
+var _last_played_view: CardView = null
+var _reroll_cost: int = 0
 
 @onready var _card_row: HBoxContainer = %CardRow
 @onready var _reroll_button: Button = %RerollButton
@@ -38,6 +41,7 @@ func _ready() -> void:
 	EventBus.estructura_fusionada.connect(func(pid: int, _a: int, _b: int, _l: int) -> void: _on_estructura_cambiada(pid))
 	EventBus.estructura_vendida.connect(func(pid: int, _s: int, _g: int) -> void: _on_estructura_cambiada(pid))
 	EventBus.coste_reroll_actualizado.connect(_on_coste_reroll_actualizado)
+	EventBus.comando_rechazado.connect(_on_comando_rechazado)
 
 
 ## Main llama a esto al conectar la escena.
@@ -68,8 +72,9 @@ func _refresh_affordability() -> void:
 	var gold: int = EconomyManager.get_gold(GameManager.local_player_id)
 	for view: CardView in _card_views:
 		if view.card != null:
-			view.refresh_cost()
-			view.set_affordable(gold >= EconomyManager.get_card_cost(GameManager.local_player_id, view.card))
+			var cost: int = EconomyManager.get_card_cost(GameManager.local_player_id, view.card)
+			view.set_affordable(gold >= cost, maxi(0, cost - gold))
+	_reroll_button.modulate = Color.WHITE if gold >= _reroll_cost else Color(1.0, 1.0, 1.0, 0.5)
 
 
 # --- Arrastre --------------------------------------------------------------------
@@ -96,6 +101,7 @@ func _on_card_drag_released(view: CardView, screen_position: Vector2) -> void:
 		return
 	_drag_preview.visible = false
 	var cancelled: bool = get_global_rect().has_point(screen_position)
+	_last_played_view = null if cancelled else view
 	local_input.end_card_drag(view.offer_index, view.card, screen_position, cancelled)
 	card_drag_finished.emit()
 
@@ -142,4 +148,19 @@ func _on_estructura_cambiada(player_id: int) -> void:
 
 func _on_coste_reroll_actualizado(player_id: int, coste: int) -> void:
 	if player_id == GameManager.local_player_id:
+		_reroll_cost = coste
 		_reroll_button.text = "Reroll ● %d" % coste
+		_refresh_affordability()
+
+
+func _on_comando_rechazado(player_id: int, tipo_comando: StringName, _motivo: String) -> void:
+	if player_id != GameManager.local_player_id:
+		return
+	if tipo_comando == &"play_card" and _last_played_view != null and _last_played_view.card != null:
+		_last_played_view.play_reject()
+		_last_played_view = null
+	elif tipo_comando == &"reroll_shop":
+		var tween: Tween = create_tween()
+		var base_x: float = _reroll_button.position.x
+		for offset: float in [-10.0, 10.0, -6.0, 6.0, 0.0]:
+			tween.tween_property(_reroll_button, "position:x", base_x + offset, 0.04)

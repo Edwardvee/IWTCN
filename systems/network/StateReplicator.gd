@@ -21,6 +21,11 @@ func setup(p_lane: LaneManager, p_grids: Array[GridManager]) -> void:
 		grids[grid.player_id] = grid
 
 
+## Olvida lo aplicado antes (reinicio de una repetición).
+func reset() -> void:
+	_grid_signatures.clear()
+
+
 func build_snapshot() -> Dictionary:
 	return {
 		"match": GameManager.match_state.to_dict() if GameManager.match_state != null else {},

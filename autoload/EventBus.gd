@@ -31,6 +31,9 @@ signal estructura_vendida(player_id: int, slot_index: int, oro_devuelto: int)
 signal unidad_desplegada(unidad: CharacterBody2D, team: int)
 signal unidad_eliminada(unidad: CharacterBody2D, team: int)
 signal unidad_convertida(unidad: CharacterBody2D, team_anterior: int, team_nuevo: int)
+## Cambio de vida de una unidad: delta < 0 daño, delta > 0 curación. También
+## se emite en clientes online y repeticiones al aplicar la vida replicada.
+signal unidad_vida_cambiada(unidad: CharacterBody2D, delta: float)
 
 # --- Tienda de cartas ---
 ## Oferta actual de la tienda de un jugador (3 cartas distintas).

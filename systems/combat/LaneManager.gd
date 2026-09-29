@@ -89,6 +89,11 @@ func _ready() -> void:
 	EventBus.partida_iniciada.connect(_on_partida_iniciada)
 
 
+## Radio en el que un proyectil sin blanco busca otro enemigo.
+const PROJECTILE_RETARGET_RANGE: float = 160.0
+## Margen sobre el enemigo más cercano dentro del cual se reparten los blancos.
+const TARGET_SPREAD_DISTANCE: float = 70.0
+
 ## Velocidad de interpolación hacia la posición replicada (clientes online).
 const NETWORK_LERP_SPEED: float = 12.0
 
@@ -119,6 +124,8 @@ func simulate_step(delta: float) -> void:
 func spawn_unit(unit_data: UnitData, team: int, world_position: Vector2) -> UnitBase:
 	if unit_data == null or not MatchTypes.is_valid_player_id(team) or GameManager.match_state == null:
 		push_error("LaneManager.spawn_unit: parámetros inválidos")
+		return null
+	if get_alive_count(team) >= get_unit_cap():
 		return null
 	var unit: UnitBase = UnitBase.new()
 	unit.setup(GameManager.match_state.allocate_entity_id(), team, unit_data, self, UnitStatModifiers.from_barracks(team, unit_data))
@@ -256,6 +263,12 @@ func refresh_team_stats(team: int) -> void:
 			unit.refresh_stats(true)
 
 
+## Tropas vivas máximas por bando (regla max_units_per_team).
+func get_unit_cap() -> int:
+	var rules: GameRules = GameManager.get_rules()
+	return rules.max_units_per_team if rules != null else 80
+
+
 func get_alive_count(team: int) -> int:
 	var count: int = 0
 	for unit: UnitBase in _units:
@@ -264,8 +277,10 @@ func get_alive_count(team: int) -> int:
 	return count
 
 
-## Enemigo vivo más cercano (distancia de borde a borde) dentro de max_range.
-## Desempate determinista: menor unit_id.
+## Enemigo vivo cercano (distancia de borde a borde) dentro de max_range.
+## Entre los que están a menos de TARGET_SPREAD_DISTANCE del más cercano se
+## reparte por unit_id del buscador, para que un ejército no concentre todos
+## los golpes en un único blanco (sobredaño). Determinista.
 func find_nearest_enemy_in_range(seeker: UnitBase, max_range: float) -> UnitBase:
 	var best: UnitBase = null
 	var best_distance: float = INF
@@ -278,7 +293,14 @@ func find_nearest_enemy_in_range(seeker: UnitBase, max_range: float) -> UnitBase
 		if distance < best_distance or (is_equal_approx(distance, best_distance) and candidate.unit_id < best.unit_id):
 			best = candidate
 			best_distance = distance
-	return best
+	if best == null:
+		return null
+	var close_enemies: Array[UnitBase] = []
+	var limit: float = minf(best_distance + TARGET_SPREAD_DISTANCE, max_range)
+	for candidate: UnitBase in _units:
+		if candidate.team != seeker.team and not candidate.is_dead and seeker.edge_distance_to(candidate) <= limit:
+			close_enemies.append(candidate)
+	return close_enemies[seeker.unit_id % close_enemies.size()]
 
 
 ## Enemigo vivo de `team` más cercano a la coordenada `origin_y` (distancia en
@@ -372,10 +394,15 @@ func _simulate_projectiles(delta: float) -> void:
 		else:
 			var target: UnitBase = get_unit(projectile.target_id)
 			if target == null or target.is_dead:
-				# El objetivo murió antes de la llegada: el proyectil se pierde.
-				_projectiles.remove_at(index)
-				projectile.queue_free()
-				continue
+				# El objetivo murió en vuelo: busca otro enemigo cercano y, si no
+				# hay ninguno, el proyectil se pierde. Sin esto, los ejércitos
+				# grandes desperdiciaban casi todas las flechas en un solo blanco.
+				target = find_nearest_enemy_to_y(projectile.team, projectile.global_position.y, PROJECTILE_RETARGET_RANGE)
+				if target == null:
+					_projectiles.remove_at(index)
+					projectile.queue_free()
+					continue
+				projectile.target_id = target.unit_id
 			destination = target.global_position
 		if projectile.simulate_towards(destination, delta):
 			_pending_hits.append(PendingHit.new(projectile.source_id, projectile.target_id, projectile.damage, projectile.target_castle_owner))
@@ -540,14 +567,17 @@ func apply_snapshot(data: Dictionary) -> void:
 		var network_pos: Vector2 = unit_data_dict.get("position", Vector2.ZERO)
 		seen_units[unit_id] = true
 		var unit: UnitBase = get_unit(unit_id)
+		var announce_health: bool = false
 		if unit == null:
 			unit = _create_replicated_unit(unit_id, team, StringName(str(unit_data_dict.get("unit_type", ""))), network_pos)
 			if unit == null:
 				continue
-		elif unit.team != team:
-			convert_unit(unit, team)
+		else:
+			announce_health = true
+			if unit.team != team:
+				convert_unit(unit, team)
 		unit.network_position = network_pos
-		unit.apply_network_health(float(unit_data_dict.get("hp", unit.current_hp)), float(unit_data_dict.get("max_hp", unit.max_hp)))
+		unit.apply_network_health(float(unit_data_dict.get("hp", unit.current_hp)), float(unit_data_dict.get("max_hp", unit.max_hp)), announce_health)
 	var index: int = 0
 	while index < _units.size():
 		var existing: UnitBase = _units[index]

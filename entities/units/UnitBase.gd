@@ -224,6 +224,7 @@ func receive_heal(amount: float, _source_id: int) -> float:
 		return 0.0
 	current_hp += applied
 	health_changed.emit(current_hp, max_hp)
+	EventBus.unidad_vida_cambiada.emit(self, applied)
 	queue_redraw()
 	_play_heal_feedback()
 	return applied
@@ -276,6 +277,7 @@ func receive_damage(incoming: float, _source_id: int) -> float:
 	var applied: float = minf(calculate_damage_taken(incoming), current_hp)
 	current_hp -= applied
 	health_changed.emit(current_hp, max_hp)
+	EventBus.unidad_vida_cambiada.emit(self, -applied)
 	queue_redraw()
 	if current_hp <= 0.0:
 		die()
@@ -298,12 +300,17 @@ func is_ready_to_free() -> bool:
 
 
 ## Solo clientes online: aplica la vida replicada por el servidor.
-func apply_network_health(hp: float, network_max_hp: float) -> void:
+## announce: emite el cambio de vida (números flotantes); una unidad recién
+## creada por el snapshot no lo anuncia.
+func apply_network_health(hp: float, network_max_hp: float, announce: bool = true) -> void:
 	if is_equal_approx(hp, current_hp) and is_equal_approx(network_max_hp, max_hp):
 		return
+	var delta_hp: float = hp - current_hp
 	current_hp = hp
 	max_hp = maxf(1.0, network_max_hp)
 	queue_redraw()
+	if announce and not is_zero_approx(delta_hp):
+		EventBus.unidad_vida_cambiada.emit(self, delta_hp)
 
 
 func get_hp_ratio() -> float:

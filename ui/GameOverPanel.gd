@@ -5,6 +5,9 @@ extends PanelContainer
 
 var _title: Label = null
 var _subtitle: Label = null
+var _restart_button: Button = null
+var _replay_button: Button = null
+var _menu_button: Button = null
 
 
 func _ready() -> void:
@@ -19,15 +22,24 @@ func _ready() -> void:
 	add_child(layout)
 	_title = _make_label(110, layout)
 	_subtitle = _make_label(40, layout)
-	var restart: Button = Button.new()
-	restart.text = "Jugar de nuevo"
-	restart.custom_minimum_size = Vector2(520.0, 130.0)
-	restart.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	restart.add_theme_font_size_override("font_size", 48)
-	restart.pressed.connect(_on_restart_pressed)
-	layout.add_child(restart)
+	_restart_button = _make_button("Jugar de nuevo", layout)
+	_restart_button.pressed.connect(_on_restart_pressed)
+	_replay_button = _make_button("Ver repetición", layout)
+	_replay_button.pressed.connect(_on_replay_pressed)
+	_menu_button = _make_button("Menú", layout)
+	_menu_button.pressed.connect(_on_menu_pressed)
 	EventBus.partida_terminada.connect(_on_partida_terminada)
 	EventBus.partida_iniciada.connect(_on_partida_iniciada)
+
+
+func _make_button(text: String, parent: Control) -> Button:
+	var button: Button = Button.new()
+	button.text = text
+	button.custom_minimum_size = Vector2(520.0, 130.0)
+	button.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	button.add_theme_font_size_override("font_size", 48)
+	parent.add_child(button)
+	return button
 
 
 func _make_label(font_size: int, parent: Control) -> Label:
@@ -41,6 +53,17 @@ func _make_label(font_size: int, parent: Control) -> Label:
 
 
 func _on_partida_terminada(ganador_player_id: int) -> void:
+	var mode: MatchTypes.GameMode = GameManager.game_mode
+	var online_spectator: bool = mode == MatchTypes.GameMode.ONLINE and GameManager.is_watching()
+	_restart_button.text = "Repetir" if mode == MatchTypes.GameMode.REPLAY else ("Nueva partida" if mode == MatchTypes.GameMode.SPECTATE else "Jugar de nuevo")
+	# El espectador online solo puede salir; el invitado no graba.
+	_restart_button.visible = not online_spectator
+	_replay_button.visible = mode != MatchTypes.GameMode.REPLAY and GameManager.is_authority()
+	_menu_button.visible = mode != MatchTypes.GameMode.ONLINE or online_spectator
+	if GameManager.is_watching():
+		_show_watch_result(ganador_player_id)
+		visible = true
+		return
 	if ganador_player_id == MatchTypes.NO_PLAYER:
 		_title.text = "EMPATE"
 		_title.add_theme_color_override("font_color", Color(0.9, 0.9, 0.9))
@@ -56,6 +79,23 @@ func _on_partida_terminada(ganador_player_id: int) -> void:
 	visible = true
 
 
+## Espectador/repetición: no hay "tu castillo", se nombra el bando ganador.
+func _show_watch_result(ganador_player_id: int) -> void:
+	match ganador_player_id:
+		MatchTypes.PLAYER_BOTTOM:
+			_title.text = "GANA ABAJO"
+			_title.add_theme_color_override("font_color", MatchTypes.team_color(MatchTypes.PLAYER_BOTTOM))
+			_subtitle.text = "El castillo de arriba ha caído"
+		MatchTypes.PLAYER_TOP:
+			_title.text = "GANA ARRIBA"
+			_title.add_theme_color_override("font_color", MatchTypes.team_color(MatchTypes.PLAYER_TOP))
+			_subtitle.text = "El castillo de abajo ha caído"
+		_:
+			_title.text = "EMPATE"
+			_title.add_theme_color_override("font_color", Color(0.9, 0.9, 0.9))
+			_subtitle.text = "Ambos castillos han caído"
+
+
 func _on_partida_iniciada(_modo: int, _semilla: int) -> void:
 	visible = false
 
@@ -63,9 +103,26 @@ func _on_partida_iniciada(_modo: int, _semilla: int) -> void:
 ## VS AI: se recarga la escena y Main arranca una partida nueva.
 ## Online: se cierra la conexión y se vuelve al menú.
 func _on_restart_pressed() -> void:
-	if GameManager.game_mode == MatchTypes.GameMode.ONLINE:
+	var mode: MatchTypes.GameMode = GameManager.game_mode
+	if mode == MatchTypes.GameMode.ONLINE:
 		NetworkManager.close()
 		get_tree().change_scene_to_file(NetworkManager.MENU_SCENE)
 		return
-	GameManager.configure_next_match(MatchTypes.GameMode.VS_AI, 0, MatchTypes.PLAYER_BOTTOM)
+	# VS IA y espectador empiezan otra partida; una repetición se vuelve a ver.
+	GameManager.configure_next_match(mode, 0, MatchTypes.PLAYER_BOTTOM)
 	get_tree().reload_current_scene()
+
+
+func _on_replay_pressed() -> void:
+	var data: ReplayData = ReplayData.load_from(GameManager.last_replay_path) if GameManager.last_replay_path != "" else null
+	if data == null:
+		_subtitle.text = "No hay repetición guardada"
+		return
+	GameManager.pending_replay = data
+	GameManager.configure_next_match(MatchTypes.GameMode.REPLAY, data.get_seed(), MatchTypes.PLAYER_BOTTOM)
+	get_tree().reload_current_scene()
+
+
+func _on_menu_pressed() -> void:
+	NetworkManager.close()
+	get_tree().change_scene_to_file(NetworkManager.MENU_SCENE)

@@ -108,15 +108,28 @@ func begin_card_drag(card: CardData) -> void:
 	_is_pressed = false
 	set_hammer_mode(false)
 	queue_redraw()
+	_refresh_build_hints()
 
 
-## Resalta el slot donde se construiría la estructura arrastrada.
+## Resalta el slot donde se construiría la estructura arrastrada: verde si es
+## un destino válido y asequible, rojo si el slot bajo el puntero no lo es.
 func update_card_drag(screen_position: Vector2) -> void:
 	if _dragged_card == null or _dragged_card.card_type != CardData.CardType.STRUCTURE:
 		return
 	var grid: GridManager = _get_local_grid()
-	if grid != null:
-		select_slot(grid.player_id, grid.resolve_drop_slot(screen_to_world(screen_position)))
+	if grid == null:
+		return
+	var world_position: Vector2 = screen_to_world(screen_position)
+	var drop_slot: int = grid.resolve_drop_slot(world_position)
+	select_slot(grid.player_id, drop_slot)
+	_refresh_build_hints()
+	if drop_slot >= 0:
+		grid.set_hover_hint(drop_slot, _can_afford_dragged_card())
+	else:
+		var hovered: int = grid.get_slot_index_at(world_position)
+		if hovered >= 0:
+			select_slot(grid.player_id, hovered)
+			grid.set_hover_hint(hovered, false)
 
 
 ## Termina el arrastre. Si no se canceló, envía el PlayCardCommand
@@ -126,6 +139,7 @@ func end_card_drag(offer_index: int, card: CardData, screen_position: Vector2, c
 	input_blocked = false
 	queue_redraw()
 	select_slot(MatchTypes.NO_PLAYER, -1)
+	_clear_build_hints()
 	if cancelled or card == null:
 		return
 	play_card_at(offer_index, card, screen_to_world(screen_position))
@@ -150,6 +164,22 @@ func _draw() -> void:
 
 
 # --- Interno -------------------------------------------------------------------
+
+func _can_afford_dragged_card() -> bool:
+	return _dragged_card != null and EconomyManager.has_gold(GameManager.local_player_id, EconomyManager.get_card_cost(GameManager.local_player_id, _dragged_card))
+
+
+func _refresh_build_hints() -> void:
+	var grid: GridManager = _get_local_grid()
+	if grid == null or _dragged_card == null or _dragged_card.card_type != CardData.CardType.STRUCTURE:
+		return
+	grid.show_build_hints(_dragged_card.structure, _can_afford_dragged_card())
+
+
+func _clear_build_hints() -> void:
+	for grid: GridManager in _grids:
+		grid.clear_build_hints()
+
 
 func _get_local_grid() -> GridManager:
 	for grid: GridManager in _grids:

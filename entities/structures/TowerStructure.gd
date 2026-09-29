@@ -19,7 +19,7 @@ func simulate(delta: float) -> void:
 	if target == null:
 		return
 	lane.spawn_projectile(building_id, owner_id, global_position, target.unit_id, data.get_tower_damage(level), data.tower_projectile_speed)
-	cooldown_left = data.get_tower_cooldown(level)
+	cooldown_left = data.get_tower_cooldown(level) / BuffSystem.get_tower_fire_rate_multiplier(owner_id)
 
 
 func to_dict() -> Dictionary:

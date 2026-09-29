@@ -118,6 +118,41 @@ func test_production_buff_does_not_affect_farms() -> void:
 	assert_eq(grid0.get_structure_at(16).get_production_interval(), 8.0, "la granja sigue en 8 s")
 
 
+func test_tower_fire_rate_buff_stacks_and_is_per_player() -> void:
+	assert_eq(BuffSystem.get_tower_fire_rate_multiplier(0), 1.0, "sin mejoras: cadencia normal")
+	_buff(&"buff_tower_fire_rate")
+	assert_true(is_equal_approx(BuffSystem.get_tower_fire_rate_multiplier(0), 1.1), "una mejora: +10%")
+	_buff(&"buff_tower_fire_rate")
+	assert_true(is_equal_approx(BuffSystem.get_tower_fire_rate_multiplier(0), 1.2), "dos mejoras: +20% (se suma)")
+	assert_eq(BuffSystem.get_tower_fire_rate_multiplier(1), 1.0, "el rival no se beneficia")
+
+
+func test_tower_fire_rate_buff_shortens_cooldown() -> void:
+	GameManager.submit_command(BuildCommand.new(0, &"card_tower", 16, GameCommand.Source.DEBUG))
+	var tower: TowerStructure = grid0.get_structure_at(16) as TowerStructure
+	assert_true(tower != null, "torre construida")
+	if tower == null:
+		return
+	_spawn(soldier, 1)
+	lane.get_alive_units()[0].global_position = tower.global_position + Vector2(0.0, -300.0)
+	tower.simulate(0.0)
+	assert_true(is_equal_approx(tower.cooldown_left, 1.0), "Lv1 sin mejora: 1.0 s (%.3f)" % tower.cooldown_left)
+	tower.cooldown_left = 0.0
+	_buff(&"buff_tower_fire_rate")
+	tower.simulate(0.0)
+	assert_true(is_equal_approx(tower.cooldown_left, 1.0 / 1.1), "con una mejora: 1.0 / 1.1 (%.3f)" % tower.cooldown_left)
+
+
+func test_tower_buff_card_needs_a_tower() -> void:
+	var card: CardData = GameManager.database.get_card(&"card_buff_tower_fire_rate")
+	assert_true(card != null, "la carta existe")
+	if card == null:
+		return
+	assert_false(draft.is_card_available(0, card), "sin torre no se ofrece")
+	GameManager.submit_command(BuildCommand.new(0, &"card_tower", 16, GameCommand.Source.DEBUG))
+	assert_true(draft.is_card_available(0, card), "con una torre sí")
+
+
 func test_play_buff_card_anywhere() -> void:
 	var existing: UnitBase = _spawn(soldier)
 	draft.force_offer(0, [&"card_buff_move_speed", &"card_farm", &"card_tower"] as Array[StringName])

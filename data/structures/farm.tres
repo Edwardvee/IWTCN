@@ -6,7 +6,7 @@
 script = ExtResource("1_txnab")
 id = &"farm"
 display_name = "Farm"
-income_per_level = PackedInt32Array(25, 40, 60, 80, 100)
+income_per_level = PackedInt32Array(12, 20, 30, 40, 50)
 spawn_count_per_level = PackedInt32Array()
 spawn_interval_per_level = PackedFloat32Array()
 tower_range_per_level = PackedFloat32Array()

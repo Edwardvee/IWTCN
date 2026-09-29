@@ -47,6 +47,20 @@ layout_mode = 2
 theme_override_font_sizes/font_size = 48
 text = "Jugar contra la IA"
 
+[node name="Spectate" type="Button" parent="Center/Layout"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 110)
+layout_mode = 2
+theme_override_font_sizes/font_size = 44
+text = "Modo espectador (IA vs IA)"
+
+[node name="Replays" type="Button" parent="Center/Layout"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 110)
+layout_mode = 2
+theme_override_font_sizes/font_size = 44
+text = "Repeticiones"
+
 [node name="Host" type="Button" parent="Center/Layout"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 130)
@@ -73,6 +87,13 @@ custom_minimum_size = Vector2(260, 110)
 layout_mode = 2
 theme_override_font_sizes/font_size = 44
 text = "Unirse"
+
+[node name="Watch" type="Button" parent="Center/Layout"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 110)
+layout_mode = 2
+theme_override_font_sizes/font_size = 44
+text = "Ver sala como espectador"
 
 [node name="LocalIP" type="Label" parent="Center/Layout"]
 unique_name_in_owner = true

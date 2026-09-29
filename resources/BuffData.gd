@@ -6,7 +6,9 @@ extends Resource
 ## código si se añade un Stat nuevo al enum.
 ## PERCENT usa fracciones: 0.15 = +15 %. FLAT suma el valor tal cual.
 
-enum Stat { MOVE_SPEED, MAX_HP, DAMAGE_MITIGATION, DAMAGE, PRODUCTION_INTERVAL }
+## TOWER_FIRE_RATE: PERCENT, +0.10 = las torres disparan un 10 % más rápido
+## (se suma por cada copia comprada). No afecta a las unidades.
+enum Stat { MOVE_SPEED, MAX_HP, DAMAGE_MITIGATION, DAMAGE, PRODUCTION_INTERVAL, TOWER_FIRE_RATE }
 enum Operation { PERCENT, FLAT }
 
 @export var id: StringName = &""
@@ -14,7 +16,7 @@ enum Operation { PERCENT, FLAT }
 @export var stat: Stat = Stat.MOVE_SPEED
 @export var operation: Operation = Operation.PERCENT
 @export var value: float = 0.0
-## Unidades afectadas por id. Vacío = todas. Ignorado en PRODUCTION_INTERVAL.
+## Unidades afectadas por id. Vacío = todas. Ignorado en PRODUCTION_INTERVAL y TOWER_FIRE_RATE.
 @export var target_unit_ids: Array[StringName] = []
 
 

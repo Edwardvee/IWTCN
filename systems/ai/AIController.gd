@@ -45,7 +45,7 @@ func _physics_process(delta: float) -> void:
 func simulate_step(delta: float) -> void:
 	if not enabled or delta <= 0.0 or not GameManager.is_authority() or not GameManager.is_match_running():
 		return
-	if GameManager.game_mode != MatchTypes.GameMode.VS_AI:
+	if GameManager.game_mode != MatchTypes.GameMode.VS_AI and GameManager.game_mode != MatchTypes.GameMode.SPECTATE:
 		return
 	_think_timer += delta
 	if _think_timer >= think_interval:

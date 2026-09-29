@@ -1,11 +1,16 @@
 // Relay de salas para I Want That Castle Now!
-// Ruta: wss://<worker>/room/<CODIGO>?role=host|guest
-// Una sala = un Durable Object con como mucho 1 anfitrión y 1 invitado.
-// Los mensajes binarios se reenvían tal cual al otro extremo (el relay no
-// entiende el juego). Los mensajes de texto son avisos del relay al cliente:
+// Ruta: wss://<worker>/room/<CODIGO>?role=host|guest|spectator
+// Una sala = un Durable Object con 1 anfitrión, 1 invitado y hasta
+// MAX_SPECTATORS espectadores (solo miran).
+// Los mensajes binarios del anfitrión se reenvían al invitado y a todos los
+// espectadores; los del invitado, al anfitrión; los de un espectador se
+// descartan (no pueden actuar). El relay no entiende el juego.
+// Los mensajes de texto son avisos del relay al cliente:
 //   {"t":"guest_joined"} {"t":"guest_left"} {"t":"host_left"}
+//   {"t":"spectator_joined"} {"t":"spectator_left"}  (al anfitrión)
 
 const CODE_RE = /^[A-Z0-9]{4,8}$/;
+const MAX_SPECTATORS = 8;
 
 export default {
   async fetch(request, env) {
@@ -37,7 +42,7 @@ export class Room {
 
   async fetch(request) {
     const role = new URL(request.url).searchParams.get("role");
-    if (role !== "host" && role !== "guest") {
+    if (role !== "host" && role !== "guest" && role !== "spectator") {
       return new Response("role inválido", { status: 400 });
     }
     const pair = new WebSocketPair();
@@ -45,6 +50,11 @@ export class Room {
 
     if (role === "host") {
       if (this.peer("host")) return this.reject(client, server, 4409, "Ese código ya está en uso");
+    } else if (role === "spectator") {
+      if (!this.peer("host")) return this.reject(client, server, 4404, "La sala no existe");
+      if (this.state.getWebSockets("spectator").length >= MAX_SPECTATORS) {
+        return this.reject(client, server, 4429, "La sala tiene demasiados espectadores");
+      }
     } else {
       if (!this.peer("host")) return this.reject(client, server, 4404, "La sala no existe");
       const old = this.peer("guest");
@@ -56,6 +66,7 @@ export class Room {
 
     this.state.acceptWebSocket(server, [role]);
     if (role === "guest") this.notify(this.peer("host"), "guest_joined");
+    if (role === "spectator") this.notify(this.peer("host"), "spectator_joined");
     return new Response(null, { status: 101, webSocket: client });
   }
 
@@ -74,8 +85,12 @@ export class Room {
   webSocketMessage(ws, message) {
     if (typeof message === "string") return; // ping de mantenimiento del cliente
     const role = this.state.getTags(ws)[0];
-    const target = this.peer(role === "host" ? "guest" : "host");
-    if (target) {
+    if (role === "spectator") return; // los espectadores no pueden enviar nada
+    const targets = role === "host"
+      ? [this.peer("guest"), ...this.state.getWebSockets("spectator")]
+      : [this.peer("host")];
+    for (const target of targets) {
+      if (!target) continue;
       try { target.send(message); } catch (_) {}
     }
   }
@@ -92,9 +107,12 @@ export class Room {
   onGone(ws) {
     const role = this.state.getTags(ws)[0];
     if (role === "host") {
-      const guest = this.peer("guest");
-      this.notify(guest, "host_left");
-      if (guest) try { guest.close(4000, "El anfitrión se fue"); } catch (_) {}
+      for (const viewer of [this.peer("guest"), ...this.state.getWebSockets("spectator")]) {
+        this.notify(viewer, "host_left");
+        if (viewer) try { viewer.close(4000, "El anfitrión se fue"); } catch (_) {}
+      }
+    } else if (role === "spectator") {
+      this.notify(this.peer("host"), "spectator_left");
     } else if (role === "guest") {
       // Solo avisa si no es el guest que acaba de ser sustituido.
       if (!this.peer("guest") || this.peer("guest") === ws) {

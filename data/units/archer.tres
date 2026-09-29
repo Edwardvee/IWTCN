@@ -8,6 +8,7 @@ id = &"archer"
 display_name = "Archer"
 role = 1
 max_hp = 110.0
+move_speed = 60.0
 attack_range = 280.0
 attack_cooldown = 0.9
 damage = 42.0

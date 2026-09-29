@@ -22,6 +22,8 @@ const SLOTS_PER_PLOT: int = 4
 ## Cuánto baja el coste del reroll cada `reroll_decay_interval` segundos (nunca por debajo de reroll_base_cost).
 @export var reroll_decay_amount: int = 1
 @export var reroll_decay_interval: float = 10.0
+## La primera oferta de cada jugador incluye siempre una carta de Farm.
+@export var guarantee_starting_farm: bool = true
 
 @export_group("Selling")
 ## Fracción del oro invertido que se devuelve al vender (0.5 = la mitad).
@@ -38,6 +40,12 @@ const SLOTS_PER_PLOT: int = 4
 @export var plot_costs: PackedInt32Array = PackedInt32Array([40, 30, 20, 50, 0, 10])
 ## Plots desbloqueados al empezar, sin coste.
 @export var initial_unlocked_plots: PackedInt32Array = PackedInt32Array([4])
+
+@export_group("Army")
+## Tropas vivas máximas por bando. Con más, los cuarteles dejan de producir y
+## las cartas de unidades se rechazan: acota el caos del carril y el coste
+## de simulación (cada unidad busca objetivos entre todas las demás).
+@export var max_units_per_team: int = 80
 
 @export_group("Structures")
 @export_range(1, 10) var max_structure_level: int = 5
@@ -78,6 +86,8 @@ func get_validation_errors() -> PackedStringArray:
 		errors.append("GameRules: costes de reroll negativos")
 	if reroll_decay_interval <= 0.0:
 		errors.append("GameRules: reroll_decay_interval debe ser > 0")
+	if max_units_per_team < 1:
+		errors.append("GameRules: max_units_per_team debe ser >= 1")
 	if plot_costs.size() != PLOT_COUNT:
 		errors.append("GameRules: plot_costs tiene %d valores, se esperaban %d" % [plot_costs.size(), PLOT_COUNT])
 	for cost: int in plot_costs:

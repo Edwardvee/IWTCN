@@ -54,6 +54,8 @@ func validate(processor: CommandProcessor) -> String:
 				return "Carril no encontrado"
 			if not lane.is_valid_deploy_position(player_id, deploy_position):
 				return "Suelta las unidades en tu mitad del carril"
+			if lane.get_alive_count(player_id) + card.unit_count > lane.get_unit_cap():
+				return "Límite de tropas alcanzado (%d)" % lane.get_unit_cap()
 			return ""
 		CardData.CardType.GLOBAL_BUFF:
 			return "" if card.buff != null else "Mejora sin datos"

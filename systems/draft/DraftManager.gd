@@ -89,7 +89,8 @@ func get_available_cards(player_id: int) -> Array[CardData]:
 # --- Mutaciones (comandos y tick) ------------------------------------------------
 
 ## Genera una oferta nueva con el stream de tienda del jugador.
-func refresh_offer(player_id: int) -> void:
+## with_farm: una de las cartas es siempre una Farm (oferta inicial).
+func refresh_offer(player_id: int, with_farm: bool = false) -> void:
 	var shop: ShopState = _get_shop(player_id)
 	var rules: GameRules = GameManager.get_rules()
 	if shop == null or rules == null:
@@ -97,10 +98,17 @@ func refresh_offer(player_id: int) -> void:
 	var rng: RandomNumberGenerator = GameManager.match_state.random.get_stream(MatchRandom.STREAM_SHOP, player_id)
 	var candidates: Array[CardData] = get_available_cards(player_id)
 	var offer: Array[StringName] = []
-	while offer.size() < rules.shop_offer_size and not candidates.is_empty():
+	var farm_id: StringName = _find_farm_card_id(candidates) if with_farm else &""
+	if farm_id != &"":
+		var farm_index: int = candidates.find_custom(func(card: CardData) -> bool: return card.id == farm_id)
+		candidates.remove_at(farm_index)
+	var others_wanted: int = rules.shop_offer_size - (1 if farm_id != &"" else 0)
+	while offer.size() < others_wanted and not candidates.is_empty():
 		var picked: int = _pick_weighted_index(candidates, rng)
 		offer.append(candidates[picked].id)
 		candidates.remove_at(picked)
+	if farm_id != &"":
+		offer.insert(rng.randi_range(0, offer.size()), farm_id)
 	shop.offer = offer
 	EventBus.draft_ofrecido.emit(player_id, get_offer(player_id))
 
@@ -142,6 +150,13 @@ func _get_shop(player_id: int) -> ShopState:
 	return player_state.shop if player_state != null else null
 
 
+func _find_farm_card_id(candidates: Array[CardData]) -> StringName:
+	for card: CardData in candidates:
+		if card.card_type == CardData.CardType.STRUCTURE and card.structure != null and card.structure.kind == StructureData.Kind.FARM:
+			return card.id
+	return &""
+
+
 ## Índice elegido con probabilidad proporcional a shop_weight. El orden de
 ## candidatos es el de la base de datos, así que el resultado es determinista.
 func _pick_weighted_index(candidates: Array[CardData], rng: RandomNumberGenerator) -> int:
@@ -176,6 +191,8 @@ func _decay_reroll_cost(player_state: PlayerState, rules: GameRules, delta: floa
 func _on_partida_iniciada(_modo: int, _semilla: int) -> void:
 	if not GameManager.is_authority() or GameManager.match_state == null:
 		return
+	var rules: GameRules = GameManager.get_rules()
+	var with_farm: bool = rules != null and rules.guarantee_starting_farm
 	for player_state: PlayerState in GameManager.match_state.players:
 		EventBus.coste_reroll_actualizado.emit(player_state.player_id, player_state.shop.reroll_cost)
-		refresh_offer(player_state.player_id)
+		refresh_offer(player_state.player_id, with_farm)

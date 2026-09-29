@@ -15,6 +15,7 @@ var _label: Label = null
 
 
 func _ready() -> void:
+	add_to_group(&"castle")
 	_label = Label.new()
 	_label.position = -body_size * 0.5
 	_label.size = body_size

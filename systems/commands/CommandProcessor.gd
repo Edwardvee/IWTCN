@@ -69,10 +69,15 @@ func _check_permissions(command: GameCommand) -> String:
 		return "Jugador inválido"
 	match command.source:
 		GameCommand.Source.LOCAL_PLAYER:
+			if GameManager.is_watching():
+				return "Modo espectador: no puedes actuar"
 			if command.player_id != GameManager.local_player_id:
 				return "No puedes actuar por otro jugador"
 		GameCommand.Source.AI:
-			if GameManager.game_mode != MatchTypes.GameMode.VS_AI or command.player_id == GameManager.local_player_id:
+			var mode: MatchTypes.GameMode = GameManager.game_mode
+			if mode == MatchTypes.GameMode.SPECTATE:
+				pass
+			elif mode != MatchTypes.GameMode.VS_AI or command.player_id == GameManager.local_player_id:
 				return "La IA solo controla al rival en VS AI"
 		GameCommand.Source.DEBUG:
 			if not OS.is_debug_build():

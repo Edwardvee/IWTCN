@@ -18,6 +18,7 @@ const SUITE_PATHS: PackedStringArray = [
 	"res://tests/suites/TestAI.gd",
 	"res://tests/suites/TestNetwork.gd",
 	"res://tests/suites/TestView.gd",
+	"res://tests/suites/TestReplay.gd",
 ]
 
 
@@ -26,6 +27,9 @@ func _ready() -> void:
 
 
 func _run_all() -> void:
+	# Los tests asumen una economía inicial fija; el valor real de balance vive
+	# en data/game_rules.tres y se ajusta sin tocar los tests.
+	TestBalance.apply()
 	var total: int = 0
 	var failed: int = 0
 	for suite_path: String in SUITE_PATHS:

@@ -1,5 +1,6 @@
 extends Control
-## Menú principal: VS IA, crear sala online (código) o unirse con un código.
+## Menú principal: VS IA, espectador (IA vs IA), repeticiones, crear sala
+## online (código) o unirse con un código.
 ## Solo configura y navega; la partida la arranca Main.
 
 const MAIN_SCENE: String = "res://scenes/Main.tscn"
@@ -10,16 +11,96 @@ const MAIN_SCENE: String = "res://scenes/Main.tscn"
 
 func _ready() -> void:
 	%PlayAI.pressed.connect(_on_play_ai_pressed)
+	%Spectate.pressed.connect(_on_spectate_pressed)
+	%Replays.pressed.connect(_on_replays_pressed)
 	%Host.pressed.connect(_on_host_pressed)
 	%Join.pressed.connect(_on_join_pressed)
+	%Watch.pressed.connect(_on_watch_pressed)
 	_code.text_changed.connect(_on_code_changed)
 	NetworkManager.status_changed.connect(_on_status_changed)
-	%LocalIP.text = "Online: el anfitrión crea una sala y comparte el código"
+	%LocalIP.text = "Online: el anfitrión crea una sala y comparte el código.\nCon el código también puedes verla como espectador."
 
 
 func _on_play_ai_pressed() -> void:
 	NetworkManager.close()
 	GameManager.configure_next_match(MatchTypes.GameMode.VS_AI, 0, MatchTypes.PLAYER_BOTTOM)
+	get_tree().change_scene_to_file(MAIN_SCENE)
+
+
+func _on_spectate_pressed() -> void:
+	NetworkManager.close()
+	GameManager.configure_next_match(MatchTypes.GameMode.SPECTATE, 0, MatchTypes.PLAYER_BOTTOM)
+	get_tree().change_scene_to_file(MAIN_SCENE)
+
+
+## Lista de repeticiones guardadas en una capa por encima del menú.
+func _on_replays_pressed() -> void:
+	var overlay: ColorRect = ColorRect.new()
+	overlay.color = Color(0.0, 0.0, 0.0, 0.85)
+	overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
+	add_child(overlay)
+	var center: CenterContainer = CenterContainer.new()
+	center.set_anchors_preset(Control.PRESET_FULL_RECT)
+	overlay.add_child(center)
+	var layout: VBoxContainer = VBoxContainer.new()
+	layout.custom_minimum_size = Vector2(860.0, 0.0)
+	layout.add_theme_constant_override("separation", 20)
+	center.add_child(layout)
+	var title: Label = Label.new()
+	title.text = "Repeticiones"
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.add_theme_font_size_override("font_size", 60)
+	layout.add_child(title)
+	var replays: Array[Dictionary] = ReplayData.list_replays()
+	if replays.is_empty():
+		var empty: Label = Label.new()
+		empty.text = "Aún no hay partidas grabadas.
+Juega una partida y aparecerá aquí."
+		empty.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		empty.add_theme_font_size_override("font_size", 34)
+		layout.add_child(empty)
+	for replay_meta: Dictionary in replays.slice(0, 8):
+		var button: Button = Button.new()
+		button.text = describe_replay(replay_meta)
+		button.custom_minimum_size = Vector2(0.0, 110.0)
+		button.add_theme_font_size_override("font_size", 32)
+		button.pressed.connect(_on_replay_chosen.bind(str(replay_meta["path"])))
+		layout.add_child(button)
+	var close: Button = Button.new()
+	close.text = "Cerrar"
+	close.custom_minimum_size = Vector2(0.0, 110.0)
+	close.add_theme_font_size_override("font_size", 40)
+	close.pressed.connect(overlay.queue_free)
+	layout.add_child(close)
+
+
+static func describe_replay(replay_meta: Dictionary) -> String:
+	var winner: int = int(replay_meta.get("winner", MatchTypes.NO_PLAYER))
+	var local_player: int = int(replay_meta.get("local_player", MatchTypes.PLAYER_BOTTOM))
+	var mode: int = int(replay_meta.get("mode", MatchTypes.GameMode.VS_AI))
+	var result: String = "Empate"
+	if mode == MatchTypes.GameMode.SPECTATE:
+		result = "Gana abajo" if winner == MatchTypes.PLAYER_BOTTOM else ("Gana arriba" if winner == MatchTypes.PLAYER_TOP else "Empate")
+	elif winner == local_player:
+		result = "Victoria"
+	elif winner != MatchTypes.NO_PLAYER:
+		result = "Derrota"
+	return "%s · %s · %s · %s" % [
+		str(replay_meta.get("date", "?")).replace("T", " "),
+		MatchTypes.game_mode_name(mode as MatchTypes.GameMode),
+		HUD.format_time(float(replay_meta.get("duration", 0.0))),
+		result,
+	]
+
+
+func _on_replay_chosen(path: String) -> void:
+	var data: ReplayData = ReplayData.load_from(path)
+	if data == null:
+		_status.text = "No se pudo abrir la repetición"
+		return
+	NetworkManager.close()
+	GameManager.pending_replay = data
+	GameManager.configure_next_match(MatchTypes.GameMode.REPLAY, data.get_seed(), MatchTypes.PLAYER_BOTTOM)
 	get_tree().change_scene_to_file(MAIN_SCENE)
 
 
@@ -29,6 +110,11 @@ func _on_host_pressed() -> void:
 
 func _on_join_pressed() -> void:
 	NetworkManager.join(_code.text)
+
+
+## Entra a la sala del código como espectador y mira la partida en directo.
+func _on_watch_pressed() -> void:
+	NetworkManager.spectate(_code.text)
 
 
 func _on_code_changed(text: String) -> void:
