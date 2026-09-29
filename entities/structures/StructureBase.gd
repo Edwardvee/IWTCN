@@ -66,6 +66,23 @@ func simulate(delta: float) -> void:
 	_refresh_progress(production_timer / interval)
 
 
+## Solo clientes online: avanza la barra entre snapshots sin disparar ciclos
+## (los efectos llegan del servidor; el siguiente snapshot corrige la deriva).
+func simulate_visual(delta: float) -> void:
+	var interval: float = get_production_interval()
+	if interval <= 0.0:
+		return
+	set_production_timer(fposmod(production_timer + delta, interval))
+
+
+## Solo clientes online: fija el temporizador replicado por el servidor.
+func set_production_timer(seconds: float) -> void:
+	production_timer = seconds
+	var interval: float = get_production_interval()
+	if interval > 0.0:
+		_refresh_progress(production_timer / interval)
+
+
 ## Segundos entre ciclos de producción. 0 = sin ciclo (la base no produce).
 func get_production_interval() -> float:
 	return 0.0

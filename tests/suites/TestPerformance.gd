@@ -175,3 +175,22 @@ func test_client_keeps_state_when_delta_omits_it() -> void:
 	var client_state: PlayerState = GameManager.get_player_state(0)
 	assert_eq(str(client_state.grid.to_dict()), expected_grid, "la cuadrícula sobrevive al snapshot incremental")
 	assert_eq(client_state.shop.offer, expected_offer, "la tienda sobrevive al snapshot incremental")
+
+
+func test_client_receives_production_progress() -> void:
+	EconomyManager.add_gold(0, 300)
+	GameManager.submit_command(BuildCommand.new(0, &"card_farm", 16, GameCommand.Source.DEBUG))
+	var farm: StructureBase = grid0.get_structure_at(16)
+	for _step: int in 90:
+		farm.simulate(STEP)
+	var server_timer: float = farm.production_timer
+	assert_true(server_timer > 0.0, "la granja lleva progreso en el servidor")
+	var snapshot: Dictionary = replicator.build_delta_snapshot({})
+	# Cliente: sin autoridad, la barra sale del snapshot y avanza sola entre ellos.
+	GameManager.start_match(MatchTypes.GameMode.REPLAY, 606)
+	replicator.reset()
+	replicator.apply_snapshot(snapshot)
+	var client_farm: StructureBase = grid0.get_structure_at(16)
+	assert_true(client_farm != null and absf(client_farm.production_timer - server_timer) < 0.02, "el cliente recibe el temporizador (%s vs %s)" % [client_farm.production_timer if client_farm != null else -1.0, server_timer])
+	client_farm.simulate_visual(0.1)
+	assert_true(client_farm.production_timer > server_timer, "la barra avanza entre snapshots")

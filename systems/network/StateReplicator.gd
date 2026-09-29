@@ -38,6 +38,10 @@ func build_snapshot() -> Dictionary:
 		var player_dict: Dictionary = player_variant
 		player_dict.erase("base_income_timer")
 		(player_dict.get("shop", {}) as Dictionary).erase("reroll_decay_timer")
+		# Barras de progreso de granjas/cuarteles: cambian a cada tick, van fuera de "grid".
+		var grid: GridManager = grids.get(int(player_dict.get("player_id", -1))) as GridManager
+		if grid != null:
+			player_dict["production"] = grid.get_production_timers()
 	return {
 		"match": match_dict,
 		"lane": lane.to_snapshot() if lane != null else {},
@@ -97,15 +101,17 @@ func _apply_player(data: Dictionary) -> void:
 		_apply_shop(player_id, player_state, data["shop"])
 	if data.has("buffs"):
 		_apply_buffs(player_id, player_state, data["buffs"])
-	if not data.has("grid"):
-		return
-	var grid_dict: Dictionary = data["grid"]
-	var signature: String = str(grid_dict)
-	if signature != _grid_signatures.get(player_id, ""):
-		_grid_signatures[player_id] = signature
-		player_state.grid.apply_dict(grid_dict)
-		if grids.has(player_id):
-			grids[player_id].resync_from_state()
+	if data.has("grid"):
+		var grid_dict: Dictionary = data["grid"]
+		var signature: String = str(grid_dict)
+		if signature != _grid_signatures.get(player_id, ""):
+			_grid_signatures[player_id] = signature
+			player_state.grid.apply_dict(grid_dict)
+			if grids.has(player_id):
+				grids[player_id].resync_from_state()
+	# Tras la cuadrícula: resync_from_state recrea las estructuras con el temporizador a 0.
+	if data.has("production") and grids.has(player_id):
+		grids[player_id].apply_production_timers(data["production"])
 
 
 func _apply_shop(player_id: int, player_state: PlayerState, shop_dict: Dictionary) -> void:

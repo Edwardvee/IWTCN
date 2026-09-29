@@ -44,6 +44,27 @@ func _ready() -> void:
 
 func _physics_process(delta: float) -> void:
 	simulate_step(delta)
+	if not GameManager.is_authority() and GameManager.is_match_running():
+		for slot: BuildingSlot in _slots:
+			if slot.structure != null:
+				slot.structure.simulate_visual(delta)
+
+
+## Temporizadores de producción por slot (0 en huecos vacíos o sin ciclo), para
+## replicarlos a los clientes. Redondeados: solo alimentan una barra visual.
+func get_production_timers() -> Array[float]:
+	var timers: Array[float] = []
+	for slot: BuildingSlot in _slots:
+		timers.append(snappedf(slot.structure.production_timer, 0.01) if slot.structure != null else 0.0)
+	return timers
+
+
+## Solo clientes online: aplica los temporizadores recibidos del servidor.
+func apply_production_timers(timers: Array) -> void:
+	for slot_index: int in mini(timers.size(), _slots.size()):
+		var structure: StructureBase = _slots[slot_index].structure
+		if structure != null:
+			structure.set_production_timer(float(timers[slot_index]))
 
 
 ## Simula las estructuras en orden de slot. Solo en la autoridad.

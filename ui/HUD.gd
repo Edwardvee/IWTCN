@@ -156,9 +156,10 @@ func _on_partida_terminada(_ganador_player_id: int) -> void:
 
 
 func _on_comando_rechazado(player_id: int, _tipo_comando: StringName, motivo: String) -> void:
-	# En builds de depuración se muestran también los rechazos del rival.
 	if GameManager.is_watching():
 		return
-	if player_id != GameManager.local_player_id and not OS.is_debug_build():
+	# En builds de depuración se muestran también los rechazos de la IA rival,
+	# pero nunca online: allí el rival es una persona y el aviso no es suyo.
+	if player_id != GameManager.local_player_id and (NetworkManager.is_online() or not OS.is_debug_build()):
 		return
 	show_toast(Reason.text(motivo))
