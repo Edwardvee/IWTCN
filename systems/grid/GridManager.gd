@@ -18,6 +18,9 @@ const SLOT_COLUMNS: int = 2
 const SLOT_ROWS: int = 2
 ## Fracción del slot que ocupa el cuerpo de la estructura (deja ver el borde de selección).
 const STRUCTURE_FILL: float = 0.86
+## Cada cuántos segundos se comprueba que el nivel de cada estructura coincide con
+## el del estado (red de seguridad: ver _reconcile_levels).
+const LEVEL_CHECK_INTERVAL: float = 0.25
 
 @export var player_id: int = MatchTypes.PLAYER_BOTTOM
 @export var grid_size: Vector2 = Vector2(1020.0, 700.0)
@@ -30,6 +33,8 @@ var lane: LaneManager = null
 
 var _plots: Array[Plot] = []
 var _slots: Array[BuildingSlot] = []
+## Segundos hasta la próxima comprobación de niveles (ver _reconcile_levels).
+var _level_check_left: float = 0.0
 
 
 func _ready() -> void:
@@ -44,6 +49,10 @@ func _ready() -> void:
 
 func _physics_process(delta: float) -> void:
 	simulate_step(delta)
+	_level_check_left -= delta
+	if _level_check_left <= 0.0:
+		_level_check_left = LEVEL_CHECK_INTERVAL
+		_reconcile_levels()
 	if not GameManager.is_authority() and GameManager.is_match_running():
 		for slot: BuildingSlot in _slots:
 			if slot.structure != null:
@@ -337,8 +346,26 @@ func _create_structure_for_kind(kind: StructureData.Kind) -> StructureBase:
 func _refresh_levels(structure: StructureData) -> void:
 	var level: int = get_structure_level(structure)
 	for slot: BuildingSlot in _slots:
-		if slot.structure != null and slot.structure.data == structure:
+		if slot.structure != null and slot.structure.data.id == structure.id:
 			slot.structure.set_level(level)
+
+
+## Todas las estructuras de un tipo comparten nivel (= cuántas hay). Se recalcula
+## de cero para TODOS los nodos, así ninguna se queda con un nivel viejo aunque
+## una actualización puntual (construir, vender, snapshot) no la alcanzara.
+func _reconcile_levels() -> void:
+	var state: GridState = get_state()
+	if state == null:
+		return
+	var counts: Dictionary[StringName, int] = {}
+	for slot: BuildingSlot in _slots:
+		if slot.structure != null:
+			var id: StringName = slot.structure.data.id
+			if not counts.has(id):
+				counts[id] = state.count_structures(id)
+			var level: int = slot.structure.data.clamp_level(counts[id])
+			if slot.structure.level != level:
+				slot.structure.set_level(level)
 
 
 func _refresh_plot(plot_index: int) -> void:

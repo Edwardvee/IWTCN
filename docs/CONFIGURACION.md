@@ -205,7 +205,7 @@ Todo el arte es procedural y se regenera con Node (sin dependencias):
 
 ```
 node tools/art/generate.js            # todo
-node tools/art/generate.js unidades   # unidades | estructuras | mundo | ui | audio
+node tools/art/generate.js unidades   # unidades | estructuras | mundo | ui | audio | emotes
 godot --headless --path . --import    # reimportar los SVG/WAV nuevos
 godot --headless --path . --script res://tools/BuildTheme.gd   # regenera ui/theme.tres
 ```
@@ -214,8 +214,9 @@ godot --headless --path . --script res://tools/BuildTheme.gd   # regenera ui/the
 |---|---|---|
 | Unidades (caminar, atacar, reposo) | `tools/art/units.js` → `assets/units/*` y `data/units/*_frames.tres` | `UnitData.sprite_frames`; el contorno del bando lo dibuja `assets/shaders/team_outline.gdshader` (material compartido en `entities/base/TeamArt.gd`) |
 | Estructuras y castillo | `tools/art/structures.js` → `assets/structures/<id>.svg` + `<id>_team.svg` (capa de estandartes teñida con el color del bando) | `StructureData.texture` / `team_texture`, `Castle.gd` |
-| Hierba, camino, árboles, suelo de plots, fondo del menú | `tools/art/world.js` | `scenes/WorldBackground.gd` (densidad y opacidad de la decoración), `Plot.gd` |
-| Iconos, cartas de mejoras y de unidades, icono de la app | `tools/art/ui.js` | `CardData.icon`, `CardView.gd`, `ShopPanel.gd` |
+| Hierba, camino, árboles, suelo de plots, fondos del menú (uno por dificultad: fácil con flores, normal, difícil con cielo rojo) | `tools/art/world.js` | `scenes/WorldBackground.gd` (densidad y opacidad de la decoración), `Plot.gd`, `ui/MainMenu.gd` (`BACKGROUNDS`) |
+| Emotes (4 caritas) y banderas del selector de idioma | `tools/art/emotes.js` → `assets/emotes/*`, `assets/ui/flag_*.svg` | `systems/emotes/Emotes.gd`, `ui/EmotePanel.gd`, `ui/MainMenu.gd` |
+| Iconos, cartas de mejoras y de unidades, icono de la app, madera de la tienda por raza (humanos `assets/bgShopPanel.png`, goblins oscura, elfos blanca) | `tools/art/ui.js` | `CardData.icon`, `CardView.gd`, `ShopPanel.gd` (fondo = `RaceData.shop_panel_texture`) |
 | Tema de la UI (botones, paneles, campos) | `tools/BuildTheme.gd` → `ui/theme.tres` | tema global (`project.godot`); variaciones `PrimaryButton`, `WoodButton`, `DangerButton`, `StoneButton`, `TopBar` |
 | Efectos de botón (hundir/rebote, destello, sonido) | `autoload/UIFeedback.gd` | se engancha solo a todo `BaseButton`; `sound_enabled` lo silencia |
 | Sonidos (clic, confirmar, error) | `tools/art/audio.js` | `UIFeedback.gd` |
@@ -224,6 +225,8 @@ Colores de las cartas por tipo (borde): estructuras amarillo, unidades azul, mej
 
 Para revisar el arte sin jugar: `godot --path . res://tools/ArtGallery.tscn -- --page=units --unit=soldier` (páginas `units`, `structures`, `cards`, `ui`) y `res://tools/GameShot.tscn` (partida con cámara fija; `--vs`, `--top`, `--cam-y=N`).
 
+
+**Emotes** (`Emotes.gd`): 4 emotes (goblin riéndose, llorar, enfado, pulgar arriba). `EmoteCommand` los envía; la autoridad exige `Emotes.COOLDOWN` = 3 s entre emotes del mismo jugador (con `COOLDOWN_TOLERANCE` para la latencia online) y viajan a los clientes en el snapshot (`emote` / `emote_seq` del jugador). `EmotePanel` dibuja el botón, el selector y los globos.
 
 ---
 

@@ -69,6 +69,21 @@ func _units_of(team: int, unit_id: StringName) -> Array[UnitBase]:
 	return result
 
 
+# --- Nivel compartido ------------------------------------------------------------
+
+func test_every_structure_of_a_type_levels_up_together() -> void:
+	for slot_index: int in [16, 17, 18]:
+		_build(&"card_tower", slot_index)
+		for built_slot: int in range(16, slot_index + 1):
+			assert_eq(grid0.get_structure_at(built_slot).level, slot_index - 15, "torre del slot %d tras construir %d" % [built_slot, slot_index - 15])
+	# Aunque un nodo se quedara con un nivel viejo, la comprobación periódica lo corrige.
+	grid0.get_structure_at(16).set_level(1)
+	grid0.get_structure_at(17).set_level(2)
+	grid0._reconcile_levels()
+	for slot_index: int in [16, 17, 18]:
+		assert_eq(grid0.get_structure_at(slot_index).level, 3, "nivel corregido en slot %d" % slot_index)
+
+
 # --- Farm → Economy ------------------------------------------------------------
 
 func test_farm_lv1_gives_25_every_8s() -> void:

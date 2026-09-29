@@ -25,6 +25,11 @@ var race_id: StringName = &"human"
 var race_income_multiplier: float = 1.0
 ## Fracción de oro de ingresos aún no entregada (evita perder decimales).
 var income_remainder: float = 0.0
+## Último emote mostrado, cuántos lleva (los clientes lo detectan por el contador)
+## y cuándo fue (match_time), para el tiempo de espera entre emotes.
+var emote_id: StringName = &""
+var emote_seq: int = 0
+var emote_time: float = 0.0
 
 
 func _init(p_player_id: int, rules: GameRules) -> void:
@@ -51,4 +56,6 @@ func to_dict() -> Dictionary:
 		"shop": shop.to_dict(),
 		"buffs": buffs.duplicate(),
 		"race": race_id,
+		"emote": emote_id,
+		"emote_seq": emote_seq,
 	}

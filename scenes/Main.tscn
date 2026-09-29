@@ -20,6 +20,7 @@
 [ext_resource type="Texture2D" path="res://assets/bgShopPanel.png" id="18_shopbg"]
 [ext_resource type="Script" path="res://scenes/WorldBackground.gd" id="19_world"]
 [ext_resource type="Texture2D" path="res://assets/ui/coin.svg" id="20_coin"]
+[ext_resource type="Script" path="res://ui/EmotePanel.gd" id="21_emotes"]
 
 [sub_resource type="StyleBoxTexture" id="StyleBoxTexture_bar"]
 content_margin_left = 20.0
@@ -286,6 +287,16 @@ size_flags_vertical = 4
 theme_type_variation = &"WoodButton"
 theme_override_font_sizes/font_size = 34
 text = "Martillo"
+
+[node name="EmotePanel" type="Control" parent="UI/HUD"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("21_emotes")
 
 [node name="GameOverPanel" type="PanelContainer" parent="UI/HUD"]
 layout_mode = 1

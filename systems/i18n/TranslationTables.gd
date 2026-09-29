@@ -49,6 +49,8 @@ const EN: Dictionary = {
 	"La partida no está en curso": "The match is not running",
 	"Sin base de datos": "No database",
 	"Jugador inválido": "Invalid player",
+	"Emote desconocido": "Unknown emote",
+	"Emote en enfriamiento": "Emote on cooldown",
 	"Modo espectador: no puedes actuar": "Spectator mode: you can't act",
 	"No puedes actuar por otro jugador": "You can't act for another player",
 	"La IA solo controla al rival en VS AI": "The AI only controls the rival in VS AI",

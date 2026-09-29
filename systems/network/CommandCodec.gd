@@ -2,7 +2,7 @@ class_name CommandCodec
 extends RefCounted
 ## Serializa los comandos que un cliente puede enviar al servidor.
 ## Lista blanca: solo acciones de jugador (jugar carta, reroll, vender,
-## desbloquear plot). Los comandos debug nunca se decodifican desde la red.
+## desbloquear plot, emote). Los comandos debug nunca se decodifican desde la red.
 ## El player_id y el source NO viajan: el servidor los fija según el peer.
 
 
@@ -16,6 +16,8 @@ static func encode(command: GameCommand) -> Dictionary:
 		data["deploy_position"] = play.deploy_position
 	elif command is SellCommand:
 		data["slot_index"] = (command as SellCommand).slot_index
+	elif command is EmoteCommand:
+		data["emote_id"] = (command as EmoteCommand).emote_id
 	elif command is UnlockPlotCommand:
 		data["plot_index"] = (command as UnlockPlotCommand).plot_index
 	return data
@@ -37,6 +39,11 @@ static func decode(data: Dictionary) -> GameCommand:
 			if not data.get("slot_index") is int:
 				return null
 			return SellCommand.new(MatchTypes.NO_PLAYER, data["slot_index"], network)
+		&"emote":
+			var emote_id: StringName = StringName(str(data.get("emote_id", "")))
+			if not Emotes.is_valid(emote_id):
+				return null
+			return EmoteCommand.new(MatchTypes.NO_PLAYER, emote_id, network)
 		&"unlock_plot":
 			if not data.get("plot_index") is int:
 				return null

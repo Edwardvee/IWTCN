@@ -4,17 +4,30 @@ extends Control
 ## Solo configura y navega; la partida la arranca Main.
 
 const MAIN_SCENE: String = "res://scenes/Main.tscn"
+## Bandera del idioma actual en el selector (abajo a la derecha).
+const FLAGS: Dictionary = {
+	"es": preload("res://assets/ui/flag_es.svg"),
+	"en": preload("res://assets/ui/flag_us.svg"),
+}
+## Cielo del menú según la dificultad de la IA: fácil con florecitas, normal el de
+## siempre y difícil rojo y amenazante (tools/art/world.js).
+const BACKGROUNDS: Dictionary = {
+	AIDifficulty.Level.EASY: preload("res://assets/ui/menu_bg_easy.svg"),
+	AIDifficulty.Level.NORMAL: preload("res://assets/ui/menu_bg.svg"),
+	AIDifficulty.Level.HARD: preload("res://assets/ui/menu_bg_hard.svg"),
+}
 
 @onready var _code: LineEdit = %Address
 @onready var _status: Label = %Status
+@onready var _background: TextureRect = %Background
 
 
 func _ready() -> void:
 	%PlayAI.pressed.connect(_on_play_ai_pressed)
 	%Spectate.pressed.connect(_on_spectate_pressed)
-	# El botón muestra el idioma al que cambiaría (en ese idioma) y no se traduce.
-	%Language.auto_translate_mode = Node.AUTO_TRANSLATE_MODE_DISABLED
-	%Language.text = Localization.get_other_language_name()
+	# El botón es la bandera del idioma actual; al pulsarlo cambia al otro.
+	%Language.icon = FLAGS[Localization.current_language]
+	%Language.tooltip_text = Localization.LANGUAGE_NAMES[Localization.current_language]
 	%Language.pressed.connect(_on_language_pressed)
 	%Race.auto_translate_mode = Node.AUTO_TRANSLATE_MODE_DISABLED
 	%Race.pressed.connect(_on_race_pressed)
@@ -62,6 +75,7 @@ func _on_difficulty_pressed() -> void:
 
 func _refresh_difficulty_button() -> void:
 	%Difficulty.text = tr("Dificultad: %s") % AIDifficulty.display_name(GameManager.ai_difficulty)
+	_background.texture = BACKGROUNDS[GameManager.ai_difficulty]
 
 
 ## Cambia el idioma y reconstruye el menú para que todo el texto se actualice.

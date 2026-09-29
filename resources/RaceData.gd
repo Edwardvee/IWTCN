@@ -43,6 +43,10 @@ extends Resource
 @export var castle_texture: Texture2D
 @export var castle_team_texture: Texture2D
 
+@export_group("Interface")
+## Fondo de la barra de la tienda (madera de la raza). Vacío = el de siempre.
+@export var shop_panel_texture: Texture2D
+
 @export_group("Names")
 ## Nombre mostrado por carta: {"card_soldiers": "Goblin Soldiers", …}. Las cartas
 ## sin entrada usan su nombre normal.

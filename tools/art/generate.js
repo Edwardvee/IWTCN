@@ -1,4 +1,4 @@
-// Regenera todo el arte procedural: node tools/art/generate.js [unidades|estructuras|mundo|ui|audio]
+// Regenera todo el arte procedural: node tools/art/generate.js [unidades|estructuras|mundo|ui|audio|emotes]
 // Salida en assets/ (SVG/WAV) y en data/ (SpriteFrames .tres). Es determinista.
 
 const L = require('./lib');
@@ -9,6 +9,7 @@ const modules = {
   mundo: () => require('./world').generate(),
   ui: () => require('./ui').generate(),
   audio: () => require('./audio').generate(),
+  emotes: () => require('./emotes').generate(),
   // Unidades y estructuras de las razas (goblin, elf). Ver tools/art/races.js.
   razas: () => {
     for (const race of Object.keys(require('./races').RACES)) {

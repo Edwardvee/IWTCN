@@ -51,5 +51,7 @@ signal castillo_danado(player_id: int, vida_actual: float, vida_maxima: float)
 ## Golpe cuerpo a cuerpo: dónde impacta y el equipo atacante (efecto de tajo).
 signal golpe_cuerpo_a_cuerpo(position: Vector2, attacker_team: int)
 signal comando_rechazado(player_id: int, tipo_comando: StringName, motivo: String)
+## Un jugador mostró un emote (id de Emotes.IDS).
+signal emote_mostrado(player_id: int, emote_id: StringName)
 
 @warning_ignore_restore("unused_signal")

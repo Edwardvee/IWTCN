@@ -162,12 +162,70 @@ function appIcon() {
   return doc(256, 256, b.join(''), defs, 1);
 }
 
+// --- Fondo de la tienda (barra inferior) según la raza -----------------------------------------------------------
+// Humanos usan assets/bgShopPanel.png (madera normal); goblins madera oscura y
+// elfos madera blanca. Mismo formato que el PNG: 1080x420 con borde oscuro.
+const SHOP_WOODS = {
+  goblin: { base: '#4f3826', grain: '#382619', grainLight: '#684a33', shade: '#1d130d', top: '#8a6b4c', rough: true },
+  elf: { base: '#efe6d2', grain: '#d2c5a6', grainLight: '#fbf6ea', shade: '#b6a98c', top: '#ffffff', rough: false },
+};
+
+function shopWood(kind) {
+  const w = SHOP_WOODS[kind];
+  const W = 1080, H = 420;
+  const r = L.rng(kind === 'elf' ? 707 : 303);
+  const defs = L.defsGradient('shade', [[0, w.shade, 0], [1, w.shade, 0.85]])
+    + `<clipPath id="clip"><rect x="4" y="4" width="${W - 8}" height="${H - 8}" rx="14"/></clipPath>`;
+  const p = [rect(4, 4, W - 8, H - 8, w.base, { r: 14, noStroke: true })];
+  const inner = [];
+  // tablones: juntas horizontales
+  for (const y of kind === 'elf' ? [104, 208, 312] : [96, 196, 300]) {
+    inner.push(rect(0, y, W, 5, w.grain, { noStroke: true, opacity: 0.9 }));
+    inner.push(rect(0, y + 5, W, 3, w.grainLight, { noStroke: true, opacity: 0.35 }));
+  }
+  // veta
+  for (let i = 0; i < (kind === 'elf' ? 60 : 44); i++) {
+    const y = r.range(10, H - 30), x = r.range(-60, W - 100), len = r.range(90, 320);
+    if (w.rough) {
+      inner.push(line(x, y, x + len, y, w.grain, r.range(3, 6), { opacity: 0.7 }));
+    } else {
+      const wave = r.range(-6, 6);
+      inner.push(path(`M${L.n(x)} ${L.n(y)} Q${L.n(x + len / 2)} ${L.n(y + wave)} ${L.n(x + len)} ${L.n(y)}`, 'none', { stroke: w.grain, sw: r.range(1.6, 3.4), opacity: 0.75 }));
+    }
+  }
+  // nudos
+  for (let i = 0; i < 4; i++) {
+    const x = r.range(80, W - 80), y = r.range(30, 330);
+    inner.push(ellipse(x, y, 16, 8, w.grain, { noStroke: true, opacity: 0.8 }), ellipse(x, y, 8, 3.6, w.shade, { noStroke: true, opacity: 0.45 }));
+  }
+  if (w.rough) {
+    // grietas y clavos de hierro
+    for (let i = 0; i < 7; i++) {
+      const x = r.range(40, W - 40), y = r.range(20, 330);
+      inner.push(path(`M${L.n(x)} ${L.n(y)} l${L.n(r.range(8, 20))} ${L.n(r.range(12, 26))} l${L.n(r.range(-10, 6))} ${L.n(r.range(10, 22))}`, 'none', { stroke: w.shade, sw: 2.6, opacity: 0.6 }));
+    }
+    for (const x of [30, W - 30]) for (const y of [50, 150, 250, 350]) inner.push(circle(x, y, 6, '#7d7566', { sw: 2 }), circle(x - 1.5, y - 1.5, 2, '#cfc6ad', { noStroke: true, opacity: 0.8 }));
+  } else {
+    // hojitas sutiles a lo largo del borde superior
+    for (let x = 60; x < W; x += 120) {
+      inner.push(path(`M${x} 26 q10 -12 24 -6 q-8 12 -24 6Z`, '#bfe0c2', { noStroke: true, opacity: 0.8 }));
+    }
+  }
+  p.push(`<g clip-path="url(#clip)">${inner.join('')}</g>`);
+  p.push(rect(4, 4, W - 8, 8, w.top, { r: 4, noStroke: true, opacity: 0.6 }));
+  p.push(`<g clip-path="url(#clip)">${rect(4, 250, W - 8, H - 254, 'url(#shade)', { noStroke: true })}</g>`);
+  p.push(rect(4, 4, W - 8, H - 8, 'none', { r: 14, sw: 8 }));
+  return L.docTL(W, H, p.join(''), defs, 1);
+}
+
 function generate() {
   L.write('ui/app_icon.svg', appIcon());
   L.write('ui/coin.svg', coin());
   L.write('ui/padlock.svg', padlock());
   L.write('ui/hammer.svg', hammer());
   L.write('ui/dice.svg', dice());
+  L.write('ui/shop_wood_goblin.svg', shopWood('goblin'));
+  L.write('ui/shop_wood_elf.svg', shopWood('elf'));
   L.write('cards/buff_armor.svg', buffArmor());
   L.write('cards/buff_max_hp.svg', buffHp());
   L.write('cards/buff_move_speed.svg', buffSpeed());

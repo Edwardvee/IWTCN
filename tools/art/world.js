@@ -191,22 +191,83 @@ function flowers() {
 
 
 // --- Fondo del menú principal ----------------------------------------------------------------------------------------------------------
-function menuBackground() {
+// Cielo del menú según la dificultad: normal (el de siempre), easy (con arcoíris y
+// florecitas en el prado) y hard (cielo rojo amenazante con nubes oscuras y rayos).
+const MENU_SKIES = {
+  normal: { stops: [[0, '#4f9fe0'], [0.55, '#9ed3f0'], [1, '#e4f5f6']], glow: '#fff6c8', sun: '#fff2a8', cloud: '#ffffff', cloudShade: '#dcecf5' },
+  easy: { stops: [[0, '#6db8f0'], [0.55, '#b5e0f7'], [1, '#f4fbf6']], glow: '#fff6c8', sun: '#fff2a8', cloud: '#ffffff', cloudShade: '#e6f2f8' },
+  hard: { stops: [[0, '#2a0508'], [0.45, '#8f1c1c'], [1, '#e2582a']], glow: '#ff6a2a', sun: '#ffb14a', cloud: '#3a1418', cloudShade: '#1b0708' },
+};
+
+function menuFlowers(r) {
+  const out = [];
+  const colors = ['#ff6f91', '#ffd23f', '#ffffff', '#c98bff', '#ff9a4d', '#7fd1ff'];
+  const add = (x, y, scale) => {
+    const col = r.pick(colors);
+    const petals = [];
+    for (let k = 0; k < 5; k++) petals.push(ellipse(0, -7, 4.6, 7.4, col, { sw: 1.5, transform: `rotate(${k * 72})` }));
+    out.push({ y, body: g([line(0, 2, 0, 20, '#3f7d32', 2.6), ellipse(4, 13, 6.5, 2.8, '#4f9a3f', { noStroke: true }), ...petals, circle(0, 0, 3.8, '#f5b83a', { sw: 1.2 })], { transform: `translate(${L.n(x)} ${L.n(y)}) scale(${L.n(scale)})` }) });
+  };
+  // franja de prado que asoma entre el castillo y el panel del menú (se ve en todo el ancho)
+  for (let i = 0; i < 46; i++) add(r.range(10, 1070), r.range(668, 742), r.range(1.1, 1.7));
+  // laterales del panel, más abajo
+  for (let i = 0; i < 70; i++) {
+    const y = r.range(742, 1900);
+    const side = r() < 0.5 ? -1 : 1;
+    add(540 + side * r.range(470, 535), y, r.range(1.4, 2.2));
+  }
+  // suelta unas flores sobre las colinas, a los lados del castillo
+  for (let i = 0; i < 18; i++) add(r() < 0.5 ? r.range(10, 70) : r.range(1010, 1070), r.range(560, 668), r.range(0.9, 1.3));
+  out.sort((a, b) => a.y - b.y);
+  return out.map((f) => f.body);
+}
+
+// Pétalos que flotan por el cielo de la dificultad fácil.
+function menuPetals(r) {
+  const out = [];
+  for (let i = 0; i < 16; i++) {
+    const x = r.range(20, 1060), y = r.range(30, 640);
+    out.push(ellipse(0, 0, 9, 5, r.pick(['#ffb3c7', '#ffffff', '#ffd6e0', '#ffe27a']), { noStroke: true, opacity: 0.9, transform: `translate(${L.n(x)} ${L.n(y)}) rotate(${L.n(r.range(-60, 60))})` }));
+  }
+  return out;
+}
+
+function menuBackground(variant = 'normal') {
   const { castleParts } = require('./structures');
   const r = L.rng(31337);
   const W = 1080, H = 1920;
+  const sky = MENU_SKIES[variant];
   const defs = [
-    L.defsGradient('sky', [[0, '#4f9fe0'], [0.55, '#9ed3f0'], [1, '#e4f5f6']]),
+    L.defsGradient('sky', sky.stops),
     L.defsGradient('meadow', [[0, '#79bb5a'], [1, '#4f8f3d']]),
-    L.defsGradient('glow', [[0, '#fff6c8', 0.9], [1, '#fff6c8', 0]], 'radial', 'cx="0.5" cy="0.5" r="0.5"'),
+    L.defsGradient('glow', [[0, sky.glow, 0.9], [1, sky.glow, 0]], 'radial', 'cx="0.5" cy="0.5" r="0.5"'),
   ].join('');
   const p = [];
   p.push(rect(0, 0, W, 700, 'url(#sky)', { noStroke: true }));
   p.push(circle(860, 210, 210, 'url(#glow)', { noStroke: true }));
-  p.push(circle(860, 210, 62, '#fff2a8', { noStroke: true, opacity: 0.95 }));
+  p.push(circle(860, 210, variant === 'hard' ? 84 : 62, sky.sun, { noStroke: true, opacity: 0.95 }));
+  if (variant === 'easy') {
+    // arcoíris suave detrás de las nubes
+    ['#ff6b6b', '#ffa94d', '#ffe66d', '#8ce99a', '#74c0fc', '#b197fc'].forEach((col, i) => {
+      const rad = 380 - i * 20;
+      p.push(path(`M${300 - rad + 200} 660 A${rad} ${rad} 0 0 1 ${300 + rad + 200} 660`, 'none', { stroke: col, sw: 20, opacity: 0.5, noStroke: false }));
+    });
+  }
+  if (variant === 'hard') {
+    // rayos lejanos
+    for (const [x, y, s] of [[250, 60, 1], [700, 40, 0.8]]) {
+      p.push(poly([[0, 0], [-26, 120], [-4, 116], [-38, 250], [30, 96], [6, 100], [26, 0]], '#ffe9a0', { noStroke: true, opacity: 0.85, transform: `translate(${x} ${y}) scale(${s})` }));
+    }
+  }
   // nubes
   for (const [x, y, s] of [[170, 150, 1.1], [560, 90, 0.8], [930, 380, 0.9], [90, 430, 0.7]]) {
-    p.push(g([ellipse(0, 0, 90, 26, '#ffffff', { noStroke: true }), ellipse(-30, -18, 42, 26, '#ffffff', { noStroke: true }), ellipse(24, -24, 50, 30, '#ffffff', { noStroke: true }), ellipse(0, 10, 80, 14, '#dcecf5', { noStroke: true, opacity: 0.6 })], { transform: `translate(${x} ${y}) scale(${s})` }));
+    p.push(g([ellipse(0, 0, 90, 26, sky.cloud, { noStroke: true }), ellipse(-30, -18, 42, 26, sky.cloud, { noStroke: true }), ellipse(24, -24, 50, 30, sky.cloud, { noStroke: true }), ellipse(0, 10, 80, 14, sky.cloudShade, { noStroke: true, opacity: 0.6 })], { transform: `translate(${x} ${y}) scale(${s})` }));
+  }
+  if (variant === 'hard') {
+    // murciélagos
+    for (const [x, y, s] of [[330, 300, 1], [430, 240, 0.7], [700, 330, 0.9], [120, 560, 0.8]]) {
+      p.push(path('M0 0 Q-14 -14 -34 -6 Q-24 0 -20 10 Q-10 0 0 8 Q10 0 20 10 Q24 0 34 -6 Q14 -14 0 0Z', '#12050a', { noStroke: true, transform: `translate(${x} ${y}) scale(${s})` }));
+    }
   }
   // colinas lejanas
   p.push(path('M0 560 Q180 470 380 540 T760 520 T1080 500 L1080 760 L0 760Z', '#7fb96a', { noStroke: true }));
@@ -219,6 +280,7 @@ function menuBackground() {
   const recolor = (svg) => svg.replace(/#f4f4f4/g, '#4d8fff').replace(/#cfcfcf/g, '#3b73dc').replace(/#a3a3a3/g, '#2b58b3');
   const castle = castleParts();
   p.push(g([castle.base, recolor(castle.team)], { transform: 'translate(540 500) scale(2.15)' }));
+  if (variant === 'easy') p.push(...menuFlowers(L.rng(555)), ...menuPetals(L.rng(556)));
   // árboles a los lados
   const trees = [];
   for (let i = 0; i < 16; i++) {
@@ -264,7 +326,9 @@ function generate() {
   L.write('world/rock.svg', rock());
   L.write('world/flowers.svg', flowers());
   L.write('world/plot_floor.svg', plotFloor());
-  L.write('ui/menu_bg.svg', menuBackground());
+  L.write('ui/menu_bg.svg', menuBackground('normal'));
+  L.write('ui/menu_bg_easy.svg', menuBackground('easy'));
+  L.write('ui/menu_bg_hard.svg', menuBackground('hard'));
 }
 
 module.exports = { generate, GRASS_TILE, ROAD_W, ROAD_H };

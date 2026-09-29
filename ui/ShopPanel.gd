@@ -25,6 +25,8 @@ var _reroll_cost_label: Label = null
 ## Carta que el jugador soltó por última vez (para sacudirla si se rechaza).
 var _last_played_view: CardView = null
 var _reroll_cost: int = 0
+## Fondo de madera por defecto (el de la escena) para volver a él si la raza no trae uno.
+var _default_panel_style: StyleBox = null
 
 @onready var _card_row: HBoxContainer = %CardRow
 @onready var _reroll_button: Button = %RerollButton
@@ -40,6 +42,7 @@ func _ready() -> void:
 		view.drag_released.connect(_on_card_drag_released)
 		_card_row.add_child(view)
 		_card_views.append(view)
+	_default_panel_style = get_theme_stylebox("panel")
 	_create_drag_preview()
 	_build_reroll_content()
 	_hammer_button.icon = HAMMER
@@ -56,6 +59,21 @@ func _ready() -> void:
 	EventBus.estructura_vendida.connect(func(pid: int, _s: int, _g: int) -> void: _on_estructura_cambiada(pid))
 	EventBus.coste_reroll_actualizado.connect(_on_coste_reroll_actualizado)
 	EventBus.comando_rechazado.connect(_on_comando_rechazado)
+	EventBus.partida_iniciada.connect(func(_mode: int, _seed: int) -> void: _apply_race_wood())
+	_apply_race_wood()
+
+
+## Madera de la barra según la raza del jugador: normal (humanos), oscura (goblins) o
+## blanca (elfos). Cada raza la define en RaceData.shop_panel_texture.
+func _apply_race_wood() -> void:
+	var race: RaceData = GameManager.get_race(GameManager.local_player_id)
+	var base_style: StyleBoxTexture = _default_panel_style as StyleBoxTexture
+	if race == null or race.shop_panel_texture == null or base_style == null:
+		add_theme_stylebox_override("panel", _default_panel_style)
+		return
+	var style: StyleBoxTexture = base_style.duplicate() as StyleBoxTexture
+	style.texture = race.shop_panel_texture
+	add_theme_stylebox_override("panel", style)
 
 
 ## Main llama a esto al conectar la escena.

@@ -99,6 +99,14 @@ func _apply_player(data: Dictionary) -> void:
 		player_state.castle_max_hp = castle_max_hp
 		EventBus.castillo_danado.emit(player_id, castle_hp, castle_max_hp)
 
+	# Emotes: el contador solo sube; un cambio = emote nuevo del servidor.
+	var emote_seq: int = int(data.get("emote_seq", player_state.emote_seq))
+	if emote_seq != player_state.emote_seq:
+		player_state.emote_seq = emote_seq
+		player_state.emote_id = StringName(str(data.get("emote", "")))
+		if emote_seq > 0 and Emotes.is_valid(player_state.emote_id):
+			EventBus.emote_mostrado.emit(player_id, player_state.emote_id)
+
 	# Los snapshots incrementales omiten lo que no cambió: solo se aplica lo que llega.
 	if data.has("shop"):
 		_apply_shop(player_id, player_state, data["shop"])
