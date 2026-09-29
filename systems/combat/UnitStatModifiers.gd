@@ -12,6 +12,9 @@ var bonus_move_speed: float = 0.0
 var bonus_mitigation: float = 0.0
 var max_hp_multiplier: float = 1.0
 var damage_multiplier: float = 1.0
+## Ritmo de ataque respecto al base (2.0 = ataca el doble de rápido). Solo lo fija el
+## cuartel al aparecer la unidad.
+var attack_speed_multiplier: float = 1.0
 var move_speed_multiplier: float = 1.0
 
 
@@ -28,6 +31,7 @@ static func from_barracks(player_id: int, unit_data: UnitData) -> UnitStatModifi
 		var extra_buildings: int = maxi(0, player_state.grid.count_structures(structure.id) - 1)
 		modifiers.bonus_max_hp += structure.unit_bonus_hp_per_extra_building * extra_buildings
 		modifiers.bonus_damage += structure.unit_bonus_damage_per_extra_building * extra_buildings
+		modifiers.attack_speed_multiplier = structure.get_unit_attack_speed(player_state.grid.count_structures(structure.id))
 	return modifiers
 
 
@@ -69,5 +73,6 @@ func combined_with(other: UnitStatModifiers) -> UnitStatModifiers:
 	result.bonus_mitigation = bonus_mitigation + other.bonus_mitigation
 	result.max_hp_multiplier = max_hp_multiplier + other.max_hp_multiplier - 1.0
 	result.damage_multiplier = damage_multiplier + other.damage_multiplier - 1.0
+	result.attack_speed_multiplier = attack_speed_multiplier * other.attack_speed_multiplier
 	result.move_speed_multiplier = move_speed_multiplier + other.move_speed_multiplier - 1.0
 	return result

@@ -121,6 +121,7 @@ func _init() -> void:
 
 
 func _ready() -> void:
+	add_to_group(&"lane")
 	EventBus.partida_iniciada.connect(_on_partida_iniciada)
 
 
@@ -193,7 +194,7 @@ func spawn_unit(unit_data: UnitData, team: int, world_position: Vector2) -> Unit
 	if unit_data == null or not MatchTypes.is_valid_player_id(team) or GameManager.match_state == null:
 		push_error("LaneManager.spawn_unit: parámetros inválidos")
 		return null
-	if get_alive_count(team) >= get_unit_cap():
+	if get_alive_count(team) >= get_unit_cap(team):
 		return null
 	var unit: UnitBase = UnitBase.new()
 	unit.setup(GameManager.match_state.allocate_entity_id(), team, unit_data, self, UnitStatModifiers.from_barracks(team, unit_data))
@@ -331,10 +332,15 @@ func refresh_team_stats(team: int) -> void:
 			unit.refresh_stats(true)
 
 
-## Tropas vivas máximas por bando (regla max_units_per_team).
-func get_unit_cap() -> int:
+## Tropas vivas máximas del equipo: depende del nivel de sus granjas
+## (GameRules.unit_cap_by_farm_level).
+func get_unit_cap(team: int) -> int:
 	var rules: GameRules = GameManager.get_rules()
-	return rules.max_units_per_team if rules != null else 80
+	if rules == null:
+		return 80
+	var player_state: PlayerState = GameManager.get_player_state(team)
+	var farm_level: int = player_state.grid.count_structures(rules.unit_cap_structure_id) if player_state != null else 0
+	return rules.get_unit_cap_for_level(farm_level)
 
 
 func get_alive_count(team: int) -> int:

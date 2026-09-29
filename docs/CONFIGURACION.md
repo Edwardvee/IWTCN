@@ -7,11 +7,11 @@ Casi todo el balance es **data-driven**: se edita en el Inspector de Godot abrie
 | Qué | Campo | Valor actual |
 | :--- | :--- | :--- |
 | Oro inicial | `starting_gold` | 50 |
-| Oro por ingreso base | `base_income_amount` | 5 |
-| Segundos entre ingresos base | `base_income_interval` | 3.0 (=1.67 oro/s) |
+| Oro por ingreso base | `base_income_amount` | 3 |
+| Segundos entre ingresos base | `base_income_interval` | 3.0 (=1 oro/s) |
 | Vida del castillo | `castle_max_hp` | 10000 |
 | Oferta inicial con Farm garantizada | `guarantee_starting_farm` | true |
-| Tropas vivas máximas por bando | `max_units_per_team` | 80 |
+| Tropas vivas máximas por bando | `unit_cap_by_farm_level` | 3 / 8 / 12 / 24 / 36 / 60 según granjas (0 a 5) |
 | Cartas en la tienda | `shop_offer_size` | 3 |
 | Coste base del reroll | `reroll_base_cost` | 10 |
 | Subida del reroll por uso | `reroll_cost_increment` | 3 |
@@ -21,8 +21,7 @@ Casi todo el balance es **data-driven**: se edita en el Inspector de Godot abrie
 | Plots gratis al empezar | `initial_unlocked_plots` | [4] |
 | Nivel máximo de estructuras | `max_structure_level` | 5 |
 | Intervalo mínimo de producción con buffs | `min_production_interval` | 1.0 s |
-| **Sobreprecio 2ª copia de un edificio** | `second_copy_cost_multiplier` | 1.25 |
-| **Sobreprecio 3ª copia y siguientes** | `extra_copy_cost_multiplier` | 1.30 |
+| **Precio de cada nivel (copia) de un edificio** | `copy_cost_multipliers` | ×1 / ×1,25 / ×2,5 / ×4 / ×6 del precio base |
 
 > Nota: los valores por defecto viven en `GameRules.gd`; el `.tres` solo guarda los que difieren. Si editas en el Inspector, Godot los escribe en el `.tres`.
 
@@ -224,3 +223,14 @@ godot --headless --path . --script res://tools/BuildTheme.gd   # regenera ui/the
 Colores de las cartas por tipo (borde): estructuras amarillo, unidades azul, mejoras violeta (`CardView.TYPE_COLORS`).
 
 Para revisar el arte sin jugar: `godot --path . res://tools/ArtGallery.tscn -- --page=units --unit=soldier` (páginas `units`, `structures`, `cards`, `ui`) y `res://tools/GameShot.tscn` (partida con cámara fija; `--vs`, `--top`, `--cam-y=N`).
+
+
+---
+
+# Escalado por nivel de estructura
+
+- **Tope de tropas:** depende del nivel de las granjas (nº de granjas): 0 → 3, 1 → 8, 2 → 12, 3 → 24, 4 → 36, 5 → 60 (`GameRules.unit_cap_by_farm_level`). Con el tope alcanzado los cuarteles no producen y las cartas de unidades se rechazan. `unit_cap_override > 0` lo sustituye por un tope fijo (bancos de prueba).
+- **Precio de cada nivel:** `copy_cost_multipliers` [1, 1,25, 2,5, 4, 6] × precio base de la carta. Ej. Farm (50): 50 / 63 / 125 / 200 / 300; Soldier Barracks (60): 60 / 75 / 150 / 240 / 360.
+- **Velocidad de ataque de las unidades** (`StructureData.unit_attack_speed_per_level`, niveles 0 a 5 de SU cuartel; 0 = sin cuartel, también para unidades compradas con carta): 0,9 / 1,0 / 1,2 / 1,8 / 1,8 / 2,0 ataques por segundo respecto a su ritmo base (arquero base = 1,0 s). Se fija al aparecer la unidad. Aplica a Soldier Barracks, Archer Barracks e Iglesia; el Tank (sin cuartel propio) no escala.
+- **Unidades por carta** (`CardData.unit_count_by_level`, nivel de su cuartel): Soldiers 3 / 3 / 3 / 4 / 4 / 5; Archers 2 / 2 / 2 / 3 / 3 / 4; Tank siempre 1.
+- Los tests fijan sus propios valores (`tests/TestBalance.gd`); `TestScaling` prueba estos datos reales.

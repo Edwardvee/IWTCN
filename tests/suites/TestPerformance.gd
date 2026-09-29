@@ -52,7 +52,7 @@ func _build_fixture() -> void:
 ## Batalla con todos los tipos de unidad, proyectiles, curas y una conversión.
 func _run_battle(seconds: float) -> String:
 	GameManager.start_match(MatchTypes.GameMode.VS_AI, 606)
-	GameManager.get_rules().max_units_per_team = 200
+	GameManager.get_rules().unit_cap_override = 200
 	for team: int in MatchTypes.PLAYER_COUNT:
 		for unit_id: StringName in [&"soldier", &"archer", &"priest", &"tank", &"soldier", &"archer"]:
 			var origin: Vector2 = Vector2(540.0, 1650.0 + (350.0 if team == 0 else -350.0))
@@ -62,7 +62,7 @@ func _run_battle(seconds: float) -> String:
 			break
 		GameManager.match_state.match_time += STEP
 		lane.simulate_step(STEP)
-	GameManager.get_rules().max_units_per_team = 80
+	GameManager.get_rules().unit_cap_override = 120
 	return "%s|%s|%s" % [str(lane.to_dict()), GameManager.get_player_state(0).castle_hp, GameManager.get_player_state(1).castle_hp]
 
 

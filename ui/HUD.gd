@@ -65,7 +65,16 @@ func _refresh() -> void:
 		state.match_seed,
 		state.match_time,
 		EconomyManager.get_gold(opponent_id),
-	]
+	] + _describe_troops()
+
+
+## " · tropas 5/12": ejército vivo y tope actual (depende de las granjas).
+func _describe_troops() -> String:
+	var lane: LaneManager = get_tree().get_first_node_in_group(&"lane") as LaneManager
+	if lane == null:
+		return ""
+	var player_id: int = GameManager.local_player_id
+	return tr(" · tropas %d/%d") % [lane.get_alive_count(player_id), lane.get_unit_cap(player_id)]
 
 
 ## " · abajo: rush · arriba: turtle" en espectador local (vacío en otros modos).
@@ -133,7 +142,7 @@ func _on_carta_elegida(player_id: int, carta: CardData) -> void:
 		return
 	match carta.card_type:
 		CardData.CardType.DIRECT_UNIT:
-			show_toast((tr("%s desplegadas") if carta.unit_count > 1 else tr("%s desplegado")) % tr(carta.display_name), true)
+			show_toast(tr("Desplegado: %d × %s") % [carta.get_unit_count_for(player_id), tr(carta.display_name)], true)
 		CardData.CardType.GLOBAL_BUFF:
 			show_toast(tr("Mejora activada · %s") % tr(carta.display_name), true)
 

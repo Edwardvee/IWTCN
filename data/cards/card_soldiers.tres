@@ -7,11 +7,13 @@
 [resource]
 script = ExtResource("1_agoch")
 id = &"card_soldiers"
-display_name = "3 Soldiers"
-description = "Despliega 3 Soldiers en el carril."
+display_name = "Soldiers"
+description = "Despliega Soldiers en el carril. Cuántos salen depende del nivel de tu Soldier Barracks (3 a 5)."
 card_type = 2
 cost = 45
 unit = ExtResource("2_e7suc")
-unit_count = 3
+unit_count = 2
+unit_count_structure = &"soldier_barracks"
+unit_count_by_level = PackedInt32Array(3, 3, 3, 4, 4, 5)
 color = Color(0.9, 0.9, 0.9, 1)
 icon = ExtResource("9_icon")

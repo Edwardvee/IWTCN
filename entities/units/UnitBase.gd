@@ -98,6 +98,7 @@ func refresh_stats(keep_hp_ratio: bool) -> void:
 	# Una unidad sin daño base (Priest) no gana daño por bonus.
 	damage = (data.damage + modifiers.bonus_damage) * modifiers.damage_multiplier if data.damage > 0.0 else 0.0
 	damage_mitigation = clampf(data.damage_mitigation + modifiers.bonus_mitigation, 0.0, 0.9)
+	attack_cooldown = data.attack_cooldown / maxf(0.1, modifiers.attack_speed_multiplier)
 	queue_redraw()
 
 

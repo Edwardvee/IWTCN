@@ -8,7 +8,7 @@ const SLOTS_PER_PLOT: int = 4
 
 @export_group("Economy")
 @export var starting_gold: int = 20
-@export var base_income_amount: int = 5
+@export var base_income_amount: int = 3
 @export var base_income_interval: float = 3.0
 
 @export_group("Castle")
@@ -30,10 +30,11 @@ const SLOTS_PER_PLOT: int = 4
 @export_range(0.0, 1.0, 0.05) var sell_refund_ratio: float = 0.5
 
 @export_group("Structure Pricing")
-## Multiplicador del precio de la 2ª copia de un edificio (1.25 = +25%).
-@export var second_copy_cost_multiplier: float = 1.25
-## Multiplicador acumulado de la 3ª copia y siguientes (1.30 = +30% sobre la anterior).
-@export var extra_copy_cost_multiplier: float = 1.30
+## Precio de cada copia de un edificio como múltiplo del precio base de su
+## carta: [1ª, 2ª, 3ª, 4ª, 5ª]. Subir de nivel = construir otra copia, así que
+## esto es el coste de cada nivel. Pasar de nivel 2 a 3, 3 a 4 y 4 a 5 es mucho
+## más caro que abrir el nivel 1 y 2.
+@export var copy_cost_multipliers: PackedFloat32Array = PackedFloat32Array([1.0, 1.25, 2.5, 4.0, 6.0])
 
 @export_group("Plots")
 ## Coste de cada plot por índice (0..5). Ver GridManager para el orden.
@@ -42,10 +43,16 @@ const SLOTS_PER_PLOT: int = 4
 @export var initial_unlocked_plots: PackedInt32Array = PackedInt32Array([4])
 
 @export_group("Army")
-## Tropas vivas máximas por bando. Con más, los cuarteles dejan de producir y
-## las cartas de unidades se rechazan: acota el caos del carril y el coste
-## de simulación (cada unidad busca objetivos entre todas las demás).
-@export var max_units_per_team: int = 80
+## Tropas vivas máximas por bando según el nivel de las granjas del jugador
+## (nivel = nº de granjas, 0 sin granja): [0, 1, 2, 3, 4, 5]. Con el tope
+## alcanzado los cuarteles dejan de producir y las cartas de unidades se
+## rechazan. Ata el tamaño del ejército a la economía y acota el coste de
+## simulación.
+@export var unit_cap_by_farm_level: PackedInt32Array = PackedInt32Array([3, 8, 12, 24, 36, 60])
+## Estructura cuyo nivel decide el tope.
+@export var unit_cap_structure_id: StringName = &"farm"
+## Si es > 0 sustituye a la tabla por un tope fijo (bancos de prueba y tests).
+@export var unit_cap_override: int = 0
 
 @export_group("Structures")
 @export_range(1, 10) var max_structure_level: int = 5
@@ -59,13 +66,22 @@ func get_plot_cost(plot_index: int) -> int:
 	return plot_costs[plot_index]
 
 
-## Precio de una estructura con `owned_count` copias ya construidas.
-## Copia 1 = base; copia 2 = base × second; copia 3+ = anterior × extra.
+## Precio de una estructura con `owned_count` copias ya construidas: el
+## multiplicador de la siguiente copia (la última se repite si hay más).
 func get_scaled_structure_cost(base_cost: int, owned_count: int) -> int:
-	var cost: float = float(base_cost)
-	for copy_index: int in owned_count:
-		cost *= second_copy_cost_multiplier if copy_index == 0 else extra_copy_cost_multiplier
-	return roundi(cost)
+	if copy_cost_multipliers.is_empty():
+		return base_cost
+	var multiplier: float = copy_cost_multipliers[mini(maxi(owned_count, 0), copy_cost_multipliers.size() - 1)]
+	return roundi(float(base_cost) * multiplier)
+
+
+## Tope de tropas para un jugador con `farm_level` granjas.
+func get_unit_cap_for_level(farm_level: int) -> int:
+	if unit_cap_override > 0:
+		return unit_cap_override
+	if unit_cap_by_farm_level.is_empty():
+		return 1
+	return unit_cap_by_farm_level[clampi(farm_level, 0, unit_cap_by_farm_level.size() - 1)]
 
 
 func get_sell_refund(invested_gold: int) -> int:
@@ -86,8 +102,18 @@ func get_validation_errors() -> PackedStringArray:
 		errors.append("GameRules: costes de reroll negativos")
 	if reroll_decay_interval <= 0.0:
 		errors.append("GameRules: reroll_decay_interval debe ser > 0")
-	if max_units_per_team < 1:
-		errors.append("GameRules: max_units_per_team debe ser >= 1")
+	if unit_cap_by_farm_level.is_empty():
+		errors.append("GameRules: unit_cap_by_farm_level vacío")
+	for cap: int in unit_cap_by_farm_level:
+		if cap < 1:
+			errors.append("GameRules: unit_cap_by_farm_level contiene valores < 1")
+			break
+	if copy_cost_multipliers.is_empty():
+		errors.append("GameRules: copy_cost_multipliers vacío")
+	for multiplier: float in copy_cost_multipliers:
+		if multiplier <= 0.0:
+			errors.append("GameRules: copy_cost_multipliers contiene valores <= 0")
+			break
 	if plot_costs.size() != PLOT_COUNT:
 		errors.append("GameRules: plot_costs tiene %d valores, se esperaban %d" % [plot_costs.size(), PLOT_COUNT])
 	for cost: int in plot_costs:

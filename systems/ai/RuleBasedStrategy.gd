@@ -179,6 +179,9 @@ func score_card(ai: AIController, card: CardData) -> int:
 		CardData.CardType.STRUCTURE:
 			return _score_structure(ai, card.structure, threat, barracks)
 		CardData.CardType.DIRECT_UNIT:
+			# Sin hueco bajo el tope de tropas la carta sería rechazada.
+			if army + card.get_unit_count_for(ai.player_id) > ai.get_unit_cap():
+				return 0
 			# Defensa urgente: por encima de cualquier construcción.
 			if threat > army:
 				return 110
@@ -203,6 +206,9 @@ func _score_structure(ai: AIController, structure: StructureData, threat: int, b
 	match structure.kind:
 		StructureData.Kind.FARM:
 			if owned < farm_priority_count:
+				return 100
+			# Con el ejército cerca del tope, otra granja es lo que lo amplía.
+			if owned < structure.max_level and ai.get_army_size() >= ai.get_unit_cap() - 2:
 				return 100
 			return 55 if owned < farm_max_count else 15
 		StructureData.Kind.TOWER:

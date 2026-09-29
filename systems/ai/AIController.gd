@@ -103,6 +103,11 @@ func get_threat() -> int:
 	return threat
 
 
+## Tropas que puede tener vivas según el nivel de sus granjas.
+func get_unit_cap() -> int:
+	return lane.get_unit_cap(player_id)
+
+
 func get_army_size() -> int:
 	return lane.get_alive_count(player_id)
 

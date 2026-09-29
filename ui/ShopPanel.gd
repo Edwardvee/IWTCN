@@ -138,6 +138,7 @@ func _refresh_affordability() -> void:
 		if view.card != null:
 			var cost: int = EconomyManager.get_card_cost(GameManager.local_player_id, view.card)
 			view.set_affordable(gold >= cost, maxi(0, cost - gold))
+			view.refresh_name()
 	_reroll_button.modulate = Color.WHITE if gold >= _reroll_cost else Color(1.0, 1.0, 1.0, 0.55)
 
 

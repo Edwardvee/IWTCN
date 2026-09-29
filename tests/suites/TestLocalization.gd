@@ -96,9 +96,9 @@ func test_switching_language_changes_text() -> void:
 	Localization.set_language("en", false)
 	assert_eq(tr("Slot ocupado"), "Slot is occupied", "inglés")
 	assert_eq(tr("Farm"), "Farm", "inglés: el nombre no cambia")
-	assert_eq(tr("Despliega 3 Soldiers en el carril."), "Deploys 3 Soldiers in the lane.", "descripción en inglés")
+	assert_eq(tr("Despliega Soldiers en el carril. Cuántos salen depende del nivel de tu Soldier Barracks (3 a 5)."), "Deploys Soldiers in the lane. How many depends on your Soldier Barracks level (3 to 5).", "descripción en inglés")
 	Localization.set_language("es", false)
-	assert_eq(tr("Despliega 3 Soldiers en el carril."), "Despliega 3 Soldados en el carril.", "descripción en español")
+	assert_eq(tr("Despliega Soldiers en el carril. Cuántos salen depende del nivel de tu Soldier Barracks (3 a 5)."), "Despliega Soldados en el carril. Cuántos salen depende del nivel de tu Cuartel de soldados (3 a 5).", "descripción en español")
 
 
 func test_unknown_language_falls_back_to_english() -> void:

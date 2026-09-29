@@ -166,7 +166,7 @@ func set_card(p_offer_index: int, p_card: CardData) -> void:
 	var color: Color = type_color(card.card_type)
 	_type_label.text = tr(TYPE_NAMES.get(card.card_type, ""))
 	_type_style.bg_color = color
-	_name_label.text = tr(card.display_name)
+	_name_label.text = _display_name()
 	_fit_font(_name_label, NAME_FONT_SIZE, NAME_MIN_FONT_SIZE, CARD_WIDTH - 44.0)
 	_description_label.text = tr(card.description)
 	refresh_cost()
@@ -178,6 +178,19 @@ func set_card(p_offer_index: int, p_card: CardData) -> void:
 	_icon_team.texture = team_texture
 	_icon_team.modulate = MatchTypes.team_color(GameManager.local_player_id)
 	_icon_team.visible = team_texture != null
+
+
+## "3 × Soldados" en las cartas de unidades (la cantidad depende del cuartel).
+func _display_name() -> String:
+	if card.card_type == CardData.CardType.DIRECT_UNIT:
+		return tr("%d × %s") % [card.get_unit_count_for(GameManager.local_player_id), tr(card.display_name)]
+	return tr(card.display_name)
+
+
+## Actualiza el nombre cuando cambia la cantidad de unidades (subió el cuartel).
+func refresh_name() -> void:
+	if card != null and _name_label != null:
+		_name_label.text = _display_name()
 
 
 ## Precio real para el jugador local (sube con cada copia construida).

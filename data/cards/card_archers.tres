@@ -7,11 +7,13 @@
 [resource]
 script = ExtResource("1_77y1p")
 id = &"card_archers"
-display_name = "2 Archers"
-description = "Despliega 2 Archers en el carril."
+display_name = "Archers"
+description = "Despliega Archers en el carril. Cuántos salen depende del nivel de tu Archer Barracks (2 a 4)."
 card_type = 2
 cost = 50
 unit = ExtResource("2_lvxl0")
-unit_count = 2
+unit_count = 1
+unit_count_structure = &"archer_barracks"
+unit_count_by_level = PackedInt32Array(2, 2, 2, 3, 3, 4)
 color = Color(0.55, 0.9, 0.45, 1)
 icon = ExtResource("9_icon")

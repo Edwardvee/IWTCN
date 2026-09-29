@@ -27,7 +27,7 @@ func _run() -> void:
 	var units_per_team: int = int(args.get("units", "80"))
 	var seconds: float = float(args.get("seconds", "30"))
 	_build_fixture()
-	GameManager.get_rules().max_units_per_team = maxi(units_per_team, 1)
+	GameManager.get_rules().unit_cap_override = maxi(units_per_team, 1)
 	GameManager.start_match(MatchTypes.GameMode.SPECTATE, int(args.get("seed", "7")))
 	GameManager.set_physics_process(false)
 	_give_towers()

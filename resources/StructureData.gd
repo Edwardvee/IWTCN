@@ -29,6 +29,11 @@ enum Kind { FARM, SPAWNER, TOWER }
 @export var spawn_interval_per_level: PackedFloat32Array = PackedFloat32Array()
 ## Mejora de las unidades de spawn_unit por cada estructura adicional de
 ## este tipo (la primera da las estadísticas base).
+## Velocidad de ataque de las unidades que produce (o compras con carta) según
+## el nivel de ESTA estructura, índices 0..max_level (0 = sin ninguna). Es un
+## multiplicador de su ritmo de ataque base: 1.2 = ataca un 20 % más rápido.
+## Se fija al aparecer la unidad. Vacío = sin escalado.
+@export var unit_attack_speed_per_level: PackedFloat32Array = PackedFloat32Array()
 @export var unit_bonus_damage_per_extra_building: float = 0.0
 @export var unit_bonus_hp_per_extra_building: float = 0.0
 
@@ -95,6 +100,13 @@ func get_tower_cooldown(level: int) -> float:
 	return _float_at_level(tower_cooldown_per_level, level)
 
 
+## Multiplicador de velocidad de ataque de las unidades a nivel `level` (0 = sin estructura).
+func get_unit_attack_speed(level: int) -> float:
+	if unit_attack_speed_per_level.is_empty():
+		return 1.0
+	return unit_attack_speed_per_level[clampi(level, 0, unit_attack_speed_per_level.size() - 1)]
+
+
 func enables_conversion(level: int) -> bool:
 	return conversion_min_level > 0 and level >= conversion_min_level
 
@@ -118,6 +130,12 @@ func get_validation_errors() -> PackedStringArray:
 				errors.append("%s: SPAWNER sin spawn_unit" % label)
 			_check_level_array(errors, label, "spawn_count_per_level", spawn_count_per_level.size())
 			_check_level_array(errors, label, "spawn_interval_per_level", spawn_interval_per_level.size())
+			if not unit_attack_speed_per_level.is_empty() and unit_attack_speed_per_level.size() != max_level + 1:
+				errors.append("%s: unit_attack_speed_per_level tiene %d valores, se esperaban %d (niveles 0..%d)" % [label, unit_attack_speed_per_level.size(), max_level + 1, max_level])
+			for value: float in unit_attack_speed_per_level:
+				if value <= 0.0:
+					errors.append("%s: unit_attack_speed_per_level contiene valores <= 0" % label)
+					break
 			for value: float in spawn_interval_per_level:
 				if value <= 0.0:
 					errors.append("%s: spawn_interval_per_level contiene valores <= 0" % label)

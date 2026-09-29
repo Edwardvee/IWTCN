@@ -3,7 +3,7 @@ extends GameCommand
 ## Jugar (comprar) una carta de la tienda del jugador.
 ##   STRUCTURE   → se construye en slot_index (el cliente lo resuelve al soltar
 ##                 sobre un plot; la autoridad valida que el slot sea válido)
-##   DIRECT_UNIT → aparecen unit_count unidades en deploy_position (mitad propia)
+##   DIRECT_UNIT → aparecen CardData.get_unit_count_for(jugador) unidades en deploy_position (mitad propia)
 ##   GLOBAL_BUFF → se aplica el buff (se puede soltar en cualquier sitio)
 ## card_id acompaña a offer_index para detectar ofertas obsoletas (la tienda
 ## cambió entre el arrastre y la llegada del comando).
@@ -54,8 +54,8 @@ func validate(processor: CommandProcessor) -> String:
 				return Reason.make("Carril no encontrado")
 			if not lane.is_valid_deploy_position(player_id, deploy_position):
 				return Reason.make("Suelta las unidades en tu mitad del carril")
-			if lane.get_alive_count(player_id) + card.unit_count > lane.get_unit_cap():
-				return Reason.make("Límite de tropas alcanzado (%d)", [lane.get_unit_cap()])
+			if lane.get_alive_count(player_id) + card.get_unit_count_for(player_id) > lane.get_unit_cap(player_id):
+				return Reason.make("Límite de tropas alcanzado (%d): sube tus granjas", [lane.get_unit_cap(player_id)])
 			return ""
 		CardData.CardType.GLOBAL_BUFF:
 			return "" if card.buff != null else Reason.make("Mejora sin datos")
@@ -80,8 +80,9 @@ func _apply_effect(processor: CommandProcessor, card: CardData, cost: int) -> bo
 		CardData.CardType.STRUCTURE:
 			return processor.get_grid(player_id).build(slot_index, card.structure, cost) != null
 		CardData.CardType.DIRECT_UNIT:
-			var spawned: Array[UnitBase] = processor.get_lane().spawn_group_at(card.unit, player_id, card.unit_count, deploy_position)
-			return spawned.size() == card.unit_count
+			var count: int = card.get_unit_count_for(player_id)
+			var spawned: Array[UnitBase] = processor.get_lane().spawn_group_at(card.unit, player_id, count, deploy_position)
+			return spawned.size() == count
 		CardData.CardType.GLOBAL_BUFF:
 			if not BuffSystem.apply_buff(player_id, card.buff):
 				return false
