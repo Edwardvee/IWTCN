@@ -50,9 +50,9 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 theme_override_constants/margin_left = 90
-theme_override_constants/margin_top = 690
+theme_override_constants/margin_top = 610
 theme_override_constants/margin_right = 90
-theme_override_constants/margin_bottom = 40
+theme_override_constants/margin_bottom = 100
 
 [node name="Panel" type="PanelContainer" parent="Margin"]
 layout_mode = 2
@@ -61,6 +61,14 @@ size_flags_vertical = 4
 [node name="Layout" type="VBoxContainer" parent="Margin/Panel"]
 layout_mode = 2
 theme_override_constants/separation = 14
+
+[node name="PlayAI" type="Button" parent="Margin/Panel/Layout"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 124)
+layout_mode = 2
+theme_type_variation = &"PrimaryButton"
+theme_override_font_sizes/font_size = 50
+text = "Jugar contra la IA"
 
 [node name="Options" type="HBoxContainer" parent="Margin/Panel/Layout"]
 layout_mode = 2
@@ -74,16 +82,9 @@ size_flags_horizontal = 3
 theme_type_variation = &"StoneButton"
 theme_override_font_sizes/font_size = 34
 
-[node name="PlayAI" type="Button" parent="Margin/Panel/Layout"]
-unique_name_in_owner = true
-custom_minimum_size = Vector2(0, 124)
-layout_mode = 2
-theme_type_variation = &"PrimaryButton"
-theme_override_font_sizes/font_size = 50
-text = "Jugar contra la IA"
-
 [node name="Spectate" type="Button" parent="Margin/Panel/Layout"]
 unique_name_in_owner = true
+visible = false
 custom_minimum_size = Vector2(0, 100)
 layout_mode = 2
 theme_type_variation = &"WoodButton"

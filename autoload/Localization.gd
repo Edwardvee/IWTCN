@@ -5,7 +5,7 @@ extends Node
 ## el idioma (el guardado por el jugador o, si no hay, el del sistema) y lo
 ## guarda en user://settings.cfg. Todo texto visible pasa por tr(); los Control
 ## (Label, Button…) además traducen solos el texto que reciben.
-## Por defecto se usa inglés salvo que el sistema esté en español.
+## Por defecto (primera vez) se usa inglés, sea cual sea el idioma del sistema.
 
 signal language_changed(code: String)
 
@@ -64,7 +64,8 @@ func _load_saved_language() -> String:
 		var saved: String = str(config.get_value("general", "language", ""))
 		if LANGUAGES.has(saved):
 			return saved
-	return "es" if OS.get_locale_language() == "es" else "en"
+	# La primera vez siempre en inglés (el jugador puede cambiarlo con la bandera del menú).
+	return "en"
 
 
 func _save_language(code: String) -> void:
