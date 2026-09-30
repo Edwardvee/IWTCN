@@ -10,6 +10,10 @@ signal drag_finished
 
 const BOTTOM_BAR_HEIGHT: float = 420.0
 const MARGIN: float = 24.0
+## Distancia al borde de los botones a partir de la cual se vuelven transparentes al arrastrar
+## una estructura hacia ellos (para ver el plot que tapan).
+const FADE_MARGIN: float = 150.0
+const FADED_ALPHA: float = 0.3
 
 var local_input: LocalInputController = null
 
@@ -66,6 +70,12 @@ func _process(_delta: float) -> void:
 	var now: float = GameManager.match_state.match_time
 	for button: SpellButton in _buttons:
 		button.set_cooldown(maxf(0.0, state.get_spell_ready_at(button.spell.id) - now), button.spell.cooldown)
+
+
+## Mientras arrastras una estructura hacia los botones se vuelven medio transparentes.
+func set_drag_pointer(screen_position: Vector2, active: bool) -> void:
+	var near: bool = active and _column.visible and _column.get_global_rect().grow(FADE_MARGIN).has_point(screen_position)
+	_column.modulate.a = FADED_ALPHA if near else 1.0
 
 
 func _refresh_visibility() -> void:

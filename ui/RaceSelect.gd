@@ -4,14 +4,13 @@ extends Control
 ## la raza elegida ocupa el centro en grande y las otras dos esperan abajo; al tocar una
 ## de ellas la rueda gira y cambia de sitio. Hay SECONDS segundos para decidir (cuenta
 ## atrás en un anillo); al acabar, o al pulsar "Elegir", la elección queda fijada.
-##   VS_AI:        fija la raza y arranca la partida.
-##   ONLINE_HOST:  fija la raza y espera a la del invitado (NetworkManager arranca).
+##   VS_AI:        fija la raza y pasa al selector de edificio (BuildingSelect).
+##   ONLINE_HOST:  fija la raza y espera a la del invitado (NetworkManager sigue).
 ##   ONLINE_GUEST: envía su raza al anfitrión y espera el aviso de inicio.
 
 enum Mode { VS_AI, ONLINE_HOST, ONLINE_GUEST }
 
 const SCENE_PATH: String = "res://scenes/RaceSelect.tscn"
-const MAIN_SCENE: String = "res://scenes/Main.tscn"
 const SECONDS: float = 5.0
 
 const CARD_SIZE: Vector2 = Vector2(620.0, 700.0)
@@ -132,10 +131,10 @@ func lock_choice() -> void:
 			NetworkManager.guest_race_locked(race.id)
 
 
+## Con la raza fijada toca elegir el edificio modificador (BuildingSelect), que arranca la partida.
 func _start_vs_ai() -> void:
 	NetworkManager.close()
-	GameManager.configure_next_match(MatchTypes.GameMode.VS_AI, 0, MatchTypes.PLAYER_BOTTOM)
-	get_tree().change_scene_to_file(MAIN_SCENE)
+	BuildingSelect.open(get_tree(), Mode.VS_AI)
 
 
 func _leave() -> void:

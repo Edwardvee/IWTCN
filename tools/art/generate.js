@@ -10,6 +10,8 @@ const modules = {
   ui: () => require('./ui').generate(),
   audio: () => require('./audio').generate(),
   emotes: () => require('./emotes').generate(),
+  // Edificios modificadores de partida (ModBuildings).
+  mods: () => require('./mods').generate(),
   // Unidades y estructuras de las razas (goblin, elf). Ver tools/art/races.js.
   razas: () => {
     for (const race of Object.keys(require('./races').RACES)) {

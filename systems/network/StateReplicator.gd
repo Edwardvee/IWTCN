@@ -87,6 +87,7 @@ func _apply_player(data: Dictionary) -> void:
 	var race_id: StringName = StringName(str(data.get("race", player_state.race_id)))
 	if race_id != player_state.race_id:
 		player_state.race_id = race_id
+	player_state.mod_building = StringName(str(data.get("mod", player_state.mod_building)))
 	var gold: int = int(data.get("gold", player_state.gold))
 	if gold != player_state.gold:
 		player_state.gold = gold

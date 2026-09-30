@@ -90,6 +90,8 @@ var _pending_conversions: Array[Vector2i] = []
 var _rains: Array[Dictionary] = []
 ## Nº de grupos aparecidos por equipo (para el escalonado lateral).
 var _group_counter: Array[int] = [0, 0]
+## Tropas caídas de cada equipo que el Nigromante puede levantar: [UnitData, posición].
+var _graveyards: Array[Array] = []
 
 ## --- Rendimiento ---
 ## Índice espacial: unidades vivas de cada equipo ordenadas por Y (con sus Y en
@@ -115,6 +117,8 @@ var _scratch_units: Array[UnitBase] = []
 var _scratch_distances: PackedFloat64Array = PackedFloat64Array()
 ## Unidades vivas por equipo (se recalcula solo cuando cambia el registro).
 var _alive_counts: Array[int] = [0, 0]
+## Lo mismo sin contar las tropas temporales (milicias de hechizo): las que cuentan para el tope.
+var _army_counts: Array[int] = [0, 0]
 var _counts_dirty: bool = true
 ## Proyectiles ya usados, listos para reutilizar (evita crear/liberar nodos).
 var _projectile_pool: Array[Projectile] = []
@@ -125,6 +129,8 @@ func _init() -> void:
 		var list: Array[UnitBase] = []
 		_team_lists.append(list)
 		_team_ys.append(PackedFloat32Array())
+		var graveyard: Array = []
+		_graveyards.append(graveyard)
 
 
 func _ready() -> void:
@@ -175,6 +181,8 @@ func simulate_step(delta: float) -> void:
 	_resolve_conversions()
 	_lap(&"golpes_y_curas")
 	_process_deaths()
+	_simulate_necromancers(delta)
+	_simulate_sudden_death(delta)
 	_update_dying(delta)
 	_check_castles()
 	_lap(&"muertes")
@@ -203,7 +211,7 @@ func spawn_unit(unit_data: UnitData, team: int, world_position: Vector2, ignore_
 	if unit_data == null or not MatchTypes.is_valid_player_id(team) or GameManager.match_state == null:
 		push_error("LaneManager.spawn_unit: parámetros inválidos")
 		return null
-	if not ignore_cap and get_alive_count(team) >= get_unit_cap(team):
+	if not ignore_cap and get_army_count(team) >= get_unit_cap(team):
 		return null
 	var unit: UnitBase = UnitBase.new()
 	unit.setup(GameManager.match_state.allocate_entity_id(), team, unit_data, self, UnitStatModifiers.from_barracks(team, unit_data).combined_with(UnitStatModifiers.from_race(team, unit_data)))
@@ -351,17 +359,26 @@ func get_unit_cap(team: int) -> int:
 		return 80
 	var player_state: PlayerState = GameManager.get_player_state(team)
 	var farm_level: int = player_state.grid.count_structures(rules.unit_cap_structure_id) if player_state != null else 0
-	return rules.get_unit_cap_for_level(farm_level)
+	return rules.get_unit_cap_for_level(farm_level) + BuffSystem.get_unit_cap_bonus(team)
 
 
 func get_alive_count(team: int) -> int:
 	if _counts_dirty:
 		_alive_counts = [0, 0]
+		_army_counts = [0, 0]
 		for unit: UnitBase in _units:
 			if MatchTypes.is_valid_player_id(unit.team):
 				_alive_counts[unit.team] += 1
+				if unit.data.lifetime <= 0.0:
+					_army_counts[unit.team] += 1
 		_counts_dirty = false
 	return _alive_counts[team] if MatchTypes.is_valid_player_id(team) else 0
+
+
+## Tropas que cuentan para el tope: las vivas menos las milicias temporales de hechizo.
+func get_army_count(team: int) -> int:
+	get_alive_count(team)
+	return _army_counts[team] if MatchTypes.is_valid_player_id(team) else 0
 
 
 ## El registro de unidades cambió (aparece, muere, se convierte): el índice
@@ -762,7 +779,64 @@ func _process_deaths() -> void:
 		_units_by_id.erase(unit.unit_id)
 		_dying.append(unit)
 		_mark_units_changed()
+		_bury(unit)
 		EventBus.unidad_eliminada.emit(unit, unit.team)
+
+
+## Apunta a la tropa caída para que un Nigromante pueda levantarla (las milicias
+## temporales de hechizo no cuentan).
+func _bury(unit: UnitBase) -> void:
+	if unit.data.lifetime > 0.0 or not MatchTypes.is_valid_player_id(unit.team):
+		return
+	var graveyard: Array = _graveyards[unit.team]
+	graveyard.append([unit.data, unit.global_position])
+	if graveyard.size() > ModBuildings.NECROMANCER_GRAVEYARD_LIMIT:
+		graveyard.pop_front()
+
+
+## Muerte súbita: con la partida muy larga los dos castillos se van desgastando por igual,
+## así que siempre acaba ganando quien lleve más vida.
+func _simulate_sudden_death(delta: float) -> void:
+	var rules: GameRules = GameManager.get_rules()
+	if rules == null:
+		return
+	var dps: float = rules.get_sudden_death_dps(GameManager.match_state.match_time)
+	if dps <= 0.0:
+		return
+	for player_id: int in MatchTypes.PLAYER_COUNT:
+		damage_castle(player_id, dps * delta)
+
+
+## Nigromante: cada NECROMANCER_INTERVAL segundos levanta a una tropa caída al azar,
+## que reaparece donde cayó con un tinte celeste verdoso. Si aún no ha caído nadie (o
+## el ejército está al tope) el poder queda listo y actúa en cuanto pueda.
+func _simulate_necromancers(delta: float) -> void:
+	for player_state: PlayerState in GameManager.match_state.players:
+		if player_state.mod_building != ModBuildings.NECROMANCER:
+			continue
+		player_state.mod_timer = minf(player_state.mod_timer + delta, ModBuildings.NECROMANCER_INTERVAL)
+		if player_state.mod_timer < ModBuildings.NECROMANCER_INTERVAL:
+			continue
+		if revive_random_fallen(player_state.player_id) != null:
+			player_state.mod_timer = 0.0
+
+
+## Levanta a una tropa caída del equipo elegida con el azar de combate. null si no hay
+## caídos o no queda sitio en el ejército.
+func revive_random_fallen(team: int) -> UnitBase:
+	var graveyard: Array = _graveyards[team]
+	if graveyard.is_empty() or get_army_count(team) >= get_unit_cap(team):
+		return null
+	var rng: RandomNumberGenerator = GameManager.match_state.random.get_stream(MatchRandom.STREAM_COMBAT, team)
+	var picked: int = rng.randi_range(0, graveyard.size() - 1)
+	var entry: Array = graveyard[picked]
+	graveyard.remove_at(picked)
+	var spawn_position: Vector2 = entry[1]
+	spawn_position.x = clampf(spawn_position.x, lane_center_x - lane_half_width, lane_center_x + lane_half_width)
+	var unit: UnitBase = spawn_unit(entry[0] as UnitData, team, spawn_position)
+	if unit != null:
+		unit.mark_revived()
+	return unit
 
 
 func _update_dying(delta: float) -> void:
@@ -811,6 +885,8 @@ func clear_units() -> void:
 	_pending_conversions.clear()
 	_rains.clear()
 	_group_counter = [0, 0]
+	for graveyard: Array in _graveyards:
+		graveyard.clear()
 
 
 func to_dict() -> Dictionary:
@@ -866,7 +942,11 @@ func to_snapshot() -> Dictionary:
 		projectile_ids[index * 3 + 2] = projectile.team
 		projectile_floats[index * 2] = projectile.global_position.x
 		projectile_floats[index * 2 + 1] = projectile.global_position.y
-	return {"ui": unit_ids, "uf": unit_floats, "ut": types, "pi": projectile_ids, "pf": projectile_floats}
+	var revived_ids: PackedInt32Array = PackedInt32Array()
+	for unit: UnitBase in _units:
+		if unit.revived:
+			revived_ids.append(unit.unit_id)
+	return {"ui": unit_ids, "uf": unit_floats, "ut": types, "pi": projectile_ids, "pf": projectile_floats, "rv": revived_ids}
 
 
 func _on_partida_iniciada(_modo: int, _semilla: int) -> void:
@@ -883,6 +963,9 @@ func apply_snapshot(data: Dictionary) -> void:
 	var unit_floats: PackedFloat32Array = data.get("uf", PackedFloat32Array())
 	var types: PackedStringArray = data.get("ut", PackedStringArray())
 	var seen_units: Dictionary[int, bool] = {}
+	var revived_ids: Dictionary[int, bool] = {}
+	for revived_id: int in data.get("rv", PackedInt32Array()):
+		revived_ids[revived_id] = true
 	for index: int in unit_ids.size() / 3:
 		var unit_id: int = unit_ids[index * 3]
 		var team: int = unit_ids[index * 3 + 1]
@@ -900,6 +983,8 @@ func apply_snapshot(data: Dictionary) -> void:
 			if unit.team != team:
 				convert_unit(unit, team)
 		unit.network_position = network_pos
+		if revived_ids.has(unit_id) and not unit.revived:
+			unit.mark_revived()
 		unit.apply_network_health(unit_floats[index * 4 + 2], unit_floats[index * 4 + 3], announce_health)
 	var index: int = 0
 	while index < _units.size():

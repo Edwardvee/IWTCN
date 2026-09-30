@@ -30,6 +30,8 @@ const SUITE_PATHS: PackedStringArray = [
 	"res://tests/suites/TestBuffIcons.gd",
 	"res://tests/suites/TestRaceSelect.gd",
 	"res://tests/suites/TestTroopCounter.gd",
+	"res://tests/suites/TestModBuildings.gd",
+	"res://tests/suites/TestMatchLimits.gd",
 ]
 
 

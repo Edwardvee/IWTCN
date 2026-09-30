@@ -172,16 +172,17 @@ func _pick_weighted_index(candidates: Array[CardData], rng: RandomNumberGenerato
 
 func _decay_reroll_cost(player_state: PlayerState, rules: GameRules, delta: float) -> void:
 	var shop: ShopState = player_state.shop
-	if shop.reroll_cost <= rules.reroll_base_cost:
+	var base_cost: int = rules.reroll_base_cost + GameManager.match_state.reroll_surcharge
+	if shop.reroll_cost <= base_cost:
 		shop.reroll_decay_timer = 0.0
 		return
 	shop.reroll_decay_timer += delta
 	var changed: bool = false
-	while shop.reroll_decay_timer >= rules.reroll_decay_interval and shop.reroll_cost > rules.reroll_base_cost:
+	while shop.reroll_decay_timer >= rules.reroll_decay_interval and shop.reroll_cost > base_cost:
 		shop.reroll_decay_timer -= rules.reroll_decay_interval
-		shop.reroll_cost = maxi(rules.reroll_base_cost, shop.reroll_cost - rules.reroll_decay_amount)
+		shop.reroll_cost = maxi(base_cost, shop.reroll_cost - rules.reroll_decay_amount)
 		changed = true
-	if shop.reroll_cost <= rules.reroll_base_cost:
+	if shop.reroll_cost <= base_cost:
 		shop.reroll_decay_timer = 0.0
 	if changed:
 		EventBus.coste_reroll_actualizado.emit(player_state.player_id, shop.reroll_cost)

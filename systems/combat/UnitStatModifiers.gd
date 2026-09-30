@@ -61,6 +61,9 @@ static func from_buffs(player_id: int, unit_data: UnitData) -> UnitStatModifiers
 	var modifiers: UnitStatModifiers = UnitStatModifiers.new()
 	if unit_data == null:
 		return modifiers
+	# La Herrería suma daño a todas las tropas del jugador.
+	if ModBuildings.has(player_id, ModBuildings.FORGE):
+		modifiers.damage_multiplier += ModBuildings.FORGE_DAMAGE_BONUS
 	for buff: BuffData in BuffSystem.get_buffs(player_id):
 		if not buff.affects_unit(unit_data.id):
 			continue

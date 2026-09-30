@@ -54,7 +54,7 @@ func validate(processor: CommandProcessor) -> String:
 				return Reason.make("Carril no encontrado")
 			if not lane.is_valid_deploy_position(player_id, deploy_position):
 				return Reason.make("Suelta las unidades en tu mitad del carril")
-			if lane.get_alive_count(player_id) + card.get_unit_count_for(player_id) > lane.get_unit_cap(player_id):
+			if lane.get_army_count(player_id) + card.get_unit_count_for(player_id) > lane.get_unit_cap(player_id):
 				return Reason.make("Límite de tropas alcanzado (%d): sube tus granjas", [lane.get_unit_cap(player_id)])
 			return ""
 		CardData.CardType.GLOBAL_BUFF:

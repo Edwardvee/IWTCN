@@ -192,6 +192,9 @@ func score_card(ai: AIController, card: CardData) -> int:
 		CardData.CardType.GLOBAL_BUFF:
 			if card.buff.stat == BuffData.Stat.TOWER_FIRE_RATE:
 				return tower_buff_score if ai.count_structures(&"tower") >= 1 else 0
+			if card.buff.stat == BuffData.Stat.UNIT_CAP:
+				# Solo sirve si el ejército ya roza el tope.
+				return buff_army_score if army >= ai.get_unit_cap() - 3 else 0
 			if card.buff.stat == BuffData.Stat.PRODUCTION_INTERVAL:
 				return buff_production_score if barracks >= 2 else 5
 			return buff_army_score if army >= 4 else 5

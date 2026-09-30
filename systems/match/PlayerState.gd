@@ -23,6 +23,10 @@ var income_multiplier: float = 1.0
 ## Raza del jugador (data/races) y su multiplicador de ingresos, fijado al empezar.
 var race_id: StringName = &"human"
 var race_income_multiplier: float = 1.0
+## Edificio modificador elegido antes de la partida (ModBuildings.*, vacío = ninguno) y
+## segundos acumulados hacia su próximo efecto periódico (Nigromante).
+var mod_building: StringName = &""
+var mod_timer: float = 0.0
 ## Fracción de oro de ingresos aún no entregada (evita perder decimales).
 var income_remainder: float = 0.0
 ## Último emote mostrado, cuántos lleva (los clientes lo detectan por el contador)
@@ -70,6 +74,7 @@ func to_dict() -> Dictionary:
 		"shop": shop.to_dict(),
 		"buffs": buffs.duplicate(),
 		"race": race_id,
+		"mod": mod_building,
 		"emote": emote_id,
 		"emote_seq": emote_seq,
 		"spells": _spell_ready_to_dict(),

@@ -12,6 +12,8 @@ var players: Array[PlayerState] = []
 var next_entity_id: int = 1
 ## Única fuente de azar de la partida (tienda, combate, IA).
 var random: MatchRandom
+## Recargo del reroll para todos los jugadores (Estafador). Lo fija GameManager al empezar.
+var reroll_surcharge: int = 0
 ## Ganador al terminar (MatchTypes.NO_PLAYER = empate o partida en curso).
 var winner_player_id: int = MatchTypes.NO_PLAYER
 

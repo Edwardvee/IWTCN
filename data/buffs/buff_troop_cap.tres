@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="BuffData" format=3]
+
+[ext_resource type="Script" path="res://resources/BuffData.gd" id="1_cap"]
+
+[resource]
+script = ExtResource("1_cap")
+id = &"buff_troop_cap"
+display_name = "+5 Límite de tropas"
+stat = 6
+operation = 1
+value = 5.0

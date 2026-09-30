@@ -110,6 +110,18 @@ Los tests (`tests/TestBalance.gd`) fijan sus propios valores en memoria, así qu
 - **Menú de partida** (botón ≡ arriba a la izquierda, `ui/PauseMenu.gd`): Continuar, Opciones (volumen general, guardado en `settings.cfg`) y Rendirse (`SurrenderCommand`, con confirmación). Solo contra la IA pausa el juego; en online la partida sigue en marcha. No aparece en la cuenta atrás, de espectador ni en repeticiones. Con Escape también se abre y se cierra.
 - **Feedback visual**: números flotantes de daño/curación (`ui/FloatingTextLayer.gd`), avisos verdes de acciones completadas y rojos de errores, resaltado de slots válidos al arrastrar una estructura, "faltan N" en cartas inasequibles y aviso de oro (`-50`).
 
+## 6d. Edificios modificadores — `systems/match/ModBuildings.gd`
+
+Tras elegir raza, cada jugador elige 1 de 3 edificios al azar (`ui/BuildingSelect.gd`, 8 s) y su efecto dura toda la partida. Todos los valores son constantes de `ModBuildings.gd`: Mina de oro (+1 al ingreso base), Nigromante (revive una tropa caída cada 12 s, tinte celeste verdoso), Aserradero (−5 % coste de estructuras), Herrería (+3 % daño), Campamento de saqueadores (−2 oro por ciclo de cada granja rival), Estafador (+2 al reroll de ambos; se acumula si los dos lo tienen) y Canteros (+1000 vida del castillo). El arte sale de `node tools/art/generate.js mods` (`tools/art/mods.js`). En VS IA el rival recibe uno según la semilla; online el anfitrión los recoge en el protocolo v5 (`pick` / `mod` / `mods`).
+
+Los edificios se dibujan en el mundo junto a cada castillo (`entities/ModBuildingView.gd`, posición en `MOD_BUILDING_OFFSET` de `scenes/Main.gd`); tocarlos muestra su efecto.
+
+### Muerte súbita y límite de tropas
+
+- `GameRules` grupo *Sudden Death*: pasados `sudden_death_start` (420 s) los dos castillos pierden `castle_max_hp × sudden_death_damage_fraction` por segundo, y el daño se suma otra vez cada `sudden_death_ramp_interval` s. Evita las partidas eternas; el reloj se pone rojo.
+- Mejora `+5 Límite de tropas` (`data/buffs/buff_troop_cap.tres`, `BuffData.Stat.UNIT_CAP`, FLAT): se acumula por copia.
+- Las milicias del hechizo no cuentan para el tope (`LaneManager.get_army_count`).
+
 ## 7. Mapa, carril y cámara (código/escena)
 
 - Carril: exports de `systems/combat/LaneManager.gd` (`lane_top_y`, `lane_bottom_y`, `lane_half_width`, …) y separación de spawn (constantes arriba).

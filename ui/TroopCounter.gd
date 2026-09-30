@@ -61,7 +61,7 @@ func _refresh() -> void:
 		_label.text = "0/0"
 		return
 	var player_id: int = GameManager.local_player_id
-	var alive: int = source.get_alive_count(player_id)
+	var alive: int = source.get_army_count(player_id)
 	var limit: int = source.get_unit_cap(player_id)
 	_label.text = "%d/%d" % [alive, limit]
 	_label.add_theme_color_override("font_color", FULL_COLOR if alive >= limit else NORMAL_COLOR)

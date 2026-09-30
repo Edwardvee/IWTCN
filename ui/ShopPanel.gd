@@ -8,6 +8,9 @@ extends PanelContainer
 
 signal card_drag_started
 signal card_drag_finished
+## Mientras se arrastra una ESTRUCTURA: dónde está el puntero (active = false al soltar). Los
+## iconos de los lados se vuelven transparentes cuando el puntero se acerca.
+signal structure_drag_moved(screen_position: Vector2, active: bool)
 
 var local_input: LocalInputController = null
 
@@ -173,13 +176,17 @@ func _on_card_drag_started(view: CardView, screen_position: Vector2) -> void:
 	_move_preview(screen_position)
 	local_input.begin_card_drag(view.card)
 	card_drag_started.emit()
+	if view.card.card_type == CardData.CardType.STRUCTURE:
+		structure_drag_moved.emit(screen_position, true)
 
 
-func _on_card_drag_moved(_view: CardView, screen_position: Vector2) -> void:
+func _on_card_drag_moved(view: CardView, screen_position: Vector2) -> void:
 	if local_input == null:
 		return
 	_move_preview(screen_position)
 	local_input.update_card_drag(screen_position)
+	if view.card.card_type == CardData.CardType.STRUCTURE:
+		structure_drag_moved.emit(screen_position, true)
 
 
 func _on_card_drag_released(view: CardView, screen_position: Vector2) -> void:
@@ -190,6 +197,7 @@ func _on_card_drag_released(view: CardView, screen_position: Vector2) -> void:
 	_last_played_view = null if cancelled else view
 	local_input.end_card_drag(view.offer_index, view.card, screen_position, cancelled)
 	card_drag_finished.emit()
+	structure_drag_moved.emit(screen_position, false)
 
 
 func _move_preview(screen_position: Vector2) -> void:

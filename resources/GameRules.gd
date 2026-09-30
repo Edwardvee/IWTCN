@@ -14,6 +14,15 @@ const SLOTS_PER_PLOT: int = 4
 @export_group("Castle")
 @export var castle_max_hp: float = 3000.0
 
+@export_group("Sudden Death")
+## Muerte súbita: pasados estos segundos los DOS castillos pierden vida cada segundo (evita
+## las partidas eternas). 0 = desactivada.
+@export var sudden_death_start: float = 420.0
+## Vida que pierde cada castillo por segundo, como fracción de castle_max_hp.
+@export var sudden_death_damage_fraction: float = 0.004
+## Cada tantos segundos el daño se suma otra vez (x2, x3…) para que acabe sí o sí.
+@export var sudden_death_ramp_interval: float = 30.0
+
 @export_group("Shop")
 @export var shop_offer_size: int = 3
 @export var reroll_base_cost: int = 10
@@ -62,6 +71,16 @@ const SLOTS_PER_PLOT: int = 4
 @export_range(1, 10) var max_structure_level: int = 5
 ## Límite inferior del intervalo de producción de unidades con buffs.
 @export var min_production_interval: float = 1.0
+
+
+## Vida que pierde cada castillo por segundo en el instante `match_time` (0 antes de la muerte súbita).
+func get_sudden_death_dps(match_time: float) -> float:
+	if sudden_death_start <= 0.0 or match_time < sudden_death_start:
+		return 0.0
+	var steps: int = 1
+	if sudden_death_ramp_interval > 0.0:
+		steps += floori((match_time - sudden_death_start) / sudden_death_ramp_interval)
+	return castle_max_hp * sudden_death_damage_fraction * float(steps)
 
 
 func get_plot_cost(plot_index: int) -> int:

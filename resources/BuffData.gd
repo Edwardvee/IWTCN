@@ -8,7 +8,8 @@ extends Resource
 
 ## TOWER_FIRE_RATE: PERCENT, +0.10 = las torres disparan un 10 % más rápido
 ## (se suma por cada copia comprada). No afecta a las unidades.
-enum Stat { MOVE_SPEED, MAX_HP, DAMAGE_MITIGATION, DAMAGE, PRODUCTION_INTERVAL, TOWER_FIRE_RATE }
+## UNIT_CAP: FLAT, +5 = puedes tener 5 tropas más a la vez (se suma por cada copia comprada).
+enum Stat { MOVE_SPEED, MAX_HP, DAMAGE_MITIGATION, DAMAGE, PRODUCTION_INTERVAL, TOWER_FIRE_RATE, UNIT_CAP }
 enum Operation { PERCENT, FLAT }
 
 @export var id: StringName = &""
@@ -16,7 +17,7 @@ enum Operation { PERCENT, FLAT }
 @export var stat: Stat = Stat.MOVE_SPEED
 @export var operation: Operation = Operation.PERCENT
 @export var value: float = 0.0
-## Unidades afectadas por id. Vacío = todas. Ignorado en PRODUCTION_INTERVAL y TOWER_FIRE_RATE.
+## Unidades afectadas por id. Vacío = todas. Ignorado en PRODUCTION_INTERVAL, TOWER_FIRE_RATE y UNIT_CAP.
 @export var target_unit_ids: Array[StringName] = []
 
 

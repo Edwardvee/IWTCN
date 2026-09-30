@@ -66,6 +66,10 @@ var _collision: CollisionShape2D = null
 var _spawn_modifiers: UnitStatModifiers = null
 ## Solo clientes online: última posición recibida del servidor (se interpola).
 var network_position: Vector2 = Vector2.ZERO
+## Levantada por un Nigromante: se ve celeste verdosa. Los destellos (cura, conversión)
+## vuelven a este color, no al blanco.
+var revived: bool = false
+var _base_modulate: Color = Color.WHITE
 
 
 func setup(p_unit_id: int, p_team: int, p_data: UnitData, p_lane: LaneManager, spawn_modifiers: UnitStatModifiers = null) -> void:
@@ -289,7 +293,7 @@ func change_team(new_team: int) -> void:
 	state_machine.transition_to(STATE_ADVANCE)
 	modulate = Color(0.85, 0.45, 1.0)
 	var tween: Tween = create_tween()
-	tween.tween_property(self, "modulate", Color.WHITE, 0.5)
+	tween.tween_property(self, "modulate", _base_modulate, 0.5)
 
 
 func calculate_damage_taken(incoming: float) -> float:
@@ -394,7 +398,14 @@ func play_animation(animation_name: StringName, restart: bool = false) -> void:
 func _play_heal_feedback() -> void:
 	modulate = HEAL_FLASH_COLOR
 	var tween: Tween = create_tween()
-	tween.tween_property(self, "modulate", Color.WHITE, HEAL_FLASH_DURATION)
+	tween.tween_property(self, "modulate", _base_modulate, HEAL_FLASH_DURATION)
+
+
+## Tinte de tropa levantada por un Nigromante.
+func mark_revived() -> void:
+	revived = true
+	_base_modulate = ModBuildings.REVIVED_TINT
+	modulate = _base_modulate
 
 
 func _create_collision() -> void:

@@ -57,6 +57,8 @@ static func describe(buff: BuffData, count: int) -> String:
 			body = TranslationServer.translate("Tus unidades reciben un %d %% menos de daño") % mini(percent, 90)
 		BuffData.Stat.PRODUCTION_INTERVAL:
 			body = TranslationServer.translate("Tus cuarteles e iglesias producen %.1f s más rápido") % absf(total)
+		BuffData.Stat.UNIT_CAP:
+			body = TranslationServer.translate("Tu límite de tropas sube en %d") % roundi(total)
 		BuffData.Stat.TOWER_FIRE_RATE:
 			body = TranslationServer.translate("Tus torres disparan un %d %% más rápido") % percent
 	return "%s

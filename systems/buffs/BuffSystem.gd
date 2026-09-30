@@ -36,6 +36,15 @@ static func get_tower_fire_rate_multiplier(player_id: int) -> float:
 	return 1.0 + bonus
 
 
+## Tropas extra que permiten las mejoras de límite de tropas del jugador.
+static func get_unit_cap_bonus(player_id: int) -> int:
+	var bonus: float = 0.0
+	for buff: BuffData in get_buffs(player_id):
+		if buff.stat == BuffData.Stat.UNIT_CAP:
+			bonus += buff.value
+	return roundi(bonus)
+
+
 ## Intervalo de producción de unidades con los buffs PRODUCTION_INTERVAL
 ## aplicados, nunca por debajo de rules.min_production_interval.
 static func get_production_interval(player_id: int, base_interval: float) -> float:

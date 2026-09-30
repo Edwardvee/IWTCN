@@ -24,6 +24,7 @@ var input_blocked: bool = false
 var lane: LaneManager = null
 
 var _grids: Array[GridManager] = []
+var _mod_views: Array[ModBuildingView] = []
 var _press_position: Vector2 = Vector2.ZERO
 var _is_pressed: bool = false
 var _dragged_card: CardData = null
@@ -34,6 +35,11 @@ var _spell_drag_world: Vector2 = Vector2.ZERO
 
 func _ready() -> void:
 	EventBus.partida_iniciada.connect(_on_partida_iniciada)
+
+
+func register_mod_view(view: ModBuildingView) -> void:
+	if not _mod_views.has(view):
+		_mod_views.append(view)
 
 
 func register_grid(grid: GridManager) -> void:
@@ -67,6 +73,10 @@ func screen_to_world(screen_position: Vector2) -> Vector2:
 
 ## Público para poder probarlo sin simular eventos de input.
 func handle_tap(world_position: Vector2) -> void:
+	for view: ModBuildingView in _mod_views:
+		if view.contains_point(world_position):
+			view.toggle_info()
+			return
 	for grid: GridManager in _grids:
 		var plot_index: int = grid.get_plot_index_at(world_position)
 		if plot_index < 0:

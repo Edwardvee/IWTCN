@@ -25,6 +25,10 @@ var ai_difficulty: AIDifficulty.Level = AIDifficulty.DEFAULT_LEVEL
 ## asiento [abajo, arriba]. Vacío = humanos para ambos.
 var player_race: StringName = RaceSettings.load_saved()
 var match_races: Array[StringName] = []
+## Edificio modificador que eligió el jugador local en esta partida (vacío = aún no) y el
+## de cada asiento [abajo, arriba]. Vacío = sin edificio.
+var player_mod: StringName = &""
+var match_mods: Array[StringName] = []
 
 var _next_match_id: int = 1
 var _command_processor: CommandProcessor = null
@@ -55,6 +59,7 @@ func start_match(mode: MatchTypes.GameMode, match_seed: int, with_countdown: boo
 	match_state = MatchState.new(_next_match_id, match_seed, MatchTypes.PLAYER_COUNT, get_rules())
 	_next_match_id += 1
 	_apply_races()
+	_apply_mods()
 	match_phase = MatchTypes.MatchPhase.COUNTDOWN if with_countdown else MatchTypes.MatchPhase.RUNNING
 	set_physics_process(not with_countdown)
 	EventBus.partida_iniciada.emit(mode, match_seed)
@@ -79,6 +84,22 @@ func _apply_races() -> void:
 			player_state.race_income_multiplier = race.income_multiplier
 			player_state.castle_max_hp *= race.castle_hp_multiplier
 			player_state.castle_hp = player_state.castle_max_hp
+
+
+## Asigna a cada jugador su edificio modificador (match_mods) y aplica los efectos que
+## se fijan una sola vez al empezar: vida del castillo (Canteros) y recargo del reroll
+## de ambos (Estafador). El resto de efectos los consultan las reglas cuando toca.
+func _apply_mods() -> void:
+	for player_state: PlayerState in match_state.players:
+		var mod_id: StringName = match_mods[player_state.player_id] if player_state.player_id < match_mods.size() else &""
+		player_state.mod_building = mod_id if ModBuildings.is_valid(mod_id) else &""
+		player_state.mod_timer = 0.0
+		if player_state.mod_building == ModBuildings.STONEMASONS:
+			player_state.castle_max_hp += ModBuildings.STONEMASONS_CASTLE_HP
+			player_state.castle_hp = player_state.castle_max_hp
+	match_state.reroll_surcharge = ModBuildings.count_in_match(ModBuildings.SWINDLER) * ModBuildings.SWINDLER_REROLL_SURCHARGE
+	for player_state: PlayerState in match_state.players:
+		player_state.shop.reroll_cost += match_state.reroll_surcharge
 
 
 ## Raza de un jugador de la partida en curso (humanos si no hay partida).

@@ -31,9 +31,12 @@ func simulate_step(delta: float) -> void:
 		return
 	for player_state: PlayerState in GameManager.match_state.players:
 		player_state.base_income_timer += delta
+		var base_amount: int = rules.base_income_amount
+		if player_state.mod_building == ModBuildings.GOLD_MINE:
+			base_amount += ModBuildings.GOLD_MINE_BASE_INCOME_BONUS
 		while player_state.base_income_timer >= rules.base_income_interval:
 			player_state.base_income_timer -= rules.base_income_interval
-			add_income(player_state.player_id, rules.base_income_amount)
+			add_income(player_state.player_id, base_amount)
 
 
 func get_gold(player_id: int) -> int:
@@ -56,11 +59,15 @@ func get_card_cost(player_id: int, card: CardData) -> int:
 		base_cost = rules.get_scaled_structure_cost(card.cost, player_state.grid.count_structures(card.structure.id))
 	elif card.card_type == CardData.CardType.GLOBAL_BUFF and card.buff != null and rules != null and player_state != null:
 		base_cost = rules.get_scaled_buff_cost(card.cost, player_state.buffs.count(card.buff.id))
+	# El Aserradero abarata la construcción de estructuras.
+	var mod_multiplier: float = 1.0
+	if card.card_type == CardData.CardType.STRUCTURE and ModBuildings.has(player_id, ModBuildings.SAWMILL):
+		mod_multiplier -= ModBuildings.SAWMILL_DISCOUNT
 	# La raza abarata o encarece cada tipo de carta.
 	var race: RaceData = GameManager.get_race(player_id)
 	if race == null:
-		return base_cost
-	return roundi(float(base_cost) * race.get_card_cost_multiplier(card))
+		return roundi(float(base_cost) * mod_multiplier)
+	return roundi(float(base_cost) * race.get_card_cost_multiplier(card) * mod_multiplier)
 
 
 func has_gold(player_id: int, amount: int) -> bool:

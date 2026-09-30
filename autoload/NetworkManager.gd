@@ -27,7 +27,9 @@ const SNAPSHOT_INTERVAL: float = 0.1
 ## 2 = snapshots compactos e incrementales.
 ## 3 = las razas viajan en el saludo del invitado y en el aviso de inicio.
 ## 4 = selector de raza: el anfitrión avisa ("select") y el invitado responde ("race").
-const PROTOCOL_VERSION: int = 4
+## 5 = selector de edificio modificador: el anfitrión avisa ("pick"), el invitado responde
+##     ("mod") y el aviso de inicio lleva los edificios de cada asiento ("mods").
+const PROTOCOL_VERSION: int = 5
 const KEEPALIVE_INTERVAL: float = 20.0
 const MAIN_SCENE: String = "res://scenes/Main.tscn"
 const MENU_SCENE: String = "res://scenes/Menu.tscn"
@@ -54,6 +56,12 @@ var _selecting: bool = false
 var _host_race_locked: bool = false
 var _guest_race_locked: bool = false
 var _selection_wait: float = 0.0
+## Selector de edificio en curso (anfitrión), tras el de raza: quién ya lo fijó y cuál.
+var _picking: bool = false
+var _host_mod_locked: bool = false
+var _guest_mod_locked: bool = false
+var _host_mod: StringName = &""
+var _guest_mod: StringName = &""
 var _replicator: StateReplicator = null
 var _snapshot_timer: float = 0.0
 var _keepalive_timer: float = 0.0
@@ -116,6 +124,7 @@ func close() -> void:
 	_role = Role.NONE
 	_was_open = false
 	_selecting = false
+	_picking = false
 	_guest_present = false
 	_spectator_count = 0
 	_snapshot_cache.clear()
@@ -214,6 +223,9 @@ func _tick_open(delta: float) -> void:
 	if _selecting and _host_race_locked and not _guest_race_locked:
 		_selection_wait -= delta
 		_host_try_start()
+	if _picking and _host_mod_locked and not _guest_mod_locked:
+		_selection_wait -= delta
+		_host_try_start_match()
 	_keepalive_timer += delta
 	if _keepalive_timer >= KEEPALIVE_INTERVAL:
 		_keepalive_timer = 0.0
@@ -276,9 +288,11 @@ func _on_packet(packet: PackedByteArray, is_text: bool) -> void:
 				return
 			if _role == Role.GUEST and target == "guest":
 				GameManager.match_races = _races_from_message(data)
+				GameManager.match_mods = _mods_from_message(data)
 				_guest_start_match(int(data.get("seed", 0)), int(data.get("player_id", MatchTypes.PLAYER_TOP)))
 			elif _role == Role.SPECTATOR and target == "spectator":
 				GameManager.match_races = _races_from_message(data)
+				GameManager.match_mods = _mods_from_message(data)
 				_spectator_start_match(int(data.get("seed", 0)))
 		"select":
 			if _role == Role.GUEST:
@@ -287,6 +301,16 @@ func _on_packet(packet: PackedByteArray, is_text: bool) -> void:
 					close()
 					return
 				RaceSelect.open(get_tree(), RaceSelect.Mode.ONLINE_GUEST)
+		"pick":
+			if _role == Role.GUEST:
+				BuildingSelect.open(get_tree(), RaceSelect.Mode.ONLINE_GUEST)
+		"mod":
+			if _role == Role.HOST and _picking:
+				var offered: StringName = StringName(str(data.get("mod", "")))
+				if ModBuildings.is_valid(offered):
+					_guest_mod = offered
+				_guest_mod_locked = true
+				_host_try_start_match()
 		"race":
 			if _role == Role.HOST and _selecting:
 				var chosen: StringName = StringName(str(data.get("race", "human")))
@@ -324,9 +348,10 @@ func _on_relay_notice(text: String) -> void:
 		"guest_left":
 			if _role == Role.HOST:
 				_guest_present = false
-				if _selecting:
-					# El rival se fue eligiendo raza: no hay partida que empezar.
+				if _selecting or _picking:
+					# El rival se fue eligiendo raza o edificio: no hay partida que empezar.
 					_selecting = false
+					_picking = false
 					status_changed.emit(tr("Rival desconectado"))
 					get_tree().change_scene_to_file(MENU_SCENE)
 					return
@@ -350,11 +375,12 @@ func _host_on_guest_joined() -> void:
 	_snapshot_cache.clear()
 	var reconnecting: bool = (GameManager.is_match_running() or GameManager.is_in_countdown()) and GameManager.game_mode == MatchTypes.GameMode.ONLINE
 	if reconnecting:
-		_send({"k": "start", "v": PROTOCOL_VERSION, "for": "guest", "seed": GameManager.match_state.match_seed, "player_id": MatchTypes.PLAYER_TOP, "races": _current_races()})
+		_send({"k": "start", "v": PROTOCOL_VERSION, "for": "guest", "seed": GameManager.match_state.match_seed, "player_id": MatchTypes.PLAYER_TOP, "races": _current_races(), "mods": _current_mods()})
 		status_changed.emit(tr("Rival reconectado"))
 		return
-	# Partida nueva: primero eligen raza los dos (RaceSelect) y luego arranca.
-	if _selecting:
+	# Partida nueva: primero eligen raza los dos (RaceSelect), luego edificio (BuildingSelect)
+	# y entonces arranca.
+	if _selecting or _picking:
 		return
 	_selecting = true
 	_host_race_locked = false
@@ -385,6 +411,40 @@ func _host_try_start() -> void:
 		return
 	if _guest_race_locked or _selection_wait <= 0.0:
 		_selecting = false
+		_begin_mod_phase()
+
+
+## Con las razas fijadas, los dos eligen su edificio modificador (BuildingSelect).
+func _begin_mod_phase() -> void:
+	_picking = true
+	_host_mod_locked = false
+	_guest_mod_locked = false
+	_host_mod = &""
+	_guest_mod = &""
+	_selection_wait = SELECTION_GRACE + BuildingSelect.SECONDS
+	_send({"k": "pick", "v": PROTOCOL_VERSION, "seconds": BuildingSelect.SECONDS})
+	BuildingSelect.open(get_tree(), RaceSelect.Mode.ONLINE_HOST)
+
+
+## El anfitrión fijó su edificio en el selector.
+func host_mod_locked(building_id: StringName) -> void:
+	_host_mod = building_id
+	_host_mod_locked = true
+	_selection_wait = SELECTION_GRACE
+	_host_try_start_match()
+
+
+## El invitado fijó su edificio: se lo manda al anfitrión.
+func guest_mod_locked(building_id: StringName) -> void:
+	_send({"k": "mod", "mod": str(building_id)})
+
+
+## Arranca cuando ambos fijaron su edificio (o el invitado no contesta a tiempo).
+func _host_try_start_match() -> void:
+	if not _picking or not _host_mod_locked:
+		return
+	if _guest_mod_locked or _selection_wait <= 0.0:
+		_picking = false
 		_host_start_match()
 
 
@@ -393,11 +453,14 @@ func _host_start_match() -> void:
 	rng.randomize()
 	var match_seed: int = maxi(1, rng.randi())
 	var races: Array = [str(GameManager.player_race), str(_guest_race)]
-	_send({"k": "start", "v": PROTOCOL_VERSION, "for": "guest", "seed": match_seed, "player_id": MatchTypes.PLAYER_TOP, "races": races})
+	var guest_mod: StringName = _guest_mod if ModBuildings.is_valid(_guest_mod) else ModBuildings.pick_from_seed(match_seed, 5)
+	var mods: Array = [str(_host_mod), str(guest_mod)]
+	_send({"k": "start", "v": PROTOCOL_VERSION, "for": "guest", "seed": match_seed, "player_id": MatchTypes.PLAYER_TOP, "races": races, "mods": mods})
 	# Los espectadores que ya esperaban en la sala arrancan con la misma semilla.
 	if _spectator_count > 0:
-		_send({"k": "start", "v": PROTOCOL_VERSION, "for": "spectator", "seed": match_seed, "races": races})
+		_send({"k": "start", "v": PROTOCOL_VERSION, "for": "spectator", "seed": match_seed, "races": races, "mods": mods})
 	GameManager.match_races = [GameManager.player_race, _guest_race]
+	GameManager.match_mods = [_host_mod, guest_mod]
 	GameManager.configure_next_match(MatchTypes.GameMode.ONLINE, match_seed, MatchTypes.PLAYER_BOTTOM)
 	get_tree().change_scene_to_file(MAIN_SCENE)
 
@@ -409,7 +472,7 @@ func _host_on_spectator_joined() -> void:
 	_snapshot_cache.clear()
 	status_changed.emit(tr("Espectadores: %d") % _spectator_count)
 	if (GameManager.is_match_running() or GameManager.is_in_countdown()) and GameManager.game_mode == MatchTypes.GameMode.ONLINE:
-		_send({"k": "start", "v": PROTOCOL_VERSION, "for": "spectator", "seed": GameManager.match_state.match_seed, "races": _current_races()})
+		_send({"k": "start", "v": PROTOCOL_VERSION, "for": "spectator", "seed": GameManager.match_state.match_seed, "races": _current_races(), "mods": _current_mods()})
 
 
 ## Razas [abajo, arriba] de la partida en curso, para quien entra a mitad.
@@ -418,6 +481,21 @@ func _current_races() -> Array:
 	for player_state: PlayerState in GameManager.match_state.players:
 		races.append(str(player_state.race_id))
 	return races
+
+
+## Edificios modificadores [abajo, arriba] de la partida en curso, para quien entra a mitad.
+func _current_mods() -> Array:
+	var mods: Array = []
+	for player_state: PlayerState in GameManager.match_state.players:
+		mods.append(str(player_state.mod_building))
+	return mods
+
+
+func _mods_from_message(data: Dictionary) -> Array[StringName]:
+	var mods: Array[StringName] = []
+	for mod_variant: Variant in data.get("mods", []):
+		mods.append(StringName(str(mod_variant)))
+	return mods
 
 
 func _races_from_message(data: Dictionary) -> Array[StringName]:

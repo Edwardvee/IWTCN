@@ -23,10 +23,15 @@ extends Node
 @onready var _systems: Node = $Systems
 @onready var _hud: Control = $UI/HUD
 
+## Dónde queda el edificio modificador respecto al castillo del jugador de abajo (a su izquierda,
+## sobre sus plots); el del rival ocupa el punto simétrico respecto a su castillo.
+const MOD_BUILDING_OFFSET: Vector2 = Vector2(-363.0, -135.0)
+
 var _recorder: ReplayRecorder = null
 var _replay_player: ReplayPlayer = null
 var _spectator_bar: SpectatorBar = null
 var _second_ai: AIController = null
+var _mod_views: Array[ModBuildingView] = []
 
 
 func _ready() -> void:
@@ -62,6 +67,7 @@ func _ready() -> void:
 	_shop_panel.card_drag_started.connect(func() -> void: _camera.input_enabled = false)
 	_shop_panel.card_drag_finished.connect(func() -> void: _camera.input_enabled = true)
 	_spell_panel.connect_input(_local_input)
+	_add_match_info()
 	_spell_panel.drag_started.connect(func() -> void: _camera.input_enabled = false)
 	_spell_panel.drag_finished.connect(func() -> void: _camera.input_enabled = true)
 	# El jugador de arriba ve el mundo girado 180°: su reino siempre abajo.
@@ -97,6 +103,7 @@ func _ready() -> void:
 	if seed_value == 0:
 		seed_value = _generate_seed()
 	_assign_races(mode, seed_value, replay)
+	_assign_mods(mode, seed_value, replay)
 	if GameManager.is_watching():
 		_setup_watch_mode(mode, seed_value)
 	if replay != null:
@@ -126,6 +133,51 @@ func _assign_races(mode: MatchTypes.GameMode, seed_value: int, replay: ReplayDat
 		GameManager.match_races = [GameManager.player_race, rival]
 	else:
 		GameManager.match_races = [rival, GameManager.player_race]
+
+
+## Edificios modificadores [abajo, arriba]. Online los fija NetworkManager y una repetición
+## los recibe en sus snapshots. En VS IA el jugador trae el suyo del selector (o uno según
+## la semilla si arrancó sin pasar por él) y el rival uno según la semilla.
+func _assign_mods(mode: MatchTypes.GameMode, seed_value: int, replay: ReplayData) -> void:
+	if mode == MatchTypes.GameMode.ONLINE:
+		return
+	if replay != null:
+		GameManager.match_mods = []
+		return
+	var rival: StringName = ModBuildings.pick_from_seed(seed_value, 13)
+	if mode == MatchTypes.GameMode.SPECTATE:
+		GameManager.match_mods = [ModBuildings.pick_from_seed(seed_value, 3), rival]
+		return
+	var own: StringName = GameManager.player_mod if ModBuildings.is_valid(GameManager.player_mod) else ModBuildings.pick_from_seed(seed_value, 5)
+	if GameManager.local_player_id == MatchTypes.PLAYER_BOTTOM:
+		GameManager.match_mods = [own, rival]
+	else:
+		GameManager.match_mods = [rival, own]
+
+
+## Los edificios modificadores (en el mundo, junto a cada castillo), el tiempo de partida bajo
+## el contador de tropas y, online, el código de sala arriba a la izquierda.
+func _add_match_info() -> void:
+	var castle_bottom: Vector2 = $World/PlayerCastle.position
+	var castle_top: Vector2 = $World/EnemyCastle.position
+	for placement: Array in [[MatchTypes.PLAYER_BOTTOM, castle_bottom + MOD_BUILDING_OFFSET], [MatchTypes.PLAYER_TOP, castle_top - MOD_BUILDING_OFFSET]]:
+		var view: ModBuildingView = ModBuildingView.new()
+		$World.add_child(view)
+		view.setup(placement[0], placement[1])
+		_mod_views.append(view)
+		_local_input.register_mod_view(view)
+	var clock: MatchClock = MatchClock.new()
+	clock.name = "MatchClock"
+	_hud.add_child(clock)
+	var room_code: RoomCodeLabel = RoomCodeLabel.new()
+	room_code.name = "RoomCodeLabel"
+	_hud.add_child(room_code)
+	# Por debajo del menú de pausa y del panel de fin de partida.
+	var pause_index: int = _hud.get_node("PauseMenu").get_index()
+	for node: Control in [clock, room_code]:
+		_hud.move_child(node, pause_index)
+	# Al arrastrar una estructura hacia los hechizos se vuelven transparentes.
+	_shop_panel.structure_drag_moved.connect(_spell_panel.set_drag_pointer)
 
 
 func _start_intro() -> void:

@@ -166,7 +166,7 @@ func get_unit_cap() -> int:
 
 
 func get_army_size() -> int:
-	return lane.get_alive_count(player_id)
+	return lane.get_army_count(player_id)
 
 
 ## Punto de despliegue para cartas de unidad: centro de mi mitad del carril.

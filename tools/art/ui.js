@@ -256,7 +256,7 @@ function spellMilitia() {
 
 // Muslito de pollo (icono de "tropas", como el hambre de Minecraft o la comida de Warcraft):
 // hueso con dos nudillos y, en el otro extremo, la carne dorada que se afina hacia el hueso.
-function drumstick() {
+function drumstickParts() {
   const meat = 'M-13 -6 C-10 -24 10 -34 28 -26 C46 -18 48 8 32 19 C18 28 -2 24 -11 7 Z';
   const b = [
     // hueso (caña + dos nudillos)
@@ -271,7 +271,23 @@ function drumstick() {
     // marca de la carne junto al hueso
     path('M-13 -6 C-8 -2 -8 4 -11 7', 'none', { stroke: '#8a4413', sw: 3.2, opacity: 0.9 }),
   ];
-  return doc(72, 72, g(b, { transform: 'translate(2 2) rotate(-38) scale(0.84)' }));
+  return b;
+}
+
+function drumstick() {
+  return doc(72, 72, g(drumstickParts(), { transform: 'translate(2 2) rotate(-38) scale(0.84)' }));
+}
+
+// Carta de mejora del límite de tropas: el muslito de comida con un más verde.
+function buffTroopCap() {
+  const b = [
+    g(drumstickParts(), { transform: 'translate(-4 8) rotate(-38) scale(1.5)' }),
+    circle(32, -32, 22, '#3fae4a', { sw: 4 }),
+    rect(24, -35, 16, 6, '#ffffff', { r: 2, noStroke: true }),
+    rect(29, -40, 6, 16, '#ffffff', { r: 2, noStroke: true }),
+    sparkle(-40, -38, 8, '#fff3b0', 0.95),
+  ];
+  return doc(128, 128, b.join(''));
 }
 
 function generate() {
@@ -288,6 +304,7 @@ function generate() {
   L.write('cards/buff_move_speed.svg', buffSpeed());
   L.write('cards/buff_production.svg', buffProduction());
   L.write('cards/buff_tower_fire_rate.svg', buffFireRate());
+  L.write('cards/buff_troop_cap.svg', buffTroopCap());
   L.write('cards/soldiers.svg', unitIcon('soldier', [{ x: -68, y: 4, s: 1.05 }, { x: 0, y: 4, s: 1.05 }, { x: 68, y: 4, s: 1.05 }]));
   L.write('cards/archers.svg', unitIcon('archer', [{ x: -68, y: 4, s: 1.1 }, { x: 0, y: 4, s: 1.1 }, { x: 68, y: 4, s: 1.1 }]));
   L.write('cards/tank.svg', unitIcon('tank', [{ x: 0, y: 4, s: 0.86 }], 160, 130));

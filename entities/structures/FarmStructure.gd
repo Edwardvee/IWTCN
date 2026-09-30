@@ -24,5 +24,13 @@ func get_income_per_cycle() -> int:
 	return share
 
 
+## Con un Campamento de saqueadores rival, cada granja da menos oro por ciclo.
+func get_raided_income() -> int:
+	var income: int = get_income_per_cycle()
+	if ModBuildings.has(MatchTypes.opponent_of(owner_id), ModBuildings.RAIDER_CAMP):
+		income = maxi(0, income - ModBuildings.RAIDER_FARM_PENALTY)
+	return income
+
+
 func _on_production_cycle() -> void:
-	EconomyManager.add_income(owner_id, get_income_per_cycle())
+	EconomyManager.add_income(owner_id, get_raided_income())
