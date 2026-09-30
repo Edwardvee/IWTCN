@@ -8,8 +8,8 @@ extends Node
 ## El sonido de botones y avisos vive en UIFeedback (que también lo silencia).
 
 const VOICES: int = 14
-## Velocidad de reproducción de las voces de presentación (1,2 = un 20 % más rápidas; sube el tono).
-const INTRO_SPEED: float = 1.2
+## Velocidad de las voces de presentación (1,2 = un 20 % más rápidas; el tono se compensa).
+const INTRO_SPEED: float = 1.4
 ## Lo que suena del bando rival va un poco más bajo que lo propio.
 const RIVAL_OFFSET_DB: float = -4.0
 
@@ -83,10 +83,30 @@ func play_intro(stream: AudioStream) -> void:
 		return
 	if _intro_player == null:
 		_intro_player = AudioStreamPlayer.new()
+		_intro_player.bus = _create_intro_bus()
 		add_child(_intro_player)
 	_intro_player.stream = stream
 	_intro_player.pitch_scale = INTRO_SPEED
 	_intro_player.play()
+
+
+## Bus propio con un cambiador de tono que deshace la subida de tono de acelerar el audio:
+## el reproductor va a INTRO_SPEED (más rápido y más agudo) y este efecto baja el tono lo
+## mismo, así que la voz suena más rápida pero con su tono de siempre.
+func _create_intro_bus() -> StringName:
+	var bus_name: StringName = &"Intro"
+	if AudioServer.get_bus_index(bus_name) >= 0:
+		return bus_name
+	AudioServer.add_bus()
+	var index: int = AudioServer.bus_count - 1
+	AudioServer.set_bus_name(index, bus_name)
+	AudioServer.set_bus_send(index, &"Master")
+	var shifter: AudioEffectPitchShift = AudioEffectPitchShift.new()
+	shifter.pitch_scale = 1.0 / INTRO_SPEED
+	shifter.oversampling = 8
+	shifter.fft_size = AudioEffectPitchShift.FFT_SIZE_2048
+	AudioServer.add_bus_effect(index, shifter)
+	return bus_name
 
 
 ## Volumen relativo según de quién es el suceso: lo del rival suena más bajo.
