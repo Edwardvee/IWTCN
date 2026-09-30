@@ -8,6 +8,8 @@ extends Node
 ## El sonido de botones y avisos vive en UIFeedback (que también lo silencia).
 
 const VOICES: int = 14
+## Velocidad de reproducción de las voces de presentación (1,2 = un 20 % más rápidas; sube el tono).
+const INTRO_SPEED: float = 1.2
 ## Lo que suena del bando rival va un poco más bajo que lo propio.
 const RIVAL_OFFSET_DB: float = -4.0
 
@@ -22,6 +24,7 @@ const SOUNDS: Dictionary = {
 	&"thunder": [preload("res://assets/audio/thunder.wav"), -3.0, 0.0, 0.0],
 	&"horn": [preload("res://assets/audio/horn.wav"), -6.0, 0.0, 0.0],
 	&"pop": [preload("res://assets/audio/pop.wav"), -8.0, 0.0, 0.05],
+	&"drum": [preload("res://assets/audio/drum.wav"), 0.0, 0.0, 0.0],
 	&"laugh": [preload("res://assets/audio/laugh.wav"), -5.0, 0.0, 0.04],
 	&"unlock": [preload("res://assets/audio/unlock.wav"), -6.0, 0.0, 0.0],
 	&"win": [preload("res://assets/audio/win.wav"), -4.0, 0.0, 0.0],
@@ -32,6 +35,7 @@ var enabled: bool = true
 
 var _players: Array[AudioStreamPlayer] = []
 var _next_voice: int = 0
+var _intro_player: AudioStreamPlayer = null
 var _last_played: Dictionary[StringName, int] = {}
 var _castle_hp: Dictionary[int, float] = {}
 
@@ -70,6 +74,19 @@ func play(sound_id: StringName, offset_db: float = 0.0) -> void:
 	var variation: float = float(entry[3])
 	player.pitch_scale = randf_range(1.0 - variation, 1.0 + variation) if variation > 0.0 else 1.0
 	player.play()
+
+
+## Voz de presentación de una raza (MatchIntro). Va aparte de las voces normales para que
+## no se corte y respeta el interruptor de sonido.
+func play_intro(stream: AudioStream) -> void:
+	if not enabled or not UIFeedback.sound_enabled or GameManager.suppress_effects or stream == null:
+		return
+	if _intro_player == null:
+		_intro_player = AudioStreamPlayer.new()
+		add_child(_intro_player)
+	_intro_player.stream = stream
+	_intro_player.pitch_scale = INTRO_SPEED
+	_intro_player.play()
 
 
 ## Volumen relativo según de quién es el suceso: lo del rival suena más bajo.

@@ -44,6 +44,8 @@ extends Resource
 @export var castle_team_texture: Texture2D
 
 @export_group("Interface")
+## Voz de la raza que suena al gritar "I WANT THAT CASTLE NOW!" al empezar la partida.
+@export var intro_sound: AudioStream
 ## Fondo de la barra de la tienda (madera de la raza). Vacío = el de siempre.
 @export var shop_panel_texture: Texture2D
 

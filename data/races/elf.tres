@@ -1,6 +1,7 @@
 [gd_resource type="Resource" script_class="RaceData" load_steps=29 format=3]
 
 [ext_resource type="Script" path="res://resources/RaceData.gd" id="r1"]
+[ext_resource type="AudioStream" path="res://assets/audio/elfo_intro.mp3" id="intro_snd"]
 [ext_resource type="Script" path="res://resources/RaceUnitOverride.gd" id="r2"]
 [ext_resource type="Script" path="res://resources/RaceStructureOverride.gd" id="r3"]
 [ext_resource type="SpriteFrames" path="res://data/races/elf/soldier_frames.tres" id="r4"]
@@ -79,13 +80,14 @@ team_texture = ExtResource("r17")
 [resource]
 script = ExtResource("r1")
 id = &"elf"
+intro_sound = ExtResource("intro_snd")
 display_name = "Elves"
 description = "Elegant and expensive: everything costs more, but their units are tougher, hit harder and shoot farther."
 accent_color = Color(0.4, 0.88, 0.7, 1)
-unit_card_cost_multiplier = 1.17
-structure_card_cost_multiplier = 1.17
-buff_card_cost_multiplier = 1.17
-hp_multiplier = 1.1
+unit_card_cost_multiplier = 1.15
+structure_card_cost_multiplier = 1.15
+buff_card_cost_multiplier = 1.15
+hp_multiplier = 1.2
 damage_multiplier = 1.08
 attack_range_multiplier = 1.1
 unit_overrides = Array[ExtResource("r2")]([SubResource("unit_soldier"), SubResource("unit_archer"), SubResource("unit_priest"), SubResource("unit_tank")])

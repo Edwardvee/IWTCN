@@ -34,3 +34,9 @@ func get_raided_income() -> int:
 
 func _on_production_cycle() -> void:
 	EconomyManager.add_income(owner_id, get_raided_income())
+	play_bounce()
+
+
+## Cliente online: el temporizador dio la vuelta = la granja produjo.
+func _on_visual_cycle() -> void:
+	play_bounce()

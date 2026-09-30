@@ -61,6 +61,8 @@ func _play() -> void:
 
 
 func _show_number(number: int) -> void:
+	# Un golpe de tambor de guerra, igual en el 3, el 2 y el 1.
+	Sfx.play(&"drum")
 	_label.text = str(number)
 	_label.add_theme_font_size_override("font_size", 420)
 	_label.add_theme_color_override("font_color", NUMBER_COLORS[3 - number])
@@ -73,6 +75,10 @@ func _show_shout() -> void:
 	_label.add_theme_color_override("font_color", Color(1.0, 0.85, 0.25))
 	_label.modulate.a = 1.0
 	UIFeedback.play_confirm()
+	# La voz de la raza del jugador local grita el nombre del juego.
+	var race: RaceData = GameManager.get_race(GameManager.local_player_id)
+	if race != null:
+		Sfx.play_intro(race.intro_sound)
 
 
 func _finish() -> void:

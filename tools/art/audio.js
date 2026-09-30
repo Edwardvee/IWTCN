@@ -148,6 +148,8 @@ function generate() {
     thunder: mix(noiseClick(0.09, 1, 41), tone(0.16, 1400, 300, 30, 0.35), delayed(rumble(0.8, 0.9, 0.035, 4, 42), 0.02)),
     // milicias: cuerno de llamada
     horn: mix(brass(0.28, 262, 0.9, 6), delayed(brass(0.5, 392, 0.9, 4.5), 0.2), delayed(sweptNoise(0.1, 0.12, 3), 0.02)),
+    // --- Cuenta atrás 3 · 2 · 1: golpe de tambor de guerra, igual en los tres números ---
+    drum: mix(tone(0.34, 125, 46, 12, 1), tone(0.07, 270, 95, 48, 0.55), tone(0.42, 62, 44, 7, 0.55), noiseClick(0.012, 0.32, 21)),
     // --- Interfaz ---
     // globito de emote
     pop: mix(tone(0.09, 480, 980, 28, 0.9), noiseClick(0.008, 0.25, 8)),

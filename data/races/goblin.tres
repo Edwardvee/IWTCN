@@ -1,6 +1,7 @@
 [gd_resource type="Resource" script_class="RaceData" load_steps=29 format=3]
 
 [ext_resource type="Script" path="res://resources/RaceData.gd" id="r1"]
+[ext_resource type="AudioStream" path="res://assets/audio/goblin_intro.mp3" id="intro_snd"]
 [ext_resource type="Script" path="res://resources/RaceUnitOverride.gd" id="r2"]
 [ext_resource type="Script" path="res://resources/RaceStructureOverride.gd" id="r3"]
 [ext_resource type="SpriteFrames" path="res://data/races/goblin/soldier_frames.tres" id="r4"]
@@ -78,6 +79,7 @@ team_texture = ExtResource("r17")
 [resource]
 script = ExtResource("r1")
 id = &"goblin"
+intro_sound = ExtResource("intro_snd")
 display_name = "Goblins"
 description = "Cheap, fragile and fast: their units cost less, have less health and strike faster."
 accent_color = Color(0.56, 0.82, 0.35, 1)
