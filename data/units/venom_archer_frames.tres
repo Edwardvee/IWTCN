@@ -1,0 +1,56 @@
+[gd_resource type="SpriteFrames" load_steps=10 format=3]
+
+[ext_resource type="Texture2D" path="res://assets/units/venom_archer/idle.svg" id="1_idle"]
+[ext_resource type="Texture2D" path="res://assets/units/venom_archer/walk_0.svg" id="2_walk_0"]
+[ext_resource type="Texture2D" path="res://assets/units/venom_archer/walk_1.svg" id="3_walk_1"]
+[ext_resource type="Texture2D" path="res://assets/units/venom_archer/walk_2.svg" id="4_walk_2"]
+[ext_resource type="Texture2D" path="res://assets/units/venom_archer/walk_3.svg" id="5_walk_3"]
+[ext_resource type="Texture2D" path="res://assets/units/venom_archer/attack_0.svg" id="6_attack_0"]
+[ext_resource type="Texture2D" path="res://assets/units/venom_archer/attack_1.svg" id="7_attack_1"]
+[ext_resource type="Texture2D" path="res://assets/units/venom_archer/attack_2.svg" id="8_attack_2"]
+[ext_resource type="Texture2D" path="res://assets/units/venom_archer/attack_3.svg" id="9_attack_3"]
+
+[resource]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("1_idle")
+}],
+"loop": true,
+"name": &"idle",
+"speed": 5
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("2_walk_0")
+}, {
+"duration": 1.0,
+"texture": ExtResource("3_walk_1")
+}, {
+"duration": 1.0,
+"texture": ExtResource("4_walk_2")
+}, {
+"duration": 1.0,
+"texture": ExtResource("5_walk_3")
+}],
+"loop": true,
+"name": &"walk",
+"speed": 8
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("6_attack_0")
+}, {
+"duration": 1.0,
+"texture": ExtResource("7_attack_1")
+}, {
+"duration": 1.0,
+"texture": ExtResource("8_attack_2")
+}, {
+"duration": 1.0,
+"texture": ExtResource("9_attack_3")
+}],
+"loop": false,
+"name": &"attack",
+"speed": 14
+}]

@@ -53,5 +53,9 @@ signal golpe_cuerpo_a_cuerpo(position: Vector2, attacker_team: int)
 signal comando_rechazado(player_id: int, tipo_comando: StringName, motivo: String)
 ## Un jugador mostró un emote (id de Emotes.IDS).
 signal emote_mostrado(player_id: int, emote_id: StringName)
+## Un proyectil sale de una unidad o torre (para el sonido de disparo).
+signal proyectil_disparado(position: Vector2, team: int)
+## Un jugador lanzó una habilidad de castillo (position = donde cae el efecto).
+signal hechizo_lanzado(player_id: int, spell_id: StringName, position: Vector2)
 
 @warning_ignore_restore("unused_signal")

@@ -50,14 +50,17 @@ static func apply(ai: AIController, level: Level) -> void:
 	match level:
 		Level.EASY:
 			ai.think_interval = 3.0
+			ai.spell_use_chance = 0.5
 			ai.income_multiplier = EASY_INCOME
 			ai.strategy = RuleBasedStrategy.create(RuleBasedStrategy.PROFILE_EASY)
 		Level.HARD:
 			ai.think_interval = 0.5
+			ai.spell_use_chance = 1.0
 			ai.income_multiplier = HARD_INCOME
 			ai.strategy = RuleBasedStrategy.create(RuleBasedStrategy.PROFILE_HARD)
 		_:
 			ai.think_interval = 1.0
+			ai.spell_use_chance = 1.0
 			ai.income_multiplier = 1.0
 			ai.strategy = RuleBasedStrategy.create(RuleBasedStrategy.PROFILE_BALANCED)
 
@@ -70,6 +73,7 @@ static func apply_by_name(ai: AIController, profile_name: StringName) -> void:
 		apply(ai, level as Level)
 		return
 	ai.think_interval = 1.0
+	ai.spell_use_chance = 1.0
 	ai.income_multiplier = 1.0
 	ai.strategy = RuleBasedStrategy.create(profile_name)
 

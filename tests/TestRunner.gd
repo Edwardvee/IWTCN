@@ -24,6 +24,12 @@ const SUITE_PATHS: PackedStringArray = [
 	"res://tests/suites/TestScaling.gd",
 	"res://tests/suites/TestRaces.gd",
 	"res://tests/suites/TestEmotes.gd",
+	"res://tests/suites/TestSpecials.gd",
+	"res://tests/suites/TestSfx.gd",
+	"res://tests/suites/TestPauseMenu.gd",
+	"res://tests/suites/TestBuffIcons.gd",
+	"res://tests/suites/TestRaceSelect.gd",
+	"res://tests/suites/TestTroopCounter.gd",
 ]
 
 

@@ -18,3 +18,8 @@ func _on_production_cycle() -> void:
 	if lane == null or data.spawn_unit == null:
 		return
 	lane.spawn_group(data.spawn_unit, owner_id, data.get_spawn_count(level))
+	play_bounce()
+
+
+func _on_visual_cycle() -> void:
+	play_bounce()

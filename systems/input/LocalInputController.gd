@@ -27,6 +27,9 @@ var _grids: Array[GridManager] = []
 var _press_position: Vector2 = Vector2.ZERO
 var _is_pressed: bool = false
 var _dragged_card: CardData = null
+## Habilidad de castillo que se está arrastrando y dónde cae (coordenadas del mundo).
+var _dragged_spell: SpellData = null
+var _spell_drag_world: Vector2 = Vector2.ZERO
 
 
 func _ready() -> void:
@@ -156,11 +159,51 @@ func play_card_at(offer_index: int, card: CardData, world_position: Vector2) -> 
 
 
 func _draw() -> void:
+	if _dragged_spell != null and lane != null:
+		var spell_zone: Rect2 = lane.get_deploy_rect(GameManager.local_player_id)
+		var inside: bool = spell_zone.has_point(_spell_drag_world)
+		draw_rect(spell_zone, DEPLOY_ZONE_COLOR)
+		draw_rect(spell_zone, DEPLOY_ZONE_BORDER, false, 4.0)
+		var aim: Color = _dragged_spell.color if inside else Color(1.0, 0.3, 0.25)
+		var aim_radius: float = _dragged_spell.radius if _dragged_spell.kind != SpellData.Kind.MILITIA else 110.0
+		draw_circle(_spell_drag_world, aim_radius, Color(aim, 0.16))
+		draw_arc(_spell_drag_world, aim_radius, 0.0, TAU, 48, Color(aim, 0.9), 5.0)
+		return
 	if _dragged_card == null or _dragged_card.card_type != CardData.CardType.DIRECT_UNIT or lane == null:
 		return
 	var zone: Rect2 = lane.get_deploy_rect(GameManager.local_player_id)
 	draw_rect(zone, DEPLOY_ZONE_COLOR)
 	draw_rect(zone, DEPLOY_ZONE_BORDER, false, 4.0)
+
+
+# --- Habilidades de castillo ------------------------------------------------------
+
+func begin_spell_drag(spell: SpellData) -> void:
+	_dragged_spell = spell
+	input_blocked = true
+	_is_pressed = false
+	set_hammer_mode(false)
+	queue_redraw()
+
+
+func update_spell_drag(screen_position: Vector2) -> void:
+	_spell_drag_world = screen_to_world(screen_position)
+	queue_redraw()
+
+
+## Termina el arrastre; si no se canceló, envía el CastSpellCommand (la autoridad valida).
+func end_spell_drag(spell: SpellData, screen_position: Vector2, cancelled: bool) -> void:
+	_dragged_spell = null
+	input_blocked = false
+	queue_redraw()
+	if cancelled or spell == null:
+		return
+	cast_spell_at(spell, screen_to_world(screen_position))
+
+
+## Público para poder probarlo sin simular arrastres.
+func cast_spell_at(spell: SpellData, world_position: Vector2) -> void:
+	GameManager.submit_command(CastSpellCommand.new(GameManager.local_player_id, spell.id, world_position))
 
 
 # --- Interno -------------------------------------------------------------------

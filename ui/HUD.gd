@@ -2,18 +2,17 @@ class_name HUD
 extends Control
 ## HUD principal. Solo lee estado (GameManager/EventBus); nunca lo modifica.
 
-const REFRESH_INTERVAL: float = 0.25
 const TOAST_DURATION: float = 2.0
 
 const SUCCESS_TOAST_COLOR: Color = Color(0.1, 0.4, 0.15, 0.9)
 
-var _refresh_accumulator: float = 0.0
 var _toast_time_left: float = 0.0
 var _error_style: StyleBox = null
 var _success_style: StyleBoxFlat = null
 var _toast_tween: Tween = null
+## Cartas con requisito (unidades especiales, Tank) que el jugador local ya tiene desbloqueadas.
+var _unlocked_cards: Dictionary[StringName, bool] = {}
 
-@onready var _match_info: Label = %MatchInfo
 @onready var _toast: Label = %Toast
 
 
@@ -29,7 +28,6 @@ func _ready() -> void:
 	_success_style = (_error_style as StyleBoxFlat).duplicate() as StyleBoxFlat
 	_success_style.bg_color = SUCCESS_TOAST_COLOR
 	_toast.visible = false
-	_refresh()
 
 
 func _process(delta: float) -> void:
@@ -37,68 +35,6 @@ func _process(delta: float) -> void:
 		_toast_time_left -= delta
 		if _toast_time_left <= 0.0:
 			_toast.visible = false
-	_refresh_accumulator += delta
-	if _refresh_accumulator < REFRESH_INTERVAL:
-		return
-	_refresh_accumulator = 0.0
-	_refresh()
-
-
-func _refresh() -> void:
-	var state: MatchState = GameManager.match_state
-	if state == null:
-		_match_info.text = tr("Sin partida")
-		return
-	if GameManager.is_watching():
-		_match_info.text = tr("%s · %s · oro abajo %d / arriba %d%s") % [
-			MatchTypes.game_mode_name(GameManager.game_mode),
-			format_time(state.match_time),
-			EconomyManager.get_gold(MatchTypes.PLAYER_BOTTOM),
-			EconomyManager.get_gold(MatchTypes.PLAYER_TOP),
-			_describe_ai_profiles(),
-		] + _describe_races()
-		return
-	# Oro rival visible solo como información de desarrollo (VS AI).
-	var opponent_id: int = MatchTypes.opponent_of(GameManager.local_player_id)
-	_match_info.text = tr("%s · seed %d · %.1f s · rival: %d oro") % [
-		MatchTypes.game_mode_name(GameManager.game_mode),
-		state.match_seed,
-		state.match_time,
-		EconomyManager.get_gold(opponent_id),
-	] + _describe_troops() + _describe_races()
-
-
-## " · Humanos vs Goblins": las razas de esta partida.
-func _describe_races() -> String:
-	var own: RaceData = GameManager.get_race(GameManager.local_player_id)
-	var rival: RaceData = GameManager.get_race(MatchTypes.opponent_of(GameManager.local_player_id))
-	if own == null or rival == null:
-		return ""
-	return " · %s vs %s" % [tr(own.display_name), tr(rival.display_name)]
-
-
-## " · tropas 5/12": ejército vivo y tope actual (depende de las granjas).
-func _describe_troops() -> String:
-	var lane: LaneManager = get_tree().get_first_node_in_group(&"lane") as LaneManager
-	if lane == null:
-		return ""
-	var player_id: int = GameManager.local_player_id
-	return tr(" · tropas %d/%d") % [lane.get_alive_count(player_id), lane.get_unit_cap(player_id)]
-
-
-## " · abajo: rush · arriba: turtle" en espectador local (vacío en otros modos).
-func _describe_ai_profiles() -> String:
-	if GameManager.game_mode != MatchTypes.GameMode.SPECTATE:
-		return ""
-	var names: Dictionary[int, String] = {}
-	for node: Node in get_tree().get_nodes_in_group(&"ai_controller"):
-		var ai: AIController = node as AIController
-		var rule_based: RuleBasedStrategy = ai.strategy as RuleBasedStrategy if ai != null else null
-		if rule_based != null:
-			names[ai.player_id] = str(rule_based.profile_name)
-	if names.size() < MatchTypes.PLAYER_COUNT:
-		return ""
-	return tr(" · abajo: %s · arriba: %s") % [names[MatchTypes.PLAYER_BOTTOM], names[MatchTypes.PLAYER_TOP]]
 
 
 static func format_time(seconds: float) -> String:
@@ -134,11 +70,39 @@ func _is_local_event(player_id: int) -> bool:
 func _on_estructura_construida(player_id: int, _slot_index: int, datos: StructureData, nivel: int) -> void:
 	if _is_local_event(player_id):
 		show_toast(tr("%s construida · Lv%d") % [tr(datos.display_name), nivel], true)
+		_check_unlocked_cards(true)
 
 
 func _on_estructura_vendida(player_id: int, _slot_index: int, oro_devuelto: int) -> void:
 	if _is_local_event(player_id):
 		show_toast(tr("Estructura vendida · +%d oro") % oro_devuelto, true)
+		_check_unlocked_cards(false)
+
+
+## Avisa (arriba, como el resto de avisos) de las cartas con requisito que acaban de
+## desbloquearse. announce = false solo actualiza el registro (al vender).
+func _check_unlocked_cards(announce: bool) -> void:
+	var player_state: PlayerState = GameManager.get_player_state(GameManager.local_player_id)
+	if player_state == null or GameManager.database == null:
+		return
+	var race: RaceData = GameManager.get_race(GameManager.local_player_id)
+	for card: CardData in GameManager.database.cards:
+		if not card.has_unlock_requirement() or card.card_type != CardData.CardType.DIRECT_UNIT:
+			continue
+		var unlocked: bool = card.is_unlocked_for(player_state, GameManager.database)
+		if unlocked and not _unlocked_cards.has(card.id):
+			_unlocked_cards[card.id] = true
+			if announce:
+				var card_name: String = race.get_card_name(card) if race != null else card.display_name
+				# Con retraso: primero se ve el aviso de "construida" y luego este.
+				get_tree().create_timer(TOAST_DURATION + 0.1).timeout.connect(_announce_unlock.bind(tr("¡Unidad desbloqueada: %s!") % tr(card_name)))
+		elif not unlocked:
+			_unlocked_cards.erase(card.id)
+
+
+func _announce_unlock(message: String) -> void:
+	show_toast(message, true)
+	Sfx.play(&"unlock")
 
 
 func _on_plot_desbloqueado(player_id: int, _plot_index: int) -> void:
@@ -157,11 +121,11 @@ func _on_carta_elegida(player_id: int, carta: CardData) -> void:
 
 
 func _on_partida_iniciada(_modo: int, _semilla: int) -> void:
-	_refresh()
+	_unlocked_cards.clear()
 
 
 func _on_partida_terminada(_ganador_player_id: int) -> void:
-	_refresh()
+	pass
 
 
 func _on_comando_rechazado(player_id: int, _tipo_comando: StringName, motivo: String) -> void:

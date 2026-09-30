@@ -3,7 +3,7 @@
 
 const L = require('./lib');
 const { C, OUT, ellipse, circle, path, rect, poly, line, g, rot, tr, sparkle, doc } = L;
-const { UNITS } = require('./units');
+const { UNITS, idleSvg } = require('./units');
 
 function star(cx, cy, r, fill, o = {}) {
   const pts = [];
@@ -141,8 +141,7 @@ function buffFireRate() {
 
 // --- Cartas de unidades ----------------------------------------------------------------------------------------------
 function unitIcon(id, layout, w = 220, h = 130) {
-  const u = UNITS[id];
-  const parts = layout.map(({ x, y, s }) => g(u.idle(), { transform: `translate(${x} ${y}) scale(${s})` }));
+  const parts = layout.map(({ x, y, s }) => g(idleSvg(id), { transform: `translate(${x} ${y}) scale(${s})` }));
   return doc(w, h, parts.join(''));
 }
 
@@ -218,12 +217,70 @@ function shopWood(kind) {
   return L.docTL(W, H, p.join(''), defs, 1);
 }
 
+// --- Iconos de habilidades de castillo ---------------------------------------------------------------------------
+function spellArrowRain() {
+  const arrow = (x, y, a) => g([
+    line(0, 18, 0, -14, OUT, 7), line(0, 18, 0, -14, C.woodLight, 3.4),
+    poly([[-5, -12], [0, -26], [5, -12]], C.steelLight, { sw: 2.4 }),
+    poly([[0, 22], [-6, 30], [0, 26], [6, 30]], '#d9483b', { noStroke: true }),
+  ], { transform: `translate(${x} ${y}) rotate(${180 + a})` });
+  const b = [
+    circle(0, 12, 40, '#ffd27a', { noStroke: true, opacity: 0.35 }),
+    ellipse(0, 34, 42, 11, '#000000', { noStroke: true, opacity: 0.22 }),
+    arrow(-26, -6, -14), arrow(0, -14, 0), arrow(26, -4, 14), arrow(-12, 16, -8), arrow(14, 18, 8),
+    sparkle(32, -30, 8, '#fff3b0', 0.95), sparkle(-34, -26, 6, '#ffffff', 0.9),
+  ];
+  return doc(128, 128, b.join(''));
+}
+
+function spellLightning() {
+  const b = [
+    circle(0, 0, 50, '#a8d6ff', { noStroke: true, opacity: 0.28 }),
+    poly([[6, -52], [-22, 2], [-3, 2], [-14, 50], [26, -12], [6, -12], [22, -52]], '#ffe66b', { sw: 4.4 }),
+    poly([[6, -46], [-14, -2], [4, -2], [-2, 22], [14, -20], [0, -20], [12, -46]], '#fff7b8', { noStroke: true, opacity: 0.85 }),
+    sparkle(-32, -26, 8, '#ffffff', 0.95), sparkle(36, 24, 7, '#cfe8ff', 0.95), sparkle(-30, 30, 5, '#fff3b0', 0.9),
+  ];
+  return doc(128, 128, b.join(''));
+}
+
+function spellMilitia() {
+  const tiny = (x, y, s) => g(idleSvg('soldier'), { transform: `translate(${x} ${y}) scale(${s})` });
+  const b = [
+    circle(0, 8, 46, '#bfe6a8', { noStroke: true, opacity: 0.35 }),
+    ellipse(0, 38, 46, 11, '#000000', { noStroke: true, opacity: 0.22 }),
+    tiny(-28, 10, 0.62), tiny(28, 10, 0.62), tiny(0, 4, 0.78),
+    sparkle(0, -40, 9, '#fff3b0', 0.95), sparkle(-40, -12, 6, '#ffffff', 0.9),
+  ];
+  return doc(128, 128, b.join(''));
+}
+
+// Muslito de pollo (icono de "tropas", como el hambre de Minecraft o la comida de Warcraft):
+// hueso con dos nudillos y, en el otro extremo, la carne dorada que se afina hacia el hueso.
+function drumstick() {
+  const meat = 'M-13 -6 C-10 -24 10 -34 28 -26 C46 -18 48 8 32 19 C18 28 -2 24 -11 7 Z';
+  const b = [
+    // hueso (caña + dos nudillos)
+    line(-14, 0, -34, 0, OUT, 15), line(-14, 0, -34, 0, '#fff4dc', 8.5),
+    circle(-40, -7, 8, '#fff4dc', { sw: 3.4 }), circle(-40, 7, 8, '#fff4dc', { sw: 3.4 }),
+    ellipse(-41, -9, 3.2, 2, '#ffffff', { noStroke: true, opacity: 0.9 }),
+    // carne
+    path(meat, '#c66f26', { sw: 4.6 }),
+    path('M-4 2 C-6 -14 8 -24 22 -20 C34 -16 36 -2 30 4 C20 -8 4 -8 -4 2 Z', '#e8a04f', { noStroke: true, opacity: 0.95 }),
+    path('M4 -22 Q18 -28 30 -20', 'none', { stroke: '#fff2c9', sw: 4, opacity: 0.85 }),
+    path('M-6 12 C6 22 26 22 36 10', 'none', { stroke: '#8a4413', sw: 4.4, opacity: 0.75 }),
+    // marca de la carne junto al hueso
+    path('M-13 -6 C-8 -2 -8 4 -11 7', 'none', { stroke: '#8a4413', sw: 3.2, opacity: 0.9 }),
+  ];
+  return doc(72, 72, g(b, { transform: 'translate(2 2) rotate(-38) scale(0.84)' }));
+}
+
 function generate() {
   L.write('ui/app_icon.svg', appIcon());
   L.write('ui/coin.svg', coin());
   L.write('ui/padlock.svg', padlock());
   L.write('ui/hammer.svg', hammer());
   L.write('ui/dice.svg', dice());
+  L.write('ui/drumstick.svg', drumstick());
   L.write('ui/shop_wood_goblin.svg', shopWood('goblin'));
   L.write('ui/shop_wood_elf.svg', shopWood('elf'));
   L.write('cards/buff_armor.svg', buffArmor());
@@ -234,6 +291,12 @@ function generate() {
   L.write('cards/soldiers.svg', unitIcon('soldier', [{ x: -68, y: 4, s: 1.05 }, { x: 0, y: 4, s: 1.05 }, { x: 68, y: 4, s: 1.05 }]));
   L.write('cards/archers.svg', unitIcon('archer', [{ x: -68, y: 4, s: 1.1 }, { x: 0, y: 4, s: 1.1 }, { x: 68, y: 4, s: 1.1 }]));
   L.write('cards/tank.svg', unitIcon('tank', [{ x: 0, y: 4, s: 0.86 }], 160, 130));
+  L.write('cards/cavalry.svg', unitIcon('cavalry', [{ x: 0, y: 6, s: 0.72 }], 160, 130));
+  L.write('cards/mage.svg', unitIcon('mage', [{ x: 0, y: 6, s: 0.95 }], 160, 130));
+  L.write('cards/venom_archer.svg', unitIcon('venom_archer', [{ x: -34, y: 6, s: 1.1 }, { x: 34, y: 6, s: 1.1 }], 160, 130));
+  L.write('spells/arrow_rain.svg', spellArrowRain());
+  L.write('spells/lightning.svg', spellLightning());
+  L.write('spells/militia.svg', spellMilitia());
 }
 
 module.exports = { generate };

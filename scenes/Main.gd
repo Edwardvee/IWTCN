@@ -17,6 +17,7 @@ extends Node
 @onready var _lane: LaneManager = $World/Lane
 @onready var _camera: CameraDragController = $Camera2D
 @onready var _shop_panel: ShopPanel = $UI/HUD/BottomBar
+@onready var _spell_panel: SpellPanel = $UI/HUD/SpellPanel
 @onready var _ai: AIController = $Systems/AIController
 @onready var _debug_panel: Control = $UI/HUD/DebugPanel
 @onready var _systems: Node = $Systems
@@ -60,6 +61,9 @@ func _ready() -> void:
 	# Mientras se arrastra una carta, la cámara no se mueve.
 	_shop_panel.card_drag_started.connect(func() -> void: _camera.input_enabled = false)
 	_shop_panel.card_drag_finished.connect(func() -> void: _camera.input_enabled = true)
+	_spell_panel.connect_input(_local_input)
+	_spell_panel.drag_started.connect(func() -> void: _camera.input_enabled = false)
+	_spell_panel.drag_finished.connect(func() -> void: _camera.input_enabled = true)
 	# El jugador de arriba ve el mundo girado 180°: su reino siempre abajo.
 	_camera.set_flipped(ViewOrientation.is_flipped())
 	_camera.focus_side(GameManager.local_player_id == MatchTypes.PLAYER_BOTTOM)
@@ -71,6 +75,7 @@ func _ready() -> void:
 	$World.add_child(floating_text)
 	floating_text.setup(grids)
 	$World.add_child(SlashEffects.new())
+	$World.add_child(SpellEffects.new())
 	_recorder = ReplayRecorder.new()
 	_recorder.replicator = _replicator
 	_systems.add_child(_recorder)

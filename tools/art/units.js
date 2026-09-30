@@ -88,7 +88,7 @@ function drawSoldier(p, arc = 0) {
 
 // --- Arquero: capucha verde y arco -----------------------------------------------
 const ARCHER_SIZE = 104;
-function drawArcher(p, nockY = -22, arrow = false, handY = null) {
+function drawArcher(p, nockY = -22, arrow = false, handY = null, venom = false) {
   const bx = -3;
   const bowTipY = -20;
   const stringHandY = handY === null ? nockY : handY;
@@ -116,12 +116,17 @@ function drawArcher(p, nockY = -22, arrow = false, handY = null) {
   upper.push(circle(bx - 1, -27, 4.4, C.skin));
   if (arrow) {
     upper.push(line(bx, pull, bx, -42, C.woodDark, 2.6));
-    upper.push(poly([[bx - 3.6, -41], [bx, -49.5], [bx + 3.6, -41]], C.steelLight, { sw: 2 }));
+    upper.push(poly([[bx - 3.6, -41], [bx, -49.5], [bx + 3.6, -41]], venom ? '#7cf03a' : C.steelLight, { sw: 2 }));
+    if (venom) upper.push(circle(bx, -53, 3, '#b8ff7a', { noStroke: true, opacity: 0.9 }), circle(bx + 4, -46, 1.8, '#7cf03a', { noStroke: true }));
     upper.push(poly([[bx - 4, pull + 3], [bx, pull - 2], [bx + 4, pull + 3], [bx, pull + 8]], '#d95b4a', { noStroke: true }));
   }
   // brazo que tensa
   upper.push(limb(17, 3, bx + 1, pull + 2, 5.5, C.greenDark));
   upper.push(circle(bx + 1, pull + 2, 4.4, C.skin));
+  if (venom) {
+    // frasco de veneno al cinto
+    upper.push(circle(-13, 13, 5.4, '#7cf03a', { sw: 2.2 }), rect(-15, 5, 4, 5, C.creamDark, { r: 1.5, sw: 1.6 }), circle(-14.6, 11.6, 1.6, '#e6ffc8', { noStroke: true }));
+  }
   parts.push(g(upper, { transform: rot(p.lean || 0, 0, 6) }));
   // capucha con punta atrás
   parts.push(g([
@@ -234,6 +239,102 @@ function drawTank(p, swing = 0) {
   return g(parts, { transform: `scale(${1 + p.bob})` });
 }
 
+// --- Caballería (humanos): caballo visto desde arriba, jinete con lanza --------------------------------------
+const CAVALRY_SIZE = 170;
+function drawCavalry(p, thrust = 0) {
+  const HORSE = '#8b5a2b', HORSE_DARK = '#5a3620', HORSE_LIGHT = '#b07a45';
+  const parts = [];
+  // patas (alternan al galopar)
+  const hoof = (x, y) => ellipse(x, y, 6, 9, '#2e2118');
+  parts.push(hoof(-15, -14 + p.stepL * 1.4), hoof(15, -14 + p.stepR * 1.4), hoof(-15, 40 + p.stepR * 1.4), hoof(15, 40 + p.stepL * 1.4));
+  // cola
+  parts.push(path('M0 56 Q-12 74 -4 88 Q6 76 4 58Z', HORSE_DARK));
+  // cuerpo y cabeza del caballo
+  parts.push(ellipse(0, 22, 25, 42, HORSE));
+  parts.push(ellipse(-8, 8, 8, 28, HORSE_LIGHT, { noStroke: true, opacity: 0.55 }));
+  parts.push(path('M-20 50 Q0 66 20 50 Q0 58 -20 50Z', HORSE_DARK, { noStroke: true, opacity: 0.6 }));
+  parts.push(ellipse(0, -34, 13, 22, HORSE));
+  parts.push(poly([[-12, -42], [-19, -58], [-6, -50]], HORSE_DARK, { sw: 2.4 }), poly([[12, -42], [19, -58], [6, -50]], HORSE_DARK, { sw: 2.4 }));
+  parts.push(ellipse(0, -50, 8, 8, HORSE_LIGHT, { noStroke: true, opacity: 0.7 }));
+  parts.push(path('M0 -56 L0 6', 'none', { stroke: HORSE_DARK, sw: 6 }));
+  // manta y silla con el azul del reino
+  parts.push(rect(-22, 4, 44, 30, '#3f6fb5', { r: 8 }));
+  parts.push(rect(-22, 4, 44, 9, '#7cb0ff', { r: 8, noStroke: true, opacity: 0.6 }));
+  parts.push(rect(-22, 26, 44, 6, C.gold, { noStroke: true, opacity: 0.9 }));
+  // lanza (a la derecha del jinete, apuntando hacia delante)
+  const lanceY = -thrust * 22;
+  parts.push(g([
+    line(0, 40, 0, -104, OUT, 8), line(0, 40, 0, -104, C.woodLight, 4.4),
+    poly([[-5, -102], [0, -126], [5, -102]], C.steelLight, { sw: 2.6 }),
+    poly([[0, -96], [22, -90], [0, -80]], '#d9483b', { sw: 2.2 }),
+  ], { transform: `translate(26 ${lanceY})` }));
+  // jinete
+  const rider = [
+    limb(-17, 16, -21, 4, 6, C.leatherDark),
+    ellipse(-25, 6, 9, 13, C.woodLight),
+    ellipse(-25, 6, 6.5, 10, C.wood, { noStroke: true }),
+    circle(-25, 6, 3.6, C.steelLight),
+    ellipse(0, 20, 19, 14, C.steel),
+    ellipse(-3, 16, 8, 5, C.steelLight, { noStroke: true, opacity: 0.75 }),
+    rect(-13, 22, 26, 4, C.gold, { noStroke: true, opacity: 0.9 }),
+    circle(-17, 19, 8, C.steel), circle(17, 19, 8, C.steel),
+    limb(17, 19, 26, 8 + lanceY, 6, C.leatherDark),
+    circle(26, 8 + lanceY, 5, C.skin),
+  ];
+  parts.push(g(rider, { transform: rot(p.lean || 0, 0, 22) }));
+  parts.push(g([
+    ...earShapes(6, 13),
+    circle(0, 6, 13, C.steel),
+    ellipse(-4, 2, 7.5, 5, C.steelLight, { noStroke: true, opacity: 0.8 }),
+    path('M-3 -8 L3 -8 L3.5 18 L-3.5 18 Z', C.goldDark, { noStroke: true, opacity: 0.9 }),
+    path('M-8 -3 Q0 -7 8 -3', 'none', { stroke: OUT, sw: 3 }),
+    path('M0 -6 Q-8 -20 -3 -30 Q4 -22 0 -6Z', '#d9483b', { sw: 2 }),
+  ], { transform: rot((p.lean || 0) * 0.5, 0, 22) }));
+  return g(parts, { transform: `scale(${1 + p.bob})` });
+}
+
+// --- Mago (elfos): túnica violeta, sombrero puntiagudo y bastón con orbe ---------------------------
+const MAGE_SIZE = 128;
+function drawMage(p, cast = 0) {
+  const ROBE = '#5b3d9a', ROBE_DARK = '#3d2870', ROBE_LIGHT = '#8a68d6';
+  const parts = [];
+  parts.push(boot(-7, 17 + p.stepL, ROBE_DARK, 5.5, 7), boot(7, 17 + p.stepR, ROBE_DARK, 5.5, 7));
+  const orbY = -38 - cast * 4;
+  const glow = 9 + cast * 10;
+  parts.push(g([
+    circle(20, orbY - 4, glow + 8, '#d9a8ff', { noStroke: true, opacity: 0.16 + cast * 0.14 }),
+    circle(20, orbY - 4, glow, '#e6c4ff', { noStroke: true, opacity: 0.4 + cast * 0.2 }),
+    line(20, 16, 20, orbY, OUT, 8), line(20, 16, 20, orbY, C.woodLight, 4),
+    circle(20, orbY - 4, 7.4, '#f2dcff'),
+    circle(18.4, orbY - 6.4, 2.6, '#ffffff', { noStroke: true }),
+    poly([[13, orbY + 2], [20, orbY + 12], [27, orbY + 2]], C.gold, { sw: 2 }),
+  ]));
+  parts.push(g([
+    ellipse(0, 9, 24, 18, ROBE),
+    path('M-18 15 Q0 27 18 15 Q0 20 -18 15Z', ROBE_DARK, { noStroke: true, opacity: 0.85 }),
+    ellipse(0, 9, 24, 18, 'none', { stroke: C.gold, sw: 2.6 }),
+    path('M-4 -6 L4 -6 L4 22 L-4 22 Z', C.gold, { noStroke: true, opacity: 0.95 }),
+    ellipse(-6, 2, 8, 5, ROBE_LIGHT, { noStroke: true, opacity: 0.6 }),
+    circle(-21, 3, 8.5, ROBE), circle(21, 3, 8.5, ROBE),
+  ], { transform: rot(p.sway, 0, 8) }));
+  const lx = cast > 0 ? -14 : -17;
+  const ly = cast > 0 ? -22 : -12;
+  parts.push(limb(19, 4, 20, -8, 5.5, ROBE_DARK), circle(20, -8, 4.6, C.skin));
+  parts.push(limb(-19, 4, lx, ly, 5.5, ROBE_DARK), circle(lx, ly, 4.6, C.skin));
+  // cabeza con sombrero de bruja visto desde arriba: ala circular y punta caída
+  parts.push(g([
+    ...earShapes(-9, 12.5),
+    circle(0, -9, 12.5, C.skin),
+    ellipse(0, -6, 21, 19, ROBE_DARK),
+    ellipse(0, -6, 21, 19, 'none', { stroke: C.gold, sw: 2.4 }),
+    path('M-12 -8 Q0 -46 10 -30 Q4 -20 12 -8 Q0 -2 -12 -8Z', ROBE),
+    path('M-6 -12 Q-2 -30 6 -30', 'none', { stroke: ROBE_LIGHT, sw: 3, opacity: 0.7 }),
+    rect(-11, -10, 22, 5, C.gold, { r: 2, noStroke: true, opacity: 0.9 }),
+  ], { transform: rot(p.sway * 0.5, 0, 8) }));
+  if (cast > 0) parts.push(sparkle(-28, -30, 6, '#ffffff', 0.9 * cast), sparkle(30, -14, 5, '#f2dcff', 0.9 * cast), sparkle(4, -52, 4, '#ffe58f', 0.9 * cast));
+  return g(parts, { transform: `scale(${1 + p.bob})` });
+}
+
 // --- Definiciones de animación -------------------------------------------------------
 const ATTACK_SOLDIER = [
   { swordAng: 55, hx: 20, hy: -4, lean: 7 },
@@ -249,7 +350,9 @@ const ATTACK_ARCHER = [
 ];
 const ATTACK_TANK = [-30, -55, 25, 8];
 const ATTACK_PRIEST = [0.4, 1, 0.8, 0.3];
+const ATTACK_CAVALRY = [0, 0.6, 1, 0.3];
 
+// Unidades especiales: cada una solo la usa su raza (race) y se dibuja con su paleta.
 const UNITS = {
   soldier: {
     size: SOLDIER_SIZE,
@@ -275,6 +378,33 @@ const UNITS = {
     idle: () => drawPriest({ ...IDLE_POSE }),
     attack: (k) => drawPriest({ ...IDLE_POSE }, ATTACK_PRIEST[k]),
   },
+  cavalry: {
+    race: null,
+    special: true,
+    size: CAVALRY_SIZE,
+    walk: (k) => drawCavalry({ ...walkPose(k) }),
+    idle: () => drawCavalry({ ...IDLE_POSE }),
+    attack: (k) => drawCavalry({ ...IDLE_POSE, lean: k === 2 ? -4 : 2 }, ATTACK_CAVALRY[k]),
+  },
+  mage: {
+    race: 'elf',
+    special: true,
+    size: MAGE_SIZE,
+    walk: (k) => drawMage({ ...walkPose(k) }),
+    idle: () => drawMage({ ...IDLE_POSE }),
+    attack: (k) => drawMage({ ...IDLE_POSE }, ATTACK_PRIEST[k]),
+  },
+  venom_archer: {
+    race: 'goblin',
+    special: true,
+    size: ARCHER_SIZE,
+    walk: (k) => drawArcher({ ...walkPose(k) }, -22, false, null, true),
+    idle: () => drawArcher({ ...IDLE_POSE }, -22, false, null, true),
+    attack: (k) => {
+      const a = ATTACK_ARCHER[k];
+      return drawArcher({ ...IDLE_POSE, lean: k === 1 ? 3 : 0 }, a.nockY, a.arrow, null, true);
+    },
+  },
   tank: {
     size: TANK_SIZE,
     walk: (k) => drawTank({ ...walkPose(k), swing: 0 }, walkPose(k).swing),
@@ -283,6 +413,20 @@ const UNITS = {
   },
 };
 
+/** Escribe los SVG y el SpriteFrames de una unidad. */
+function writeUnit(id, u, dir, dataDir, race) {
+  const svg = (body) => recolor(doc(u.size, u.size, body), race);
+  L.write(`${dir}/${id}/idle.svg`, svg(u.idle()));
+  for (let k = 0; k < WALK_FRAMES; k++) L.write(`${dir}/${id}/walk_${k}.svg`, svg(u.walk(k)));
+  for (let k = 0; k < ATTACK_FRAMES; k++) L.write(`${dir}/${id}/attack_${k}.svg`, svg(u.attack(k)));
+  const res = (name) => `res://assets/${dir}/${id}/${name}.svg`;
+  L.writeData(`${dataDir}/${id}_frames.tres`, L.spriteFramesTres([
+    { name: 'idle', frames: [res('idle')], speed: 5, loop: true },
+    { name: 'walk', frames: [0, 1, 2, 3].map((k) => res(`walk_${k}`)), speed: 8, loop: true },
+    { name: 'attack', frames: [0, 1, 2, 3].map((k) => res(`attack_${k}`)), speed: 14, loop: false },
+  ]));
+}
+
 /** Genera las unidades de los humanos (raceId null) o de una raza (ver races.js). */
 function generate(raceId = null) {
   withRace(raceId, (race) => {
@@ -290,19 +434,36 @@ function generate(raceId = null) {
     const dir = raceId ? `units/${raceId}` : 'units';
     const dataDir = raceId ? `data/races/${raceId}` : 'data/units';
     for (const [id, u] of Object.entries(UNITS)) {
-      const svg = (body) => recolor(doc(u.size, u.size, body), race);
-      L.write(`${dir}/${id}/idle.svg`, svg(u.idle()));
-      for (let k = 0; k < WALK_FRAMES; k++) L.write(`${dir}/${id}/walk_${k}.svg`, svg(u.walk(k)));
-      for (let k = 0; k < ATTACK_FRAMES; k++) L.write(`${dir}/${id}/attack_${k}.svg`, svg(u.attack(k)));
-      const res = (name) => `res://assets/${dir}/${id}/${name}.svg`;
-      L.writeData(`${dataDir}/${id}_frames.tres`, L.spriteFramesTres([
-        { name: 'idle', frames: [res('idle')], speed: 5, loop: true },
-        { name: 'walk', frames: [0, 1, 2, 3].map((k) => res(`walk_${k}`)), speed: 8, loop: true },
-        { name: 'attack', frames: [0, 1, 2, 3].map((k) => res(`attack_${k}`)), speed: 14, loop: false },
-      ]));
+      if (!u.special) writeUnit(id, u, dir, dataDir, race);
     }
     raceStyle = null;
   });
+  if (!raceId) generateSpecials();
 }
 
-module.exports = { UNITS, WALK_FRAMES, ATTACK_FRAMES, generate };
+/** Unidades especiales: una por raza, dibujadas con la paleta de su raza. */
+function generateSpecials() {
+  for (const [id, u] of Object.entries(UNITS)) {
+    if (!u.special) continue;
+    withRace(u.race, (race) => {
+      raceStyle = race;
+      writeUnit(id, u, 'units', 'data/units', race);
+      raceStyle = null;
+    });
+  }
+}
+
+/** SVG (sin envolver) de la pose de reposo de una unidad con la paleta de su raza. */
+function idleSvg(id) {
+  const u = UNITS[id];
+  return withRace(u.race || null, (race) => {
+    raceStyle = race;
+    try {
+      return recolor(u.idle(), race);
+    } finally {
+      raceStyle = null;
+    }
+  });
+}
+
+module.exports = { UNITS, WALK_FRAMES, ATTACK_FRAMES, generate, idleSvg };

@@ -34,6 +34,11 @@ enum DropTarget { PLOT, LANE, ANYWHERE }
 ## `required_structure_count` niveles de estructuras con esta etiqueta.
 @export var required_structure_tag: StringName = &""
 @export var required_structure_count: int = 0
+## Si no está vacío, hacen falta `required_structure_count` estructuras de ESE tipo
+## (p. ej. 3 × soldier_barracks). Es independiente de la etiqueta.
+@export var required_structure_id: StringName = &""
+## Si no está vacío, la carta solo sale a jugadores de esa raza (unidades especiales).
+@export var required_race: StringName = &""
 
 @export_group("Visual")
 @export var icon: Texture2D
@@ -50,6 +55,20 @@ func get_unit_count_for(player_id: int) -> int:
 	return unit_count_by_level[clampi(level, 0, unit_count_by_level.size() - 1)]
 
 
+## ¿Cumple el jugador la raza y las estructuras que pide la carta? (Sin mirar el tipo de
+## carta ni si está en la tienda: DraftManager añade sus propias condiciones.)
+func is_unlocked_for(player_state: PlayerState, database: GameDatabase) -> bool:
+	if required_race != &"" and player_state.race_id != required_race:
+		return false
+	if required_structure_tag != &"" and required_structure_count > 0:
+		if player_state.grid.count_structures_with_tag(required_structure_tag, database) < required_structure_count:
+			return false
+	if required_structure_id != &"" and required_structure_count > 0:
+		if player_state.grid.count_structures(required_structure_id) < required_structure_count:
+			return false
+	return true
+
+
 func get_drop_target() -> DropTarget:
 	match card_type:
 		CardType.STRUCTURE:
@@ -60,7 +79,7 @@ func get_drop_target() -> DropTarget:
 
 
 func has_unlock_requirement() -> bool:
-	return required_structure_tag != &"" and required_structure_count > 0
+	return (required_structure_tag != &"" or required_structure_id != &"") and required_structure_count > 0
 
 
 func get_validation_errors() -> PackedStringArray:
@@ -88,6 +107,6 @@ func get_validation_errors() -> PackedStringArray:
 				if count < 1:
 					errors.append("%s: unit_count_by_level contiene valores < 1" % label)
 					break
-	if required_structure_tag != &"" and required_structure_count <= 0:
-		errors.append("%s: required_structure_tag sin required_structure_count" % label)
+	if (required_structure_tag != &"" or required_structure_id != &"") and required_structure_count <= 0:
+		errors.append("%s: requisito de estructura sin required_structure_count" % label)
 	return errors

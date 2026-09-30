@@ -26,6 +26,11 @@ class PendingHit:
 	## Si es un jugador válido, el golpe va a su castillo (target_id se ignora).
 	var castle_owner: int = MatchTypes.NO_PLAYER
 	var amount: float = 0.0
+	## Efectos del golpe (ver UnitData): daño en área y veneno.
+	var splash_fraction: float = 0.0
+	var splash_radius: float = 0.0
+	var poison_dps: float = 0.0
+	var poison_duration: float = 0.0
 
 	func _init(p_attacker_id: int, p_target_id: int, p_amount: float, p_castle_owner: int = MatchTypes.NO_PLAYER) -> void:
 		attacker_id = p_attacker_id
@@ -81,6 +86,8 @@ var _pending_hits: Array[PendingHit] = []
 var _pending_heals: Array[PendingHeal] = []
 ## Conversiones decididas este tick: [id del convertidor, id del objetivo].
 var _pending_conversions: Array[Vector2i] = []
+## Lluvias de flechas activas (ver start_arrow_rain).
+var _rains: Array[Dictionary] = []
 ## Nº de grupos aparecidos por equipo (para el escalonado lateral).
 var _group_counter: Array[int] = [0, 0]
 
@@ -158,6 +165,7 @@ func simulate_step(delta: float) -> void:
 	_lap(&"indice")
 	for unit: UnitBase in _units:
 		unit.simulate(delta)
+	_simulate_rains(delta)
 	_lap(&"unidades")
 	_simulate_projectiles(delta)
 	_lap(&"proyectiles")
@@ -190,17 +198,20 @@ func _lap(phase: StringName) -> void:
 
 # --- Aparición -------------------------------------------------------------
 
-func spawn_unit(unit_data: UnitData, team: int, world_position: Vector2) -> UnitBase:
+## ignore_cap: las unidades de hechizo (milicias) no cuentan para el tope de tropas.
+func spawn_unit(unit_data: UnitData, team: int, world_position: Vector2, ignore_cap: bool = false) -> UnitBase:
 	if unit_data == null or not MatchTypes.is_valid_player_id(team) or GameManager.match_state == null:
 		push_error("LaneManager.spawn_unit: parámetros inválidos")
 		return null
-	if get_alive_count(team) >= get_unit_cap(team):
+	if not ignore_cap and get_alive_count(team) >= get_unit_cap(team):
 		return null
 	var unit: UnitBase = UnitBase.new()
 	unit.setup(GameManager.match_state.allocate_entity_id(), team, unit_data, self, UnitStatModifiers.from_barracks(team, unit_data).combined_with(UnitStatModifiers.from_race(team, unit_data)))
 	_get_container(team).add_child(unit)
 	unit.global_position = world_position
 	_register(unit)
+	if unit_data.lifetime > 0.0:
+		unit.lifetime_left = unit_data.lifetime
 	EventBus.unidad_desplegada.emit(unit, team)
 	return unit
 
@@ -212,7 +223,7 @@ func spawn_group(unit_data: UnitData, team: int, count: int) -> Array[UnitBase]:
 
 ## Grupo centrado en `origin` (cartas de unidad: se sueltan en la zona propia).
 ## Filas de hasta SPAWN_ROW_SIZE; las siguientes filas quedan detrás.
-func spawn_group_at(unit_data: UnitData, team: int, count: int, origin: Vector2) -> Array[UnitBase]:
+func spawn_group_at(unit_data: UnitData, team: int, count: int, origin: Vector2, ignore_cap: bool = false) -> Array[UnitBase]:
 	var spawned: Array[UnitBase] = []
 	if not MatchTypes.is_valid_player_id(team):
 		return spawned
@@ -227,7 +238,7 @@ func spawn_group_at(unit_data: UnitData, team: int, count: int, origin: Vector2)
 		var offset_x: float = (float(column) - float(row_count - 1) * 0.5) * SPAWN_SPACING_X + stagger
 		var spawn_position: Vector2 = origin + Vector2(offset_x, 0.0) + backward * (row * SPAWN_SPACING_Y)
 		spawn_position.x = clampf(spawn_position.x, lane_center_x - lane_half_width, lane_center_x + lane_half_width)
-		var unit: UnitBase = spawn_unit(unit_data, team, spawn_position)
+		var unit: UnitBase = spawn_unit(unit_data, team, spawn_position, ignore_cap)
 		if unit != null:
 			spawned.append(unit)
 	return spawned
@@ -519,7 +530,12 @@ func get_projectile_count() -> int:
 func queue_hit(attacker: UnitBase, target: UnitBase, amount: float) -> void:
 	if attacker == null or target == null or attacker.is_dead:
 		return
-	_pending_hits.append(PendingHit.new(attacker.unit_id, target.unit_id, amount))
+	var hit: PendingHit = PendingHit.new(attacker.unit_id, target.unit_id, amount)
+	hit.splash_fraction = attacker.data.splash_fraction
+	hit.splash_radius = attacker.data.splash_radius
+	hit.poison_dps = attacker.data.poison_dps
+	hit.poison_duration = attacker.data.poison_duration
+	_pending_hits.append(hit)
 
 
 func queue_heal(healer: UnitBase, target: UnitBase, amount: float) -> void:
@@ -551,6 +567,7 @@ func _create_projectile(source_id: int, team: int, origin: Vector2, target_id: i
 	projectile.setup(GameManager.match_state.allocate_entity_id(), source_id, team, target_id, amount, speed)
 	projectile.global_position = origin
 	_projectiles.append(projectile)
+	EventBus.proyectil_disparado.emit(origin, team)
 	return projectile
 
 
@@ -595,7 +612,12 @@ func _simulate_projectiles(delta: float) -> void:
 				projectile.target_id = target.unit_id
 			destination = target.global_position
 		if projectile.simulate_towards(destination, delta):
-			_pending_hits.append(PendingHit.new(projectile.source_id, projectile.target_id, projectile.damage, projectile.target_castle_owner))
+			var hit: PendingHit = PendingHit.new(projectile.source_id, projectile.target_id, projectile.damage, projectile.target_castle_owner)
+			hit.splash_fraction = projectile.splash_fraction
+			hit.splash_radius = projectile.splash_radius
+			hit.poison_dps = projectile.poison_dps
+			hit.poison_duration = projectile.poison_duration
+			_pending_hits.append(hit)
 			_projectiles.remove_at(index)
 			_release_projectile(projectile)
 			continue
@@ -610,7 +632,62 @@ func _resolve_hits() -> void:
 		var target: UnitBase = get_unit(hit.target_id)
 		if target != null and not target.is_dead:
 			target.receive_damage(hit.amount, hit.attacker_id)
+			if hit.poison_dps > 0.0:
+				target.apply_poison(hit.poison_dps, hit.poison_duration)
+			if hit.splash_fraction > 0.0:
+				damage_units_in_area(target.team, target.global_position, hit.splash_radius, hit.amount * hit.splash_fraction, hit.attacker_id, target.unit_id)
 	_pending_hits.clear()
+
+
+# --- Daño en área y hechizos de castillo ---------------------------------------
+
+## Daño a todas las unidades vivas del equipo `victim_team` a menos de `radius` de
+## `center` (distancia entre centros), salvo `except_id`. Devuelve cuántas alcanzó.
+func damage_units_in_area(victim_team: int, center: Vector2, radius: float, amount: float, source_id: int = 0, except_id: int = 0, ignore_mitigation: bool = false) -> int:
+	var hit_count: int = 0
+	for unit: UnitBase in _units:
+		if unit.team != victim_team or unit.is_dead or unit.unit_id == except_id:
+			continue
+		if unit.global_position.distance_to(center) <= radius + unit.body_radius:
+			unit.receive_damage(amount, source_id, ignore_mitigation)
+			hit_count += 1
+	return hit_count
+
+
+## Enemigo vivo del equipo `victim_team` más cercano a `point` dentro de `radius`
+## (contando su cuerpo). Desempate: menor unit_id.
+func find_unit_near(victim_team: int, point: Vector2, radius: float) -> UnitBase:
+	var best: UnitBase = null
+	var best_distance: float = INF
+	for unit: UnitBase in _units:
+		if unit.team != victim_team or unit.is_dead:
+			continue
+		var distance: float = unit.global_position.distance_to(point) - unit.body_radius
+		if distance <= radius and distance < best_distance:
+			best = unit
+			best_distance = distance
+	return best
+
+
+## Lluvia de flechas: `waves` oleadas de daño ligero cada `interval` segundos sobre
+## un círculo. Las oleadas se resuelven en simulate_step (determinista).
+func start_arrow_rain(caster_team: int, center: Vector2, radius: float, damage_per_wave: float, waves: int, interval: float) -> void:
+	_rains.append({"team": MatchTypes.opponent_of(caster_team), "center": center, "radius": radius, "damage": damage_per_wave, "waves_left": waves, "interval": interval, "timer": 0.0})
+
+
+func _simulate_rains(delta: float) -> void:
+	var index: int = 0
+	while index < _rains.size():
+		var rain: Dictionary = _rains[index]
+		rain["timer"] = float(rain["timer"]) - delta
+		while float(rain["timer"]) <= 0.0 and int(rain["waves_left"]) > 0:
+			rain["timer"] = float(rain["timer"]) + float(rain["interval"])
+			rain["waves_left"] = int(rain["waves_left"]) - 1
+			damage_units_in_area(int(rain["team"]), rain["center"], float(rain["radius"]), float(rain["damage"]), 0)
+		if int(rain["waves_left"]) <= 0:
+			_rains.remove_at(index)
+		else:
+			index += 1
 
 
 func queue_conversion(converter: UnitBase, target: UnitBase) -> void:
@@ -732,6 +809,7 @@ func clear_units() -> void:
 	_pending_hits.clear()
 	_pending_heals.clear()
 	_pending_conversions.clear()
+	_rains.clear()
 	_group_counter = [0, 0]
 
 
@@ -868,6 +946,7 @@ func _apply_projectile_snapshot(projectile_ids: PackedInt32Array, projectile_flo
 			projectile = _acquire_projectile()
 			projectile.setup(projectile_id, projectile_ids[index * 3 + 1], projectile_ids[index * 3 + 2], 0, 0.0, 0.0)
 			projectile.global_position = network_pos
+			EventBus.proyectil_disparado.emit(network_pos, projectile_ids[index * 3 + 2])
 		by_id.erase(projectile_id)
 		projectile.target_point = network_pos
 		kept.append(projectile)

@@ -20,6 +20,9 @@ const ART_OFFSET_Y: float = 10.0
 const BADGE_SIZE: Vector2 = Vector2(58.0, 34.0)
 ## Cambio mínimo de progreso para redibujar la barra (evita redibujar cada tick).
 const PROGRESS_REDRAW_STEP: float = 0.02
+## Rebote al producir: duración (s) y fuerza (fracción de aplastamiento máximo).
+const BOUNCE_DURATION: float = 0.55
+const BOUNCE_STRENGTH: float = 0.22
 
 var building_id: int = 0
 var owner_id: int = MatchTypes.NO_PLAYER
@@ -36,6 +39,10 @@ var _sprite: AnimatedSprite2D = null
 var _art: Sprite2D = null
 var _team_layer: Sprite2D = null
 var _drawn_progress: float = -1.0
+## Posición y escala de reposo del arte (el rebote las anima y siempre vuelve a ellas).
+var _art_rest_scale: Vector2 = Vector2.ONE
+var _art_rest_position: Vector2 = Vector2.ZERO
+var _bounce_tween: Tween = null
 ## Arte según la raza del dueño (ver _create_visuals).
 var _art_texture: Texture2D = null
 var _art_team_texture: Texture2D = null
@@ -55,6 +62,8 @@ func setup(p_building_id: int, p_owner_id: int, p_data: StructureData, p_slot_in
 func set_level(new_level: int) -> void:
 	level = data.clamp_level(new_level) if data != null else maxi(1, new_level)
 	_update_label()
+	# El indicador de alcance de las torres depende del nivel: hay que redibujarlo.
+	queue_redraw()
 
 
 ## Un paso de simulación. Lo llama GridManager (nunca el propio nodo).
@@ -80,7 +89,11 @@ func simulate_visual(delta: float) -> void:
 
 ## Solo clientes online: fija el temporizador replicado por el servidor.
 func set_production_timer(seconds: float) -> void:
+	var interval_now: float = get_production_interval()
+	var wrapped: bool = interval_now > 0.0 and seconds < production_timer - interval_now * 0.5
 	production_timer = seconds
+	if wrapped:
+		_on_visual_cycle()
 	var interval: float = get_production_interval()
 	if interval > 0.0:
 		_refresh_progress(production_timer / interval)
@@ -89,6 +102,40 @@ func set_production_timer(seconds: float) -> void:
 ## Segundos entre ciclos de producción. 0 = sin ciclo (la base no produce).
 func get_production_interval() -> float:
 	return 0.0
+
+
+## Solo clientes online: el temporizador dio la vuelta = el servidor produjo algo.
+## Las subclases con efecto visual de producción lo sobrescriben.
+func _on_visual_cycle() -> void:
+	pass
+
+
+## Rebote de "acabo de producir": el edificio se aplasta contra el suelo y se estira
+## con un muelle amortiguado (squash & stretch). Se hace con la escala del sprite:
+## un shader haría lo mismo, pero necesitaría un material por edificio y no aporta nada
+## a un movimiento tan simple.
+func play_bounce() -> void:
+	if _art == null or GameManager.suppress_effects or not is_inside_tree():
+		return
+	if _bounce_tween != null and _bounce_tween.is_valid():
+		_bounce_tween.kill()
+	Sfx.play(&"boing", 0.0 if owner_id == GameManager.local_player_id or GameManager.is_watching() else Sfx.RIVAL_OFFSET_DB)
+	_bounce_tween = create_tween()
+	_bounce_tween.tween_method(_apply_bounce, 0.0, 1.0, BOUNCE_DURATION)
+	_bounce_tween.tween_callback(_apply_bounce.bind(1.0))
+
+
+## t de 0 a 1: oscilación amortiguada; 0 = reposo, positivo = aplastado, negativo = estirado.
+func _apply_bounce(t: float) -> void:
+	if _art == null:
+		return
+	var wave: float = exp(-4.5 * t) * sin(t * TAU * 2.0) if t < 1.0 else 0.0
+	var squash: float = BOUNCE_STRENGTH * wave
+	_art.scale = _art_rest_scale * Vector2(1.0 + squash * 0.7, 1.0 - squash)
+	# El edificio se apoya en su base: se ajusta la posición para que no "flote".
+	var half_height: float = _art.texture.get_height() * _art_rest_scale.y * 0.5 if _art.texture != null else 0.0
+	var grounded: float = -1.0 if ViewOrientation.is_flipped() else 1.0
+	_art.position = _art_rest_position + Vector2(0.0, squash * half_height * grounded)
 
 
 ## Efecto de un ciclo de producción. Solo se llama si el intervalo es > 0,
@@ -170,6 +217,8 @@ func _create_art() -> void:
 	_art.scale = Vector2.ONE * art_scale
 	_art.rotation = upright
 	_art.position = Vector2(0.0, -ART_OFFSET_Y if upright != 0.0 else ART_OFFSET_Y)
+	_art_rest_scale = _art.scale
+	_art_rest_position = _art.position
 	add_child(_art)
 	if _art_team_texture != null:
 		_team_layer = Sprite2D.new()

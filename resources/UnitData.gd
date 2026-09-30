@@ -29,6 +29,21 @@ enum Shape { SQUARE, TRIANGLE, CIRCLE, DIAMOND }
 @export var uses_projectile: bool = false
 @export var projectile_speed: float = 900.0
 
+@export_group("Special")
+## Daño en área: fracción del daño del golpe (0.15 = 15 %) que reciben también los
+## enemigos a menos de splash_radius del objetivo. 0 = sin daño en área.
+@export_range(0.0, 1.0, 0.01) var splash_fraction: float = 0.0
+@export var splash_radius: float = 0.0
+## Veneno: cada golpe deja al objetivo con poison_dps de daño por segundo durante
+## poison_duration segundos (no se acumula: se renueva). Ignora la armadura.
+@export var poison_dps: float = 0.0
+@export var poison_duration: float = 0.0
+## Solo unidades temporales (milicias): segundos que permanecen en el campo. 0 = permanente.
+@export var lifetime: float = 0.0
+## Si no está vacío, la raza usa el arte y la escala que tenga para esa otra unidad
+## (las milicias se ven como soldados de su raza).
+@export var art_unit_id: StringName = &""
+
 @export_group("Visual")
 ## Sprite animado opcional. Si es null se dibuja fallback_shape.
 @export var sprite_frames: SpriteFrames
@@ -40,6 +55,14 @@ enum Shape { SQUARE, TRIANGLE, CIRCLE, DIAMOND }
 @export var fallback_color: Color = Color.WHITE
 ## Radio del cuerpo, usado para el tamaño visual y la colisión.
 @export var body_radius: float = 20.0
+
+
+func has_splash() -> bool:
+	return splash_fraction > 0.0 and splash_radius > 0.0
+
+
+func has_poison() -> bool:
+	return poison_dps > 0.0 and poison_duration > 0.0
 
 
 func is_healer() -> bool:
@@ -70,6 +93,12 @@ func get_validation_errors() -> PackedStringArray:
 			errors.append("%s: HEALER necesita heal_amount > 0" % label)
 	elif damage <= 0.0:
 		errors.append("%s: unidad de combate necesita damage > 0" % label)
+	if splash_fraction > 0.0 and splash_radius <= 0.0:
+		errors.append("%s: splash_fraction necesita splash_radius > 0" % label)
+	if (poison_dps > 0.0) != (poison_duration > 0.0):
+		errors.append("%s: poison_dps y poison_duration van juntos" % label)
+	if lifetime < 0.0:
+		errors.append("%s: lifetime negativo" % label)
 	if uses_projectile and projectile_speed <= 0.0:
 		errors.append("%s: projectile_speed debe ser > 0" % label)
 	if body_radius <= 0.0:

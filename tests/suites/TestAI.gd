@@ -19,6 +19,8 @@ func before_each() -> void:
 	GameManager.register_command_processor(processor)
 	GameManager.start_match(MatchTypes.GameMode.VS_AI, 1313)
 	ai.enabled = true
+	# Los hechizos se prueban en TestSpecials; aquí la IA solo juega cartas.
+	ai.spell_use_chance = 0.0
 	ai_rejections.clear()
 
 
@@ -97,6 +99,16 @@ func test_defends_its_half() -> void:
 	for unit: UnitBase in lane.get_alive_units():
 		if unit.team == AI_PLAYER:
 			assert_true(lane.is_valid_deploy_position(AI_PLAYER, unit.global_position), "en su propia mitad")
+
+
+func test_casts_a_spell_against_a_pack_in_its_half() -> void:
+	ai.spell_use_chance = 1.0
+	lane.spawn_group_at(GameManager.database.get_unit(&"soldier"), 0, 3, Vector2(540.0, 1400.0))
+	assert_true(ai.think(), "la IA actúa")
+	var state: PlayerState = GameManager.get_player_state(AI_PLAYER)
+	assert_eq(state.spell_seq, 1, "lanzó un hechizo")
+	assert_eq(state.spell_id, &"arrow_rain", "lluvia de flechas contra el grupo")
+	assert_true(state.get_spell_ready_at(&"arrow_rain") > GameManager.match_state.match_time, "y quedó en enfriamiento")
 
 
 func test_unlocks_plot_when_full() -> void:

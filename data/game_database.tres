@@ -37,12 +37,24 @@
 [ext_resource type="Resource" path="res://data/units/archer.tres" id="29_3k60q"]
 [ext_resource type="Resource" path="res://data/units/tank.tres" id="30_verxg"]
 [ext_resource type="Resource" path="res://data/units/priest.tres" id="31_8xss3"]
+[ext_resource type="Script" path="res://resources/SpellData.gd" id="sp_script"]
+[ext_resource type="Resource" path="res://data/spells/arrow_rain.tres" id="sp_rain"]
+[ext_resource type="Resource" path="res://data/spells/lightning.tres" id="sp_bolt"]
+[ext_resource type="Resource" path="res://data/spells/militia.tres" id="sp_militia"]
+[ext_resource type="Resource" path="res://data/units/cavalry.tres" id="u_cav"]
+[ext_resource type="Resource" path="res://data/units/mage.tres" id="u_mage"]
+[ext_resource type="Resource" path="res://data/units/venom_archer.tres" id="u_venom"]
+[ext_resource type="Resource" path="res://data/units/militia.tres" id="u_militia"]
+[ext_resource type="Resource" path="res://data/cards/card_cavalry.tres" id="c_cav"]
+[ext_resource type="Resource" path="res://data/cards/card_mage.tres" id="c_mage"]
+[ext_resource type="Resource" path="res://data/cards/card_venom_archer.tres" id="c_venom"]
 
 [resource]
 script = ExtResource("20_ydtca")
 rules = ExtResource("19_yt75o")
-units = Array[ExtResource("27_7h56u")]([ExtResource("28_aolhs"), ExtResource("29_3k60q"), ExtResource("30_verxg"), ExtResource("31_8xss3")])
+units = Array[ExtResource("27_7h56u")]([ExtResource("28_aolhs"), ExtResource("29_3k60q"), ExtResource("30_verxg"), ExtResource("31_8xss3"), ExtResource("u_cav"), ExtResource("u_mage"), ExtResource("u_venom"), ExtResource("u_militia")])
 structures = Array[ExtResource("21_q0fyq")]([ExtResource("22_m1ws1"), ExtResource("23_ap1wn"), ExtResource("24_2oi3a"), ExtResource("25_jm8uu"), ExtResource("26_wpomh")])
 buffs = Array[ExtResource("1_kib3y")]([ExtResource("2_br8rk"), ExtResource("3_t3hgm"), ExtResource("4_ins62"), ExtResource("5_mg05e"), ExtResource("40_towbuff")])
-cards = Array[ExtResource("6_bm8cc")]([ExtResource("7_wdau7"), ExtResource("8_bs1kh"), ExtResource("9_y4ny8"), ExtResource("10_0rfu2"), ExtResource("11_hq7mt"), ExtResource("12_6nn2q"), ExtResource("13_gcs4y"), ExtResource("14_yo4sn"), ExtResource("15_h6kyv"), ExtResource("16_7kpo8"), ExtResource("17_dsgde"), ExtResource("18_a2emy"), ExtResource("41_towcard")])
+cards = Array[ExtResource("6_bm8cc")]([ExtResource("7_wdau7"), ExtResource("8_bs1kh"), ExtResource("9_y4ny8"), ExtResource("10_0rfu2"), ExtResource("11_hq7mt"), ExtResource("12_6nn2q"), ExtResource("13_gcs4y"), ExtResource("14_yo4sn"), ExtResource("15_h6kyv"), ExtResource("16_7kpo8"), ExtResource("17_dsgde"), ExtResource("18_a2emy"), ExtResource("41_towcard"), ExtResource("c_cav"), ExtResource("c_mage"), ExtResource("c_venom")])
 races = Array[ExtResource("90_racescript")]([ExtResource("91_human"), ExtResource("92_goblin"), ExtResource("93_elf")])
+spells = Array[ExtResource("sp_script")]([ExtResource("sp_rain"), ExtResource("sp_bolt"), ExtResource("sp_militia")])

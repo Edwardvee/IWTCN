@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="CardData" format=3]
+
+[ext_resource type="Script" path="res://resources/CardData.gd" id="1_card"]
+[ext_resource type="Texture2D" path="res://assets/cards/mage.svg" id="2_icon"]
+[ext_resource type="Resource" path="res://data/units/mage.tres" id="3_unit"]
+
+[resource]
+script = ExtResource("1_card")
+id = &"card_mage"
+display_name = "Mage"
+description = "Despliega un Mago: muy frágil, mucho daño y un 15% en área. Solo elfos; requiere 3 cuarteles de arqueros."
+card_type = 2
+cost = 100
+shop_weight = 6
+unit = ExtResource("3_unit")
+required_structure_count = 3
+required_structure_id = &"archer_barracks"
+required_race = &"elf"
+color = Color(0.7, 0.5, 1, 1)
+icon = ExtResource("2_icon")

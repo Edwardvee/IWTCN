@@ -44,7 +44,8 @@ func get_gold(player_id: int) -> int:
 
 
 ## Precio real de una carta para un jugador. Las estructuras suben de precio
-## según las copias que ya tiene construidas; el resto cuesta card.cost.
+## según las copias que ya tiene construidas y las mejoras un 10 % por cada copia ya
+## comprada; las cartas de unidad cuestan card.cost.
 func get_card_cost(player_id: int, card: CardData) -> int:
 	if card == null:
 		return 0
@@ -53,6 +54,8 @@ func get_card_cost(player_id: int, card: CardData) -> int:
 	var player_state: PlayerState = GameManager.get_player_state(player_id)
 	if card.card_type == CardData.CardType.STRUCTURE and card.structure != null and rules != null and player_state != null:
 		base_cost = rules.get_scaled_structure_cost(card.cost, player_state.grid.count_structures(card.structure.id))
+	elif card.card_type == CardData.CardType.GLOBAL_BUFF and card.buff != null and rules != null and player_state != null:
+		base_cost = rules.get_scaled_buff_cost(card.cost, player_state.buffs.count(card.buff.id))
 	# La raza abarata o encarece cada tipo de carta.
 	var race: RaceData = GameManager.get_race(player_id)
 	if race == null:

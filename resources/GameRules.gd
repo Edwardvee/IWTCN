@@ -36,6 +36,10 @@ const SLOTS_PER_PLOT: int = 4
 ## más caro que abrir el nivel 1 y 2.
 @export var copy_cost_multipliers: PackedFloat32Array = PackedFloat32Array([1.0, 1.25, 2.5, 4.0, 6.0])
 
+## Cada mejora (carta violeta) que ya tienes sube un 10 % el precio de la siguiente copia
+## de ESA mejora (0.10; se acumula: 100 → 110 → 121…).
+@export var buff_copy_cost_increase: float = 0.10
+
 @export_group("Plots")
 ## Coste de cada plot por índice (0..5). Ver GridManager para el orden.
 @export var plot_costs: PackedInt32Array = PackedInt32Array([40, 30, 20, 50, 0, 10])
@@ -75,6 +79,12 @@ func get_scaled_structure_cost(base_cost: int, owned_count: int) -> int:
 	return roundi(float(base_cost) * multiplier)
 
 
+## Precio de una mejora con `owned_count` copias ya compradas (sube un
+## buff_copy_cost_increase acumulado por copia).
+func get_scaled_buff_cost(base_cost: int, owned_count: int) -> int:
+	return roundi(float(base_cost) * pow(1.0 + buff_copy_cost_increase, maxi(owned_count, 0)))
+
+
 ## Tope de tropas para un jugador con `farm_level` granjas.
 func get_unit_cap_for_level(farm_level: int) -> int:
 	if unit_cap_override > 0:
@@ -108,6 +118,8 @@ func get_validation_errors() -> PackedStringArray:
 		if cap < 1:
 			errors.append("GameRules: unit_cap_by_farm_level contiene valores < 1")
 			break
+	if buff_copy_cost_increase < 0.0:
+		errors.append("GameRules: buff_copy_cost_increase negativo")
 	if copy_cost_multipliers.is_empty():
 		errors.append("GameRules: copy_cost_multipliers vacío")
 	for multiplier: float in copy_cost_multipliers:

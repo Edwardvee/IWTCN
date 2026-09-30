@@ -23,6 +23,9 @@ const TEAM_LAYER_BITS: Array[int] = [2, 4]
 const HP_BAR_HEIGHT: float = 8.0
 const HP_BAR_BACK: Color = Color(0.09, 0.07, 0.12, 0.9)
 const SHADOW_COLOR: Color = Color(0.0, 0.0, 0.0, 0.28)
+## Segundos entre pulsos de daño del veneno.
+const POISON_TICK: float = 0.5
+const POISON_COLOR: Color = Color(0.5, 0.95, 0.25)
 
 signal health_changed(current_hp: float, max_hp: float)
 
@@ -43,6 +46,12 @@ var heal_amount: float = 0.0
 var body_radius: float = 20.0
 
 var attack_cooldown_left: float = 0.0
+## Veneno recibido: daño por segundo y segundos restantes (0 = sin veneno).
+var poison_dps: float = 0.0
+var poison_left: float = 0.0
+var _poison_accumulated: float = 0.0
+## Solo unidades temporales (milicias): segundos hasta desaparecer. 0 = permanente.
+var lifetime_left: float = 0.0
 ## Solo HEALER con conversión activa: segundos hasta el próximo intento.
 var conversion_cooldown_left: float = 0.0
 var target_id: int = 0
@@ -108,6 +117,12 @@ func simulate(delta: float) -> void:
 	if not is_dead:
 		attack_cooldown_left = maxf(0.0, attack_cooldown_left - delta)
 		conversion_cooldown_left = maxf(0.0, conversion_cooldown_left - delta)
+		if poison_left > 0.0:
+			_tick_poison(delta)
+		if lifetime_left > 0.0:
+			lifetime_left -= delta
+			if lifetime_left <= 0.0:
+				die()
 	state_machine.physics_update(delta)
 
 
@@ -175,7 +190,9 @@ func perform_attack(target: UnitBase) -> void:
 	if not data.uses_projectile:
 		EventBus.golpe_cuerpo_a_cuerpo.emit(target.global_position, team)
 	if data.uses_projectile:
-		lane.spawn_projectile(unit_id, team, global_position, target.unit_id, damage, data.projectile_speed)
+		var projectile: Projectile = lane.spawn_projectile(unit_id, team, global_position, target.unit_id, damage, data.projectile_speed)
+		if projectile != null:
+			projectile.set_effects(data)
 	else:
 		lane.queue_hit(self, target, damage)
 	attack_cooldown_left = attack_cooldown
@@ -279,11 +296,12 @@ func calculate_damage_taken(incoming: float) -> float:
 	return incoming * (1.0 - clampf(damage_mitigation, 0.0, 0.9))
 
 
-## Aplica daño (ya mitigado aquí). Devuelve el daño realmente recibido.
-func receive_damage(incoming: float, _source_id: int) -> float:
+## Aplica daño (ya mitigado aquí salvo ignore_mitigation: veneno y rayos).
+## Devuelve el daño realmente recibido.
+func receive_damage(incoming: float, _source_id: int, ignore_mitigation: bool = false) -> float:
 	if is_dead or incoming <= 0.0:
 		return 0.0
-	var applied: float = minf(calculate_damage_taken(incoming), current_hp)
+	var applied: float = minf(incoming if ignore_mitigation else calculate_damage_taken(incoming), current_hp)
 	current_hp -= applied
 	health_changed.emit(current_hp, max_hp)
 	EventBus.unidad_vida_cambiada.emit(self, -applied)
@@ -291,6 +309,28 @@ func receive_damage(incoming: float, _source_id: int) -> float:
 	if current_hp <= 0.0:
 		die()
 	return applied
+
+
+## Envenena (o renueva el veneno). No se acumula: manda el más fuerte y el más largo.
+func apply_poison(dps: float, duration: float) -> void:
+	if is_dead or dps <= 0.0 or duration <= 0.0:
+		return
+	poison_dps = maxf(poison_dps, dps)
+	poison_left = maxf(poison_left, duration)
+	queue_redraw()
+
+
+func _tick_poison(delta: float) -> void:
+	poison_left -= delta
+	_poison_accumulated += delta
+	while _poison_accumulated >= POISON_TICK and not is_dead:
+		_poison_accumulated -= POISON_TICK
+		receive_damage(poison_dps * POISON_TICK, 0, true)
+	if poison_left <= 0.0:
+		poison_left = 0.0
+		poison_dps = 0.0
+		_poison_accumulated = 0.0
+		queue_redraw()
 
 
 func die() -> void:
@@ -404,6 +444,10 @@ func _draw() -> void:
 	if _sprite == null:
 		_draw_shape(data.fallback_shape, body_radius, MatchTypes.team_color(team))
 		_draw_shape(data.fallback_shape, body_radius * 0.45, data.fallback_color)
+	if poison_left > 0.0 and not is_dead:
+		draw_arc(Vector2.ZERO, body_radius + 5.0, 0.0, TAU, 28, Color(POISON_COLOR, 0.85), 3.0)
+		for bubble: Vector2 in [Vector2(-0.6, -0.5), Vector2(0.5, -0.8), Vector2(0.1, 0.7)]:
+			draw_circle(bubble * body_radius, 3.5, Color(POISON_COLOR, 0.9))
 	if is_dead or current_hp >= max_hp:
 		return
 	# Barra de vida solo cuando la unidad está herida (menos ruido con ejércitos grandes).

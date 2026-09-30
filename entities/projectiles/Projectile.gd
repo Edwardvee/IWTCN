@@ -22,6 +22,13 @@ var target_castle_owner: int = MatchTypes.NO_PLAYER
 var target_point: Vector2 = Vector2.ZERO
 var damage: float = 0.0
 var speed: float = 900.0
+## Efectos del disparo (ver UnitData): daño en área y veneno.
+var splash_fraction: float = 0.0
+var splash_radius: float = 0.0
+var poison_dps: float = 0.0
+var poison_duration: float = 0.0
+## Estética: color de la estela (alfa 0 = el del bando).
+var tint: Color = Color(0.0, 0.0, 0.0, 0.0)
 
 var _direction: Vector2 = Vector2.UP
 
@@ -38,7 +45,30 @@ func setup(p_projectile_id: int, p_source_id: int, p_team: int, p_target_id: int
 	target_point = Vector2.ZERO
 	damage = p_damage
 	speed = p_speed
+	splash_fraction = 0.0
+	splash_radius = 0.0
+	poison_dps = 0.0
+	poison_duration = 0.0
+	if tint.a > 0.0:
+		tint = Color(0.0, 0.0, 0.0, 0.0)
+		queue_redraw()
 	set_physics_process(false)
+
+
+## Copia de la unidad que dispara sus efectos especiales (área, veneno).
+func set_effects(unit_data: UnitData) -> void:
+	splash_fraction = unit_data.splash_fraction
+	splash_radius = unit_data.splash_radius
+	poison_dps = unit_data.poison_dps
+	poison_duration = unit_data.poison_duration
+	var new_tint: Color = Color(0.0, 0.0, 0.0, 0.0)
+	if unit_data.has_poison():
+		new_tint = Color(0.5, 0.95, 0.25)
+	elif unit_data.has_splash():
+		new_tint = Color(0.75, 0.5, 1.0)
+	if new_tint != tint:
+		tint = new_tint
+		queue_redraw()
 
 
 func setup_castle_target(castle_owner: int, point: Vector2) -> void:
@@ -67,7 +97,7 @@ func simulate_towards(destination: Vector2, delta: float) -> bool:
 func _draw() -> void:
 	# Flecha que apunta hacia -Y (la rotación la orienta al objetivo): estela del
 	# color del bando, asta de madera, plumas y punta de acero.
-	var color: Color = MatchTypes.team_color(team).lightened(0.4)
+	var color: Color = tint if tint.a > 0.0 else MatchTypes.team_color(team).lightened(0.4)
 	draw_line(Vector2(0.0, TRAIL_LENGTH), Vector2(0.0, 14.0), Color(color, 0.5), 5.0)
 	draw_line(Vector2(0.0, 22.0), Vector2(0.0, -10.0), OUTLINE_COLOR, 6.0)
 	draw_line(Vector2(0.0, 22.0), Vector2(0.0, -10.0), SHAFT_COLOR, 3.0)

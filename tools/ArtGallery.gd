@@ -4,7 +4,7 @@ extends Node2D
 ## Con --write-movie sirve para sacar capturas sin arrancar una partida.
 
 const OUTLINE_SHADER: Shader = preload("res://assets/shaders/team_outline.gdshader")
-const UNIT_IDS: Array[String] = ["soldier", "archer", "priest", "tank"]
+const UNIT_IDS: Array[String] = ["soldier", "archer", "priest", "tank", "cavalry", "mage", "venom_archer"]
 const STRUCTURE_IDS: Array[String] = ["farm", "soldier_barracks", "archer_barracks", "church", "tower", "castle"]
 
 

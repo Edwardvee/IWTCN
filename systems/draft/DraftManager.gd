@@ -8,7 +8,8 @@ extends Node
 ## - Reroll manual: cuesta reroll_cost; cada uso lo sube reroll_cost_increment;
 ##   cada reroll_decay_interval segundos baja reroll_decay_amount hasta el base.
 ## - Una carta solo aparece si está disponible para ese jugador: tipo
-##   habilitado, requisito de desbloqueo cumplido (Tank: 3 cuarteles) y, si es
+##   habilitado, requisito de desbloqueo cumplido (Tank: 3 cuarteles; unidades
+##   especiales: 3 cuarteles del mismo tipo y ser de su raza) y, si es
 ##   una estructura, que no esté ya al máximo de nivel.
 ##
 ## Solo lo modifican los comandos (PlayCardCommand, RerollShopCommand) y su
@@ -66,10 +67,8 @@ func is_card_available(player_id: int, card: CardData) -> bool:
 	var player_state: PlayerState = GameManager.get_player_state(player_id)
 	if player_state == null or card == null or not enabled_card_types.has(card.card_type):
 		return false
-	if card.has_unlock_requirement():
-		var owned: int = player_state.grid.count_structures_with_tag(card.required_structure_tag, GameManager.database)
-		if owned < card.required_structure_count:
-			return false
+	if not card.is_unlocked_for(player_state, GameManager.database):
+		return false
 	if card.card_type == CardData.CardType.STRUCTURE and card.structure != null:
 		if player_state.grid.count_structures(card.structure.id) >= card.structure.max_level:
 			return false

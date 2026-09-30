@@ -5,14 +5,14 @@ extends Control
 ## Solo presentación: el botón abre un selector con los emotes de Emotes.IDS, la
 ## elección se envía como EmoteCommand (la autoridad valida el tiempo de espera) y
 ## los globos se dibujan al recibir EventBus.emote_mostrado, igual en local,
-## online y repeticiones. Tu emote sale junto al botón; el del rival, arriba.
+## online y repeticiones. Tu emote sale junto al botón; el del rival, arriba a la derecha.
 
 const BOTTOM_BAR_HEIGHT: float = 420.0
 const MARGIN: float = 24.0
 const TOGGLE_SIZE: float = 124.0
 const PICK_SIZE: float = 136.0
 const BUBBLE_SIZE: float = 184.0
-const RIVAL_BUBBLE_TOP: float = 250.0
+const RIVAL_BUBBLE_TOP: float = 340.0
 
 var _toggle: Button = null
 var _cooldown_label: Label = null
@@ -115,9 +115,11 @@ func _build_bubble(own: bool) -> PanelContainer:
 	if own:
 		_place(bubble, MARGIN * 2.0 + TOGGLE_SIZE, BOTTOM_BAR_HEIGHT + MARGIN, BUBBLE_SIZE, BUBBLE_SIZE)
 	else:
-		bubble.offset_left = MARGIN
+		bubble.anchor_left = 1.0
+		bubble.anchor_right = 1.0
+		bubble.offset_left = -(MARGIN + BUBBLE_SIZE)
+		bubble.offset_right = -MARGIN
 		bubble.offset_top = RIVAL_BUBBLE_TOP
-		bubble.offset_right = MARGIN + BUBBLE_SIZE
 		bubble.offset_bottom = RIVAL_BUBBLE_TOP + BUBBLE_SIZE
 	var picture: TextureRect = TextureRect.new()
 	picture.name = "Picture"

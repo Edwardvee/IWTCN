@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="CardData" format=3]
+
+[ext_resource type="Script" path="res://resources/CardData.gd" id="1_card"]
+[ext_resource type="Texture2D" path="res://assets/cards/cavalry.svg" id="2_icon"]
+[ext_resource type="Resource" path="res://data/units/cavalry.tres" id="3_unit"]
+
+[resource]
+script = ExtResource("1_card")
+id = &"card_cavalry"
+display_name = "Cavalry"
+description = "Despliega una Caballería: mucha vida y un golpe que daña un 5% en área. Solo humanos; requiere 3 cuarteles de soldados."
+card_type = 2
+cost = 100
+shop_weight = 6
+unit = ExtResource("3_unit")
+required_structure_count = 3
+required_structure_id = &"soldier_barracks"
+required_race = &"human"
+color = Color(0.85, 0.65, 0.35, 1)
+icon = ExtResource("2_icon")

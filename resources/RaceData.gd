@@ -69,16 +69,16 @@ func get_structure_override(structure_id: StringName) -> RaceStructureOverride:
 
 ## SpriteFrames de la unidad para esta raza (o los de la unidad base).
 func get_unit_frames(unit: UnitData) -> SpriteFrames:
-	var unit_override: RaceUnitOverride = get_unit_override(unit.id)
+	var unit_override: RaceUnitOverride = get_unit_override(unit.art_unit_id if unit.art_unit_id != &"" else unit.id)
 	if unit_override != null and unit_override.sprite_frames != null:
 		return unit_override.sprite_frames
 	return unit.sprite_frames
 
 
 func get_unit_sprite_scale(unit: UnitData) -> Vector2:
-	var unit_override: RaceUnitOverride = get_unit_override(unit.id)
+	var unit_override: RaceUnitOverride = get_unit_override(unit.art_unit_id if unit.art_unit_id != &"" else unit.id)
 	if unit_override != null and unit_override.sprite_scale != Vector2.ZERO:
-		return unit_override.sprite_scale
+		return unit.sprite_scale * (unit_override.sprite_scale / Vector2(0.5, 0.5)) if unit.art_unit_id != &"" else unit_override.sprite_scale
 	return unit.sprite_scale
 
 

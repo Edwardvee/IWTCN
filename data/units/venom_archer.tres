@@ -1,0 +1,23 @@
+[gd_resource type="Resource" script_class="UnitData" format=3]
+
+[ext_resource type="Script" path="res://resources/UnitData.gd" id="1_unit"]
+[ext_resource type="SpriteFrames" path="res://data/units/venom_archer_frames.tres" id="2_frames"]
+
+[resource]
+script = ExtResource("1_unit")
+id = &"venom_archer"
+display_name = "Venom Archer"
+role = 1
+max_hp = 100.0
+move_speed = 60.0
+attack_range = 270.0
+attack_cooldown = 1.0
+damage = 10.0
+uses_projectile = true
+poison_dps = 20.0
+poison_duration = 4.0
+body_radius = 18.0
+fallback_shape = 1
+fallback_color = Color(0.5, 0.95, 0.25, 1)
+sprite_frames = ExtResource("2_frames")
+sprite_scale = Vector2(0.5, 0.5)

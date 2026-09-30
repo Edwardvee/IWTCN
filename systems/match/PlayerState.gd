@@ -30,6 +30,12 @@ var income_remainder: float = 0.0
 var emote_id: StringName = &""
 var emote_seq: int = 0
 var emote_time: float = 0.0
+## Habilidades de castillo: cuándo (match_time) podrá volver a lanzarse cada una, y la
+## última lanzada (contador para que los clientes detecten un lanzamiento nuevo).
+var spell_ready: Dictionary[StringName, float] = {}
+var spell_id: StringName = &""
+var spell_position: Vector2 = Vector2.ZERO
+var spell_seq: int = 0
 
 
 func _init(p_player_id: int, rules: GameRules) -> void:
@@ -39,6 +45,14 @@ func _init(p_player_id: int, rules: GameRules) -> void:
 	castle_max_hp = rules.castle_max_hp if rules != null else 1.0
 	castle_hp = castle_max_hp
 	shop = ShopState.new(rules.reroll_base_cost if rules != null else 0)
+
+
+func get_spell_ready_at(id: StringName) -> float:
+	return spell_ready.get(id, 0.0)
+
+
+func set_spell_ready_at(id: StringName, time: float) -> void:
+	spell_ready[id] = time
 
 
 func is_castle_alive() -> bool:
@@ -58,4 +72,15 @@ func to_dict() -> Dictionary:
 		"race": race_id,
 		"emote": emote_id,
 		"emote_seq": emote_seq,
+		"spells": _spell_ready_to_dict(),
+		"spell": spell_id,
+		"spell_pos": spell_position,
+		"spell_seq": spell_seq,
 	}
+
+
+func _spell_ready_to_dict() -> Dictionary:
+	var result: Dictionary = {}
+	for id: StringName in spell_ready:
+		result[str(id)] = spell_ready[id]
+	return result

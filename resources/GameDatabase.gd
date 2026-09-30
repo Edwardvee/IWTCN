@@ -10,12 +10,14 @@ extends Resource
 @export var buffs: Array[BuffData] = []
 @export var cards: Array[CardData] = []
 @export var races: Array[RaceData] = []
+@export var spells: Array[SpellData] = []
 
 var _units_by_id: Dictionary[StringName, UnitData] = {}
 var _structures_by_id: Dictionary[StringName, StructureData] = {}
 var _buffs_by_id: Dictionary[StringName, BuffData] = {}
 var _cards_by_id: Dictionary[StringName, CardData] = {}
 var _races_by_id: Dictionary[StringName, RaceData] = {}
+var _spells_by_id: Dictionary[StringName, SpellData] = {}
 
 
 func build_index() -> void:
@@ -24,6 +26,10 @@ func build_index() -> void:
 	_buffs_by_id.clear()
 	_cards_by_id.clear()
 	_races_by_id.clear()
+	_spells_by_id.clear()
+	for spell: SpellData in spells:
+		if spell != null:
+			_spells_by_id[spell.id] = spell
 	for race: RaceData in races:
 		if race != null:
 			_races_by_id[race.id] = race
@@ -51,6 +57,10 @@ func get_structure(structure_id: StringName) -> StructureData:
 
 func get_buff(buff_id: StringName) -> BuffData:
 	return _buffs_by_id.get(buff_id, null)
+
+
+func get_spell(spell_id: StringName) -> SpellData:
+	return _spells_by_id.get(spell_id, null)
 
 
 func get_card(card_id: StringName) -> CardData:
@@ -107,6 +117,16 @@ func get_validation_errors() -> PackedStringArray:
 			errors.append("CardData '%s': buff no está en buffs" % card.id)
 		if card.unit != null and not units.has(card.unit):
 			errors.append("CardData '%s': unit no está en units" % card.id)
+		if card.required_race != &"" and get_race(card.required_race) == null:
+			errors.append("CardData '%s': required_race desconocida" % card.id)
+	for spell: SpellData in spells:
+		if spell == null:
+			errors.append("GameDatabase: entrada nula en spells")
+			continue
+		_check_duplicate(errors, seen_ids, spell.id)
+		errors.append_array(spell.get_validation_errors())
+		if spell.unit != null and not units.has(spell.unit):
+			errors.append("SpellData '%s': unit no está en units" % spell.id)
 	if races.is_empty():
 		errors.append("GameDatabase: hace falta al menos una raza")
 	for race: RaceData in races:

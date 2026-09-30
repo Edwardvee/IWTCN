@@ -107,6 +107,18 @@ func _apply_player(data: Dictionary) -> void:
 		if emote_seq > 0 and Emotes.is_valid(player_state.emote_id):
 			EventBus.emote_mostrado.emit(player_id, player_state.emote_id)
 
+	# Habilidades de castillo: tiempos de espera y último lanzamiento (contador).
+	var spells_dict: Dictionary = data.get("spells", {})
+	for spell_key: Variant in spells_dict:
+		player_state.set_spell_ready_at(StringName(str(spell_key)), float(spells_dict[spell_key]))
+	var spell_seq: int = int(data.get("spell_seq", player_state.spell_seq))
+	if spell_seq != player_state.spell_seq:
+		player_state.spell_seq = spell_seq
+		player_state.spell_id = StringName(str(data.get("spell", "")))
+		player_state.spell_position = data.get("spell_pos", Vector2.ZERO)
+		if spell_seq > 0 and GameManager.database.get_spell(player_state.spell_id) != null:
+			EventBus.hechizo_lanzado.emit(player_id, player_state.spell_id, player_state.spell_position)
+
 	# Los snapshots incrementales omiten lo que no cambió: solo se aplica lo que llega.
 	if data.has("shop"):
 		_apply_shop(player_id, player_state, data["shop"])

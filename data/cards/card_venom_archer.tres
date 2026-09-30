@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="CardData" format=3]
+
+[ext_resource type="Script" path="res://resources/CardData.gd" id="1_card"]
+[ext_resource type="Texture2D" path="res://assets/cards/venom_archer.svg" id="2_icon"]
+[ext_resource type="Resource" path="res://data/units/venom_archer.tres" id="3_unit"]
+
+[resource]
+script = ExtResource("1_card")
+id = &"card_venom_archer"
+display_name = "Venom Archer"
+description = "Despliega un Arquero venenoso: su veneno hace daño cada segundo. Solo goblins; requiere 3 cuarteles de arqueros."
+card_type = 2
+cost = 70
+shop_weight = 6
+unit = ExtResource("3_unit")
+required_structure_count = 3
+required_structure_id = &"archer_barracks"
+required_race = &"goblin"
+color = Color(0.5, 0.95, 0.25, 1)
+icon = ExtResource("2_icon")

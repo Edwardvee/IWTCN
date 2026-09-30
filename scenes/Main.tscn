@@ -13,7 +13,6 @@
 [ext_resource type="Script" path="res://ui/CastleHealthDisplay.gd" id="11_castle_hp"]
 [ext_resource type="Script" path="res://ui/ShopPanel.gd" id="12_shop"]
 [ext_resource type="Script" path="res://systems/draft/DraftManager.gd" id="13_draft"]
-[ext_resource type="Script" path="res://ui/BuffListLabel.gd" id="14_buffs"]
 [ext_resource type="Script" path="res://ui/GameOverPanel.gd" id="15_game_over"]
 [ext_resource type="Script" path="res://systems/ai/AIController.gd" id="16_ai"]
 [ext_resource type="Script" path="res://systems/network/StateReplicator.gd" id="17_replicator"]
@@ -21,6 +20,10 @@
 [ext_resource type="Script" path="res://scenes/WorldBackground.gd" id="19_world"]
 [ext_resource type="Texture2D" path="res://assets/ui/coin.svg" id="20_coin"]
 [ext_resource type="Script" path="res://ui/EmotePanel.gd" id="21_emotes"]
+[ext_resource type="Script" path="res://ui/SpellPanel.gd" id="22_spells"]
+[ext_resource type="Script" path="res://ui/PauseMenu.gd" id="23_pause"]
+[ext_resource type="Script" path="res://ui/BuffIcons.gd" id="24_bufficons"]
+[ext_resource type="Script" path="res://ui/TroopCounter.gd" id="25_troops"]
 
 [sub_resource type="StyleBoxTexture" id="StyleBoxTexture_bar"]
 content_margin_left = 20.0
@@ -163,14 +166,6 @@ grow_horizontal = 2
 layout_mode = 2
 alignment = 1
 
-[node name="MatchInfo" type="Label" parent="UI/HUD/TopBar/Lines"]
-unique_name_in_owner = true
-layout_mode = 2
-theme_override_font_sizes/font_size = 28
-text = "Sin partida"
-horizontal_alignment = 1
-vertical_alignment = 1
-
 [node name="CastleInfo" type="Label" parent="UI/HUD/TopBar/Lines"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 34
@@ -178,12 +173,18 @@ horizontal_alignment = 1
 vertical_alignment = 1
 script = ExtResource("11_castle_hp")
 
-[node name="BuffList" type="Label" parent="UI/HUD/TopBar/Lines"]
-layout_mode = 2
-theme_override_colors/font_color = Color(0.8, 0.65, 1, 1)
-theme_override_font_sizes/font_size = 24
-horizontal_alignment = 1
-script = ExtResource("14_buffs")
+[node name="TroopCounter" type="Control" parent="UI/HUD"]
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -290.0
+offset_top = 14.0
+offset_right = -20.0
+offset_bottom = 104.0
+grow_horizontal = 0
+mouse_filter = 2
+script = ExtResource("25_troops")
 
 [node name="Toast" type="Label" parent="UI/HUD"]
 unique_name_in_owner = true
@@ -297,6 +298,36 @@ grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
 script = ExtResource("21_emotes")
+
+[node name="SpellPanel" type="Control" parent="UI/HUD"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("22_spells")
+
+[node name="BuffIcons" type="Control" parent="UI/HUD"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("24_bufficons")
+
+[node name="PauseMenu" type="Control" parent="UI/HUD"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("23_pause")
 
 [node name="GameOverPanel" type="PanelContainer" parent="UI/HUD"]
 layout_mode = 1

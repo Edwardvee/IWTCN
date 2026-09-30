@@ -2,7 +2,7 @@ class_name CommandCodec
 extends RefCounted
 ## Serializa los comandos que un cliente puede enviar al servidor.
 ## Lista blanca: solo acciones de jugador (jugar carta, reroll, vender,
-## desbloquear plot, emote). Los comandos debug nunca se decodifican desde la red.
+## desbloquear plot, emote, hechizo, rendirse). Los comandos debug nunca se decodifican desde la red.
 ## El player_id y el source NO viajan: el servidor los fija según el peer.
 
 
@@ -16,6 +16,11 @@ static func encode(command: GameCommand) -> Dictionary:
 		data["deploy_position"] = play.deploy_position
 	elif command is SellCommand:
 		data["slot_index"] = (command as SellCommand).slot_index
+	elif command is SurrenderCommand:
+		pass
+	elif command is CastSpellCommand:
+		data["spell_id"] = (command as CastSpellCommand).spell_id
+		data["position"] = (command as CastSpellCommand).position
 	elif command is EmoteCommand:
 		data["emote_id"] = (command as EmoteCommand).emote_id
 	elif command is UnlockPlotCommand:
@@ -39,6 +44,12 @@ static func decode(data: Dictionary) -> GameCommand:
 			if not data.get("slot_index") is int:
 				return null
 			return SellCommand.new(MatchTypes.NO_PLAYER, data["slot_index"], network)
+		&"surrender":
+			return SurrenderCommand.new(MatchTypes.NO_PLAYER, network)
+		&"cast_spell":
+			if not data.get("position") is Vector2:
+				return null
+			return CastSpellCommand.new(MatchTypes.NO_PLAYER, StringName(str(data.get("spell_id", ""))), data["position"], network)
 		&"emote":
 			var emote_id: StringName = StringName(str(data.get("emote_id", "")))
 			if not Emotes.is_valid(emote_id):

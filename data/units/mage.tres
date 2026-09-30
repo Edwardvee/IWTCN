@@ -1,0 +1,24 @@
+[gd_resource type="Resource" script_class="UnitData" format=3]
+
+[ext_resource type="Script" path="res://resources/UnitData.gd" id="1_unit"]
+[ext_resource type="SpriteFrames" path="res://data/units/mage_frames.tres" id="2_frames"]
+
+[resource]
+script = ExtResource("1_unit")
+id = &"mage"
+display_name = "Mage"
+role = 1
+max_hp = 55.0
+move_speed = 52.0
+attack_range = 300.0
+attack_cooldown = 1.7
+damage = 110.0
+uses_projectile = true
+projectile_speed = 650.0
+splash_fraction = 0.15
+splash_radius = 120.0
+body_radius = 18.0
+fallback_shape = 2
+fallback_color = Color(0.7, 0.5, 1, 1)
+sprite_frames = ExtResource("2_frames")
+sprite_scale = Vector2(0.5, 0.5)

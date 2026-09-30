@@ -16,6 +16,8 @@ const BUILD_SLOT_ORDER: Array[int] = [2, 3, 0, 1]
 @export var enabled: bool = true
 ## Segundos entre decisiones (tiempo de reacción).
 @export var think_interval: float = 1.0
+## Probabilidad de aprovechar una buena ocasión para lanzar un hechizo (dificultad).
+@export var spell_use_chance: float = 1.0
 ## Multiplicador de ingresos de este rival (dificultad). 1.0 = sin ventaja.
 @export var income_multiplier: float = 1.0
 
@@ -59,12 +61,67 @@ func simulate_step(delta: float) -> void:
 func think() -> bool:
 	if strategy == null or draft == null or grid == null or lane == null:
 		return false
+	if _try_cast_spell():
+		return true
 	var command: GameCommand = strategy.choose_command(self)
 	if command == null:
 		return false
 	command.player_id = player_id
 	command.source = GameCommand.Source.AI
 	return GameManager.submit_command(command)
+
+
+## Lanza una habilidad de castillo si hay una buena ocasión (mismo comando y reglas que
+## el jugador). Un hechizo por turno de decisión.
+func _try_cast_spell() -> bool:
+	var database: GameDatabase = GameManager.database
+	var state: PlayerState = GameManager.get_player_state(player_id)
+	if database == null or state == null or lane == null:
+		return false
+	var now: float = get_match_time()
+	for spell: SpellData in database.spells:
+		if state.get_spell_ready_at(spell.id) > now:
+			continue
+		var point: Vector2 = _choose_spell_point(spell)
+		if point == Vector2.INF:
+			continue
+		if get_rng().randf() > spell_use_chance:
+			continue
+		if GameManager.submit_command(CastSpellCommand.new(player_id, spell.id, point, GameCommand.Source.AI)):
+			return true
+	return false
+
+
+## Dónde lanzarlo (Vector2.INF = ahora no compensa).
+func _choose_spell_point(spell: SpellData) -> Vector2:
+	var half: Rect2 = lane.get_deploy_rect(player_id)
+	var enemies: Array[UnitBase] = []
+	for unit: UnitBase in lane.get_alive_units():
+		if unit.team != player_id and half.has_point(unit.global_position):
+			enemies.append(unit)
+	match spell.kind:
+		SpellData.Kind.ARROW_RAIN:
+			var best_count: int = 0
+			var best_point: Vector2 = Vector2.INF
+			for center: UnitBase in enemies:
+				var count: int = 0
+				for other: UnitBase in enemies:
+					if other.global_position.distance_to(center.global_position) <= spell.radius:
+						count += 1
+				if count > best_count:
+					best_count = count
+					best_point = center.global_position
+			return best_point if best_count >= 3 else Vector2.INF
+		SpellData.Kind.LIGHTNING:
+			var strongest: UnitBase = null
+			for unit: UnitBase in enemies:
+				if unit.max_hp >= 300.0 and (strongest == null or unit.max_hp > strongest.max_hp):
+					strongest = unit
+			return strongest.global_position if strongest != null else Vector2.INF
+		SpellData.Kind.MILITIA:
+			if enemies.size() >= 3 and enemies.size() > get_army_size():
+				return get_deploy_point()
+	return Vector2.INF
 
 
 # --- Consultas de solo lectura para las estrategias ------------------------------

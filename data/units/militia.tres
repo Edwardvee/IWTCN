@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="UnitData" format=3]
+
+[ext_resource type="Script" path="res://resources/UnitData.gd" id="1_unit"]
+[ext_resource type="SpriteFrames" path="res://data/units/soldier_frames.tres" id="2_frames"]
+
+[resource]
+script = ExtResource("1_unit")
+id = &"militia"
+display_name = "Militia"
+max_hp = 45.0
+move_speed = 80.0
+attack_range = 45.0
+attack_cooldown = 1.0
+damage = 9.0
+lifetime = 20.0
+art_unit_id = &"soldier"
+fallback_color = Color(0.75, 0.75, 0.85, 1)
+body_radius = 16.0
+sprite_frames = ExtResource("2_frames")
+sprite_scale = Vector2(0.36, 0.36)

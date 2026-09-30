@@ -11,7 +11,7 @@ extends Node
 ## Los perfiles admiten "@raza" (balanced@goblin, rush@elf): así se enfrentan razas.
 ## --set sustituye un valor de los datos solo en esta ejecución (no toca los
 ## .tres), para probar cambios de equilibrio sin editar archivos. Rutas:
-## rules.<campo> · unit.<id>.<campo> · structure.<id>.<campo> · card.<id>.<campo> · race.<id>.<campo>.
+## rules.<campo> · unit.<id>.<campo> · structure.<id>.<campo> · card.<id>.<campo> · race.<id>.<campo> · spell.<id>.<campo>.
 ## Las listas se escriben con "/" (structure.farm.income_per_level=25/40/60/80/100).
 ## Termina con código 0. El informe sale por stdout.
 
@@ -61,6 +61,8 @@ func _run() -> void:
 	var profiles: Array[StringName] = []
 	for profile_name: String in str(args.get("profiles", ",".join(RuleBasedStrategy.PROFILES))).split(","):
 		profiles.append(StringName(profile_name))
+	# Sin gráficos: nada de tweens ni efectos (solo cuestan tiempo).
+	GameManager.suppress_effects = true
 	_build_fixture()
 	for override: String in _overrides:
 		if not _apply_override(override):
@@ -126,7 +128,7 @@ func _apply_override(override: String) -> bool:
 				return false
 			resource = GameManager.get_rules()
 			field = path[1]
-		"unit", "structure", "card", "race":
+		"unit", "structure", "card", "race", "spell":
 			if path.size() != 3:
 				return false
 			var database: GameDatabase = GameManager.database
@@ -140,6 +142,8 @@ func _apply_override(override: String) -> bool:
 					resource = database.get_card(entity_id)
 				"race":
 					resource = database.get_race(entity_id)
+				"spell":
+					resource = database.get_spell(entity_id)
 			field = path[2]
 		_:
 			return false

@@ -26,10 +26,13 @@ const SNAPSHOT_INTERVAL: float = 0.1
 ## anfitrión e invitado/espectador con versiones distintas no se entenderían.
 ## 2 = snapshots compactos e incrementales.
 ## 3 = las razas viajan en el saludo del invitado y en el aviso de inicio.
-const PROTOCOL_VERSION: int = 3
+## 4 = selector de raza: el anfitrión avisa ("select") y el invitado responde ("race").
+const PROTOCOL_VERSION: int = 4
 const KEEPALIVE_INTERVAL: float = 20.0
 const MAIN_SCENE: String = "res://scenes/Main.tscn"
 const MENU_SCENE: String = "res://scenes/Menu.tscn"
+## Segundos que espera el anfitrión la raza del invitado tras fijar la suya.
+const SELECTION_GRACE: float = 4.0
 
 enum Role { NONE, HOST, GUEST, SPECTATOR }
 
@@ -46,6 +49,11 @@ var _spectator_count: int = 0
 var _snapshot_cache: Dictionary = {}
 ## Raza que eligió el invitado (llega en su saludo).
 var _guest_race: StringName = &"human"
+## Selector de raza en curso (anfitrión): quién ya fijó su raza y cuánto se espera al otro.
+var _selecting: bool = false
+var _host_race_locked: bool = false
+var _guest_race_locked: bool = false
+var _selection_wait: float = 0.0
 var _replicator: StateReplicator = null
 var _snapshot_timer: float = 0.0
 var _keepalive_timer: float = 0.0
@@ -107,6 +115,7 @@ func close() -> void:
 	_socket = null
 	_role = Role.NONE
 	_was_open = false
+	_selecting = false
 	_guest_present = false
 	_spectator_count = 0
 	_snapshot_cache.clear()
@@ -127,6 +136,11 @@ func is_spectator() -> bool:
 ## Invitado o espectador: no simula, solo presenta lo que envía el anfitrión.
 func is_client() -> bool:
 	return _role == Role.GUEST or _role == Role.SPECTATOR
+
+
+## Hay un socket abierto con la sala (para el selector de raza).
+func has_connection() -> bool:
+	return _socket != null and _socket.get_ready_state() == WebSocketPeer.STATE_OPEN
 
 
 func is_online() -> bool:
@@ -197,6 +211,9 @@ func _process(delta: float) -> void:
 func _tick_open(delta: float) -> void:
 	if _socket == null:
 		return
+	if _selecting and _host_race_locked and not _guest_race_locked:
+		_selection_wait -= delta
+		_host_try_start()
 	_keepalive_timer += delta
 	if _keepalive_timer >= KEEPALIVE_INTERVAL:
 		_keepalive_timer = 0.0
@@ -263,6 +280,20 @@ func _on_packet(packet: PackedByteArray, is_text: bool) -> void:
 			elif _role == Role.SPECTATOR and target == "spectator":
 				GameManager.match_races = _races_from_message(data)
 				_spectator_start_match(int(data.get("seed", 0)))
+		"select":
+			if _role == Role.GUEST:
+				if int(data.get("v", 1)) != PROTOCOL_VERSION:
+					status_changed.emit(tr("Versión del juego incompatible: actualiza"))
+					close()
+					return
+				RaceSelect.open(get_tree(), RaceSelect.Mode.ONLINE_GUEST)
+		"race":
+			if _role == Role.HOST and _selecting:
+				var chosen: StringName = StringName(str(data.get("race", "human")))
+				if GameManager.database.get_race(chosen) != null:
+					_guest_race = GameManager.database.get_race(chosen).id
+				_guest_race_locked = true
+				_host_try_start()
 		"hello":
 			if _role == Role.HOST:
 				if int(data.get("v", 1)) != PROTOCOL_VERSION:
@@ -293,6 +324,12 @@ func _on_relay_notice(text: String) -> void:
 		"guest_left":
 			if _role == Role.HOST:
 				_guest_present = false
+				if _selecting:
+					# El rival se fue eligiendo raza: no hay partida que empezar.
+					_selecting = false
+					status_changed.emit(tr("Rival desconectado"))
+					get_tree().change_scene_to_file(MENU_SCENE)
+					return
 				status_changed.emit(tr("Rival desconectado: la partida sigue, esperando reconexión"))
 		"spectator_joined":
 			if _role == Role.HOST:
@@ -316,6 +353,42 @@ func _host_on_guest_joined() -> void:
 		_send({"k": "start", "v": PROTOCOL_VERSION, "for": "guest", "seed": GameManager.match_state.match_seed, "player_id": MatchTypes.PLAYER_TOP, "races": _current_races()})
 		status_changed.emit(tr("Rival reconectado"))
 		return
+	# Partida nueva: primero eligen raza los dos (RaceSelect) y luego arranca.
+	if _selecting:
+		return
+	_selecting = true
+	_host_race_locked = false
+	_guest_race_locked = false
+	_selection_wait = SELECTION_GRACE
+	_send({"k": "select", "v": PROTOCOL_VERSION, "seconds": RaceSelect.SECONDS})
+	status_changed.emit(tr("Rival conectado"))
+	RaceSelect.open(get_tree(), RaceSelect.Mode.ONLINE_HOST)
+
+
+## El anfitrión fijó su raza en el selector.
+func host_race_locked(race_id: StringName) -> void:
+	GameManager.set_player_race(race_id)
+	_host_race_locked = true
+	_selection_wait = SELECTION_GRACE
+	_host_try_start()
+
+
+## El invitado fijó su raza: se la manda al anfitrión.
+func guest_race_locked(race_id: StringName) -> void:
+	GameManager.set_player_race(race_id)
+	_send({"k": "race", "race": str(race_id)})
+
+
+## Arranca cuando ambos fijaron su raza (o el invitado no contesta a tiempo).
+func _host_try_start() -> void:
+	if not _selecting or not _host_race_locked:
+		return
+	if _guest_race_locked or _selection_wait <= 0.0:
+		_selecting = false
+		_host_start_match()
+
+
+func _host_start_match() -> void:
 	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
 	rng.randomize()
 	var match_seed: int = maxi(1, rng.randi())
@@ -326,7 +399,6 @@ func _host_on_guest_joined() -> void:
 		_send({"k": "start", "v": PROTOCOL_VERSION, "for": "spectator", "seed": match_seed, "races": races})
 	GameManager.match_races = [GameManager.player_race, _guest_race]
 	GameManager.configure_next_match(MatchTypes.GameMode.ONLINE, match_seed, MatchTypes.PLAYER_BOTTOM)
-	status_changed.emit(tr("Rival conectado"))
 	get_tree().change_scene_to_file(MAIN_SCENE)
 
 

@@ -6,7 +6,7 @@ Casi todo el balance es **data-driven**: se edita en el Inspector de Godot abrie
 
 | Qué | Campo | Valor actual |
 | :--- | :--- | :--- |
-| Oro inicial | `starting_gold` | 65 |
+| Oro inicial | `starting_gold` | 80 |
 | Oro por ingreso base | `base_income_amount` | 3 |
 | Segundos entre ingresos base | `base_income_interval` | 3.0 (=1 oro/s) |
 | Vida del castillo | `castle_max_hp` | 10000 |
@@ -83,6 +83,8 @@ Los arrays por nivel tienen 5 valores (índice 0 = Lv1). Nivel = nº de copias d
 
 Constantes al inicio: `PLAY_THRESHOLD`, `REROLL_RESERVE`, `SCORE_JITTER`, `SURPLUS_GOLD`; `think_interval` (export) = velocidad de reacción. Los pesos de puntuación son campos de la estrategia y `RuleBasedStrategy.create(perfil)` devuelve variantes con estilos distintos: `balanced`, `economy`, `rush`, `turtle`, `barracks`, `spam`. En el modo espectador cada semilla enfrenta dos perfiles.
 
+Mejoras (cartas violetas): cada copia ya comprada de una mejora sube un 10 % el precio de la siguiente de ESA mejora, acumulado (`GameRules.buff_copy_cost_increase`; 100 → 110 → 121…).
+
 ## 6b. Simulador de equilibrio y ritmo — `tools/BalanceSim.tscn`
 
 IA contra IA sin gráficos (unas 2-3 partidas por segundo). Enfrenta todos los perfiles en ambos lados del mapa y resume duración de las partidas, tasa de victoria por perfil y por lado, y economía.
@@ -104,6 +106,8 @@ Los tests (`tests/TestBalance.gd`) fijan sus propios valores en memoria, así qu
 - **Espectador local** (menú → *Modo espectador*): IA contra IA en el dispositivo, con pausa y velocidad x1/x2/x4/x8. Atajo de desarrollo: ejecutar `res://scenes/Main.tscn` con `-- --spectate`.
 - **Repeticiones** (menú → *Repeticiones*): cada partida contra la IA, de espectador o como anfitrión online se graba sola (`user://replays/*.iwr`, zstd, se conservan las 15 últimas). Se reproducen con pausa, velocidad, barra de progreso y reinicio. Guardan snapshots del estado (no comandos), así que siguen funcionando aunque cambie el balance. Código: `systems/replay/`.
 - **Espectador online** (menú → escribir el código de sala → *Ver sala como espectador*): mira en directo una partida online desde la vista del anfitrión. Hasta 8 espectadores por sala; no pueden enviar comandos. Requiere el relay actualizado (ver más abajo).
+- **Selector de raza** (`ui/RaceSelect.gd`, tras pulsar Jugar contra la IA o al unirse una sala online): 5 s para elegir entre las razas con una rueda estilo GTA (la elegida al centro, las otras abajo; tocar una la trae al centro) o pulsar Elegir para fijarla antes. Al acabar el tiempo queda fijada la que esté al centro. Contra la IA arranca la partida; online el anfitrión espera la raza del invitado (máx. 4 s tras fijar la suya) y arranca. La última raza usada se recuerda. Protocolo online v4 (mensajes `select` y `race`).
+- **Menú de partida** (botón ≡ arriba a la izquierda, `ui/PauseMenu.gd`): Continuar, Opciones (volumen general, guardado en `settings.cfg`) y Rendirse (`SurrenderCommand`, con confirmación). Solo contra la IA pausa el juego; en online la partida sigue en marcha. No aparece en la cuenta atrás, de espectador ni en repeticiones. Con Escape también se abre y se cierra.
 - **Feedback visual**: números flotantes de daño/curación (`ui/FloatingTextLayer.gd`), avisos verdes de acciones completadas y rojos de errores, resaltado de slots válidos al arrastrar una estructura, "faltan N" en cartas inasequibles y aviso de oro (`-50`).
 
 ## 7. Mapa, carril y cámara (código/escena)
@@ -219,7 +223,7 @@ godot --headless --path . --script res://tools/BuildTheme.gd   # regenera ui/the
 | Iconos, cartas de mejoras y de unidades, icono de la app, madera de la tienda por raza (humanos `assets/bgShopPanel.png`, goblins oscura, elfos blanca) | `tools/art/ui.js` | `CardData.icon`, `CardView.gd`, `ShopPanel.gd` (fondo = `RaceData.shop_panel_texture`) |
 | Tema de la UI (botones, paneles, campos) | `tools/BuildTheme.gd` → `ui/theme.tres` | tema global (`project.godot`); variaciones `PrimaryButton`, `WoodButton`, `DangerButton`, `StoneButton`, `TopBar` |
 | Efectos de botón (hundir/rebote, destello, sonido) | `autoload/UIFeedback.gd` | se engancha solo a todo `BaseButton`; `sound_enabled` lo silencia |
-| Sonidos (clic, confirmar, error) | `tools/art/audio.js` | `UIFeedback.gd` |
+| Sonidos: interfaz (clic, confirmar, error) y de partida (flechas, impactos, muertes, castillo, rebote, hechizos, emotes, desbloqueo, victoria/derrota) | `tools/art/audio.js` | `UIFeedback.gd` (interfaz) y `autoload/Sfx.gd` (partida; intervalo mínimo por sonido y volumen más bajo para el rival) |
 
 Colores de las cartas por tipo (borde): estructuras amarillo, unidades azul, mejoras violeta (`CardView.TYPE_COLORS`).
 
@@ -227,6 +231,26 @@ Para revisar el arte sin jugar: `godot --path . res://tools/ArtGallery.tscn -- -
 
 
 **Emotes** (`Emotes.gd`): 4 emotes (goblin riéndose, llorar, enfado, pulgar arriba). `EmoteCommand` los envía; la autoridad exige `Emotes.COOLDOWN` = 3 s entre emotes del mismo jugador (con `COOLDOWN_TOLERANCE` para la latencia online) y viajan a los clientes en el snapshot (`emote` / `emote_seq` del jugador). `EmotePanel` dibuja el botón, el selector y los globos.
+
+---
+
+# Unidades especiales y habilidades de castillo
+
+**Unidades especiales** (una por raza, carta de unidad con `required_race` y `required_structure_id` + `required_structure_count` = 3 cuarteles del MISMO tipo):
+
+| Raza | Unidad | Carta | Requisito | Rasgos |
+|---|---|---|---|---|
+| Humanos | Caballería (`cavalry`) | 100 | 3 × Soldier Barracks | vida 620, rápida, 5 % del daño en área (radio 90) |
+| Elfos | Mago (`mage`) | 100 | 3 × Archer Barracks | vida 55, daño 110, proyectil, 15 % en área (radio 120) |
+| Goblins | Arquero venenoso (`venom_archer`) | 70 (la más barata) | 3 × Archer Barracks | golpe 10 + veneno 20 dps durante 4 s (ignora armadura, no se acumula) |
+
+Todo está en `data/units/*.tres` (campos del grupo *Special* de `UnitData`: `splash_fraction`, `splash_radius`, `poison_dps`, `poison_duration`, `lifetime`, `art_unit_id`) y `data/cards/card_cavalry|mage|venom_archer.tres`. Los multiplicadores de la raza se aplican encima (el veneno no escala con el daño). Su arte sale de `tools/art/units.js` (paleta de su raza).
+
+**Habilidades de castillo** (`data/spells/*.tres`, `SpellData`; botones a la derecha, se arrastran a TU mitad del carril; la espera de 30 s es COMPARTIDA: lanzar una deja a las otras dos en enfriamiento):
+- **Lluvia de flechas** (`arrow_rain`): 6 oleadas de 18 de daño cada 0,4 s a los enemigos de un círculo de radio 170.
+- **Rayo** (`lightning`): mata a la unidad enemiga más cercana al punto (tolerancia 130); sin enemigos cerca no se lanza ni gasta espera.
+- **Llamar a las milicias** (`summon_militia`): 6 soldados débiles (`militia`: vida 45, daño 9) que desaparecen a los 20 s; no cuentan para el tope de tropas.
+La IA también las usa (`AIController._try_cast_spell`; en Fácil solo la mitad de las veces). El simulador acepta `--set=spell.<id>.<campo>=…`.
 
 ---
 

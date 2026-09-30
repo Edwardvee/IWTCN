@@ -23,6 +23,7 @@ GameManager="*res://autoload/GameManager.gd"
 EconomyManager="*res://autoload/EconomyManager.gd"
 NetworkManager="*res://autoload/NetworkManager.gd"
 UIFeedback="*res://autoload/UIFeedback.gd"
+Sfx="*res://autoload/Sfx.gd"
 
 [display]
 
