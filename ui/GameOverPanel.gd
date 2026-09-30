@@ -8,6 +8,8 @@ var _subtitle: Label = null
 var _restart_button: Button = null
 var _replay_button: Button = null
 var _menu_button: Button = null
+## Cambia con cada partida nueva: si se reinicia durante la espera, el panel ya no se muestra.
+var _generation: int = 0
 
 
 func _ready() -> void:
@@ -61,7 +63,12 @@ func _make_label(font_size: int, parent: Control) -> Label:
 	return label
 
 
+## Segundos REALES que se espera a mostrar el panel cuando cae un castillo (cámara lenta, ver Main.gd).
+const SLOWMO_DELAY: float = 1.9
+
+
 func _on_partida_terminada(ganador_player_id: int) -> void:
+	var generation: int = _generation
 	var mode: MatchTypes.GameMode = GameManager.game_mode
 	var online_spectator: bool = mode == MatchTypes.GameMode.ONLINE and GameManager.is_watching()
 	_restart_button.text = tr("Repetir") if mode == MatchTypes.GameMode.REPLAY else (tr("Nueva partida") if mode == MatchTypes.GameMode.SPECTATE else tr("Jugar de nuevo"))
@@ -71,7 +78,8 @@ func _on_partida_terminada(ganador_player_id: int) -> void:
 	_menu_button.visible = mode != MatchTypes.GameMode.ONLINE or online_spectator
 	if GameManager.is_watching():
 		_show_watch_result(ganador_player_id)
-		visible = true
+		await _wait_for_castle_collapse()
+		visible = generation == _generation
 		return
 	if ganador_player_id == MatchTypes.NO_PLAYER:
 		_title.text = tr("EMPATE")
@@ -85,7 +93,18 @@ func _on_partida_terminada(ganador_player_id: int) -> void:
 		_title.text = tr("DERROTA")
 		_title.add_theme_color_override("font_color", Color(1.0, 0.35, 0.3))
 		_subtitle.text = tr("Tu castillo ha caído")
-	visible = true
+	await _wait_for_castle_collapse()
+	visible = generation == _generation
+
+
+## Si un castillo ha caído, deja ver el derrumbe antes de tapar la pantalla.
+func _wait_for_castle_collapse() -> void:
+	if GameManager.suppress_effects or GameManager.match_state == null:
+		return
+	for player_state: PlayerState in GameManager.match_state.players:
+		if not player_state.is_castle_alive():
+			await get_tree().create_timer(SLOWMO_DELAY, true, false, true).timeout
+			return
 
 
 ## Espectador/repetición: no hay "tu castillo", se nombra el bando ganador.
@@ -106,6 +125,7 @@ func _show_watch_result(ganador_player_id: int) -> void:
 
 
 func _on_partida_iniciada(_modo: int, _semilla: int) -> void:
+	_generation += 1
 	visible = false
 
 

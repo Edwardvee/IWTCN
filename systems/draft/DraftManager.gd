@@ -16,7 +16,7 @@ extends Node
 ## propio tick. La IA leerá la misma oferta que ve un jugador humano.
 
 ## Tipos de carta que pueden salir en la tienda.
-@export var enabled_card_types: Array[CardData.CardType] = [CardData.CardType.STRUCTURE, CardData.CardType.DIRECT_UNIT, CardData.CardType.GLOBAL_BUFF]
+@export var enabled_card_types: Array[CardData.CardType] = [CardData.CardType.STRUCTURE, CardData.CardType.DIRECT_UNIT, CardData.CardType.GLOBAL_BUFF, CardData.CardType.SABOTAGE]
 
 
 func _ready() -> void:
@@ -56,6 +56,14 @@ func get_offer_card_id(player_id: int, offer_index: int) -> StringName:
 	if shop == null or offer_index < 0 or offer_index >= shop.offer.size():
 		return &""
 	return shop.offer[offer_index]
+
+
+## Segundos que le quedan de bloqueo a un hueco de la tienda (0 = libre).
+func get_block_left(player_id: int, offer_index: int) -> float:
+	var shop: ShopState = _get_shop(player_id)
+	if shop == null or GameManager.match_state == null or not shop.is_blocked(offer_index, GameManager.match_state.match_time):
+		return 0.0
+	return shop.blocked_until[offer_index] - GameManager.match_state.match_time
 
 
 func get_reroll_cost(player_id: int) -> int:

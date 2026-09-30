@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="CardData" format=3]
+
+[ext_resource type="Script" path="res://resources/CardData.gd" id="1_card"]
+[ext_resource type="Texture2D" path="res://assets/cards/sabotage_steal.svg" id="2_icon"]
+
+[resource]
+script = ExtResource("1_card")
+id = &"card_sabotage_steal"
+display_name = "Saqueo"
+description = "Roba 25 de oro al rival."
+card_type = 3
+cost = 30
+shop_weight = 4
+sabotage_kind = 3
+sabotage_value = 25
+color = Color(0.94, 0.33, 0.31, 1)
+icon = ExtResource("2_icon")

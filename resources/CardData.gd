@@ -6,7 +6,9 @@ extends Resource
 ## y requisitos de desbloqueo. El efecto lo resuelve el sistema de cartas
 ## a partir del recurso referenciado (structure / buff / unit).
 
-enum CardType { STRUCTURE, GLOBAL_BUFF, DIRECT_UNIT }
+enum CardType { STRUCTURE, GLOBAL_BUFF, DIRECT_UNIT, SABOTAGE }
+## Qué hace una carta de sabotaje sobre el rival (ver Sabotage.gd).
+enum SabotageKind { FREEZE_STRUCTURE, BLOCK_SHOP_SLOT, FORCE_REROLL, STEAL_GOLD, SILENCE_SPELLS }
 ## Dónde se suelta la carta al arrastrarla desde la tienda.
 enum DropTarget { PLOT, LANE, ANYWHERE }
 
@@ -22,6 +24,9 @@ enum DropTarget { PLOT, LANE, ANYWHERE }
 @export var structure: StructureData
 @export var buff: BuffData
 @export var unit: UnitData
+## SABOTAGE: qué hace y con qué fuerza (segundos de congelación/bloqueo/silencio, o oro robado).
+@export var sabotage_kind: SabotageKind = SabotageKind.FREEZE_STRUCTURE
+@export var sabotage_value: float = 5.0
 ## Unidades por carta. Si unit_count_by_level no está vacío se usa esa tabla.
 @export var unit_count: int = 1
 ## Estructura cuyo nivel decide cuántas unidades salen (p. ej. soldier_barracks)
@@ -98,6 +103,9 @@ func get_validation_errors() -> PackedStringArray:
 		CardType.GLOBAL_BUFF:
 			if buff == null:
 				errors.append("%s: GLOBAL_BUFF sin buff" % label)
+		CardType.SABOTAGE:
+			if sabotage_value <= 0.0:
+				errors.append("%s: SABOTAGE con sabotage_value <= 0" % label)
 		CardType.DIRECT_UNIT:
 			if unit == null:
 				errors.append("%s: DIRECT_UNIT sin unit" % label)

@@ -139,6 +139,98 @@ function buffFireRate() {
   return doc(128, 128, b.join(''));
 }
 
+
+// --- Cartas de sabotaje (rojas): caen sobre el rival ----------------------------------------------------------------
+function sabFreeze() {
+  const arms = [];
+  for (let i = 0; i < 3; i++) {
+    arms.push(g([
+      line(-44, 0, 44, 0, OUT, 12), line(-44, 0, 44, 0, '#dff6ff', 7),
+      poly([[-44, 0], [-34, -9], [-30, 0], [-34, 9]], '#dff6ff', { sw: 2.4 }),
+      poly([[44, 0], [34, -9], [30, 0], [34, 9]], '#dff6ff', { sw: 2.4 }),
+      line(-22, 0, -32, -13, '#dff6ff', 5), line(-22, 0, -32, 13, '#dff6ff', 5),
+      line(22, 0, 32, -13, '#dff6ff', 5), line(22, 0, 32, 13, '#dff6ff', 5),
+    ], { transform: `rotate(${i * 60})` }));
+  }
+  const b = [
+    circle(0, 0, 52, '#7cc7ff', { sw: 4, opacity: 0.9 }),
+    circle(0, 0, 52, 'none', { stroke: '#e8f8ff', sw: 3, opacity: 0.8 }),
+    ...arms,
+    circle(0, 0, 9, '#ffffff', { sw: 3 }),
+    sparkle(-40, -40, 8, '#ffffff'), sparkle(42, 38, 6, '#ffffff', 0.9),
+  ];
+  return doc(128, 128, b.join(''));
+}
+
+function sabBlock() {
+  const b = [
+    // carta inclinada
+    rect(-38, -50, 76, 100, '#2f2440', { r: 9, sw: 4, transform: 'rotate(-10)' }),
+    rect(-30, -42, 60, 48, '#5a4778', { r: 6, noStroke: true, transform: 'rotate(-10)' }),
+    // candado
+    path('M-20 -4 L-20 -22 Q-20 -44 0 -44 Q20 -44 20 -22 L20 -4', 'none', { stroke: OUT, sw: 15 }),
+    path('M-20 -4 L-20 -22 Q-20 -44 0 -44 Q20 -44 20 -22 L20 -4', 'none', { stroke: '#cfd8e3', sw: 8 }),
+    rect(-32, -6, 64, 52, '#f0bd4a', { r: 9, sw: 4.4 }),
+    rect(-32, -6, 64, 16, '#ffe07a', { r: 9, noStroke: true, opacity: 0.8 }),
+    circle(0, 16, 8, '#3a2a4a', { sw: 3 }),
+    rect(-3.5, 18, 7, 16, '#3a2a4a', { r: 2.5, noStroke: true }),
+    sparkle(40, -34, 8, '#fff3b0'),
+  ];
+  return doc(128, 128, b.join(''));
+}
+
+function sabReroll() {
+  const die = (x, y, rotDeg, dots) => g([
+    rect(-24, -24, 48, 48, '#fff8e6', { r: 10, sw: 4 }),
+    rect(-24, -24, 48, 14, '#ffffff', { r: 10, noStroke: true, opacity: 0.7 }),
+    ...dots.map(([dx, dy]) => circle(dx, dy, 5, '#d63a3a', { noStroke: true })),
+  ], { transform: `translate(${x} ${y}) rotate(${rotDeg})` });
+  const b = [
+    die(-16, 14, -14, [[-10, -10], [10, 10], [0, 0], [10, -10], [-10, 10]]),
+    die(20, -18, 18, [[-9, -9], [9, 9], [0, 0]]),
+    // flecha circular roja
+    path('M-46 -22 A50 50 0 0 1 22 -50', 'none', { stroke: OUT, sw: 15 }),
+    path('M-46 -22 A50 50 0 0 1 22 -50', 'none', { stroke: '#ff5b4f', sw: 8 }),
+    poly([[22, -64], [44, -48], [18, -36]], '#ff5b4f', { sw: 3 }),
+    path('M46 30 A50 50 0 0 1 -22 52', 'none', { stroke: OUT, sw: 15 }),
+    path('M46 30 A50 50 0 0 1 -22 52', 'none', { stroke: '#ff5b4f', sw: 8 }),
+    poly([[-22, 66], [-44, 50], [-18, 38]], '#ff5b4f', { sw: 3 }),
+  ];
+  return doc(128, 128, b.join(''));
+}
+
+function sabSteal() {
+  const b = [
+    // saco de oro
+    path('M-34 46 Q-52 8 -30 -12 L-16 -30 L16 -30 L30 -12 Q52 8 34 46Z', '#9a6b3a', { sw: 4.4 }),
+    path('M-16 -30 L16 -30 L30 -12 L-30 -12Z', '#b98552', { noStroke: true, opacity: 0.8 }),
+    path('M-24 -14 Q0 -4 24 -14', 'none', { stroke: OUT, sw: 9 }),
+    path('M-24 -14 Q0 -4 24 -14', 'none', { stroke: '#e8c55a', sw: 4.4 }),
+    path('M-14 -30 Q0 -44 14 -30', 'none', { stroke: '#e8c55a', sw: 5 }),
+    circle(0, 16, 15, '#f5c33b', { sw: 3.4 }),
+    star(0, 17, 8, '#ffe58f', { sw: 2 }),
+    // monedas que salen volando
+    circle(38, -34, 11, '#f5c33b', { sw: 3 }), circle(50, -10, 9, '#f5c33b', { sw: 3 }),
+    // daga que perfora el saco
+    line(-46, -46, -8, -6, OUT, 12), line(-46, -46, -8, -6, '#dfe6ee', 6),
+    rect(-58, -60, 22, 10, '#5a3a22', { r: 4, sw: 3, transform: 'rotate(-45 -47 -55)' }),
+  ];
+  return doc(128, 128, b.join(''));
+}
+
+function sabSilence() {
+  const b = [
+    // varita/estrella de hechizo
+    star(0, -2, 40, '#c99bff', { sw: 4.4 }),
+    star(0, -2, 22, '#efdcff', { noStroke: true, opacity: 0.85 }),
+    // señal de prohibido
+    circle(0, 0, 50, 'none', { stroke: OUT, sw: 17 }),
+    circle(0, 0, 50, 'none', { stroke: '#ff4d4d', sw: 10 }),
+    line(-35, 35, 35, -35, OUT, 17), line(-35, 35, 35, -35, '#ff4d4d', 10),
+  ];
+  return doc(128, 128, b.join(''));
+}
+
 // --- Cartas de unidades ----------------------------------------------------------------------------------------------
 function unitIcon(id, layout, w = 220, h = 130) {
   const parts = layout.map(({ x, y, s }) => g(idleSvg(id), { transform: `translate(${x} ${y}) scale(${s})` }));
@@ -305,6 +397,11 @@ function generate() {
   L.write('cards/buff_production.svg', buffProduction());
   L.write('cards/buff_tower_fire_rate.svg', buffFireRate());
   L.write('cards/buff_troop_cap.svg', buffTroopCap());
+  L.write('cards/sabotage_freeze.svg', sabFreeze());
+  L.write('cards/sabotage_block.svg', sabBlock());
+  L.write('cards/sabotage_reroll.svg', sabReroll());
+  L.write('cards/sabotage_steal.svg', sabSteal());
+  L.write('cards/sabotage_silence.svg', sabSilence());
   L.write('cards/soldiers.svg', unitIcon('soldier', [{ x: -68, y: 4, s: 1.05 }, { x: 0, y: 4, s: 1.05 }, { x: 68, y: 4, s: 1.05 }]));
   L.write('cards/archers.svg', unitIcon('archer', [{ x: -68, y: 4, s: 1.1 }, { x: 0, y: 4, s: 1.1 }, { x: 68, y: 4, s: 1.1 }]));
   L.write('cards/tank.svg', unitIcon('tank', [{ x: 0, y: 4, s: 0.86 }], 160, 130));

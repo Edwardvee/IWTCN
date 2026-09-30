@@ -53,10 +53,24 @@ func _physics_process(delta: float) -> void:
 	if _level_check_left <= 0.0:
 		_level_check_left = LEVEL_CHECK_INTERVAL
 		_reconcile_levels()
+	_update_frozen_visuals()
 	if not GameManager.is_authority() and GameManager.is_match_running():
+		var frozen_state: PlayerState = GameManager.get_player_state(player_id)
 		for slot: BuildingSlot in _slots:
-			if slot.structure != null:
+			if slot.structure != null and not (frozen_state != null and frozen_state.is_slot_frozen(slot.slot_index, GameManager.match_state.match_time)):
 				slot.structure.simulate_visual(delta)
+
+
+## Marca (o desmarca) como congeladas las estructuras según el estado del jugador: igual en
+## la autoridad y en los clientes, que lo leen del snapshot.
+func _update_frozen_visuals() -> void:
+	var player_state: PlayerState = GameManager.get_player_state(player_id)
+	if player_state == null or GameManager.match_state == null:
+		return
+	var now: float = GameManager.match_state.match_time
+	for slot: BuildingSlot in _slots:
+		if slot.structure != null:
+			slot.structure.set_frozen(player_state.is_slot_frozen(slot.slot_index, now))
 
 
 ## Temporizadores de producción por slot (0 en huecos vacíos o sin ciclo), para
@@ -80,8 +94,11 @@ func apply_production_timers(timers: Array) -> void:
 func simulate_step(delta: float) -> void:
 	if delta <= 0.0 or not GameManager.is_authority() or not GameManager.is_match_running():
 		return
+	var player_state: PlayerState = GameManager.get_player_state(player_id)
+	var now: float = GameManager.match_state.match_time
 	for slot: BuildingSlot in _slots:
-		if slot.structure != null:
+		# Un sabotaje de congelación detiene la producción y los disparos de la estructura.
+		if slot.structure != null and not (player_state != null and player_state.is_slot_frozen(slot.slot_index, now)):
 			slot.structure.simulate(delta)
 
 

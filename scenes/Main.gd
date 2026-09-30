@@ -25,6 +25,9 @@ extends Node
 
 ## Dónde queda el edificio modificador respecto al castillo del jugador de abajo (a su izquierda,
 ## sobre sus plots); el del rival ocupa el punto simétrico respecto a su castillo.
+## Cámara lenta al caer un castillo: velocidad del tiempo y segundos REALES que dura.
+const SLOWMO_SCALE: float = 0.25
+const SLOWMO_SECONDS: float = 1.8
 const MOD_BUILDING_OFFSET: Vector2 = Vector2(-363.0, -135.0)
 
 var _recorder: ReplayRecorder = null
@@ -74,6 +77,7 @@ func _ready() -> void:
 	_camera.set_flipped(ViewOrientation.is_flipped())
 	_camera.focus_side(GameManager.local_player_id == MatchTypes.PLAYER_BOTTOM)
 	GameManager.register_command_processor(_command_processor)
+	EventBus.partida_terminada.connect(_on_match_ended)
 	_replicator.setup(_lane, grids)
 	NetworkManager.register_replicator(_replicator)
 
@@ -178,6 +182,26 @@ func _add_match_info() -> void:
 		_hud.move_child(node, pause_index)
 	# Al arrastrar una estructura hacia los hechizos se vuelven transparentes.
 	_shop_panel.structure_drag_moved.connect(_spell_panel.set_drag_pointer)
+
+
+## Cuando un castillo cae, cámara lenta: el tiempo se frena, la cámara se acerca al castillo
+## derrumbado (que se sacude y suelta escombros, ver Castle.gd) y el panel de fin de partida
+## espera a que pase. Una rendición no derriba ningún castillo, así que no la activa.
+func _on_match_ended(_winner_id: int) -> void:
+	if GameManager.suppress_effects:
+		return
+	var fallen_y: float = INF
+	for player_state: PlayerState in GameManager.match_state.players:
+		if not player_state.is_castle_alive():
+			fallen_y = ($World/PlayerCastle if player_state.player_id == MatchTypes.PLAYER_BOTTOM else $World/EnemyCastle).position.y
+	if fallen_y == INF:
+		return
+	var previous_scale: float = Engine.time_scale
+	Engine.time_scale = SLOWMO_SCALE
+	_camera.pan_to(fallen_y, SLOWMO_SECONDS * 0.6)
+	get_tree().create_timer(SLOWMO_SECONDS, true, false, true).timeout.connect(func() -> void:
+		if is_equal_approx(Engine.time_scale, SLOWMO_SCALE):
+			Engine.time_scale = previous_scale)
 
 
 func _start_intro() -> void:

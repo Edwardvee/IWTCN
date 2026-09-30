@@ -108,6 +108,8 @@ func get_card_cost_multiplier(card: CardData) -> float:
 			return structure_card_cost_multiplier
 		CardData.CardType.DIRECT_UNIT:
 			return unit_card_cost_multiplier
+		CardData.CardType.SABOTAGE:
+			return 1.0
 	return buff_card_cost_multiplier
 
 

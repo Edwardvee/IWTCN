@@ -5,6 +5,7 @@ extends GameCommand
 ##                 sobre un plot; la autoridad valida que el slot sea válido)
 ##   DIRECT_UNIT → aparecen CardData.get_unit_count_for(jugador) unidades en deploy_position (mitad propia)
 ##   GLOBAL_BUFF → se aplica el buff (se puede soltar en cualquier sitio)
+##   SABOTAGE    → efecto sobre el rival (ver Sabotage.gd; se puede soltar en cualquier sitio)
 ## card_id acompaña a offer_index para detectar ofertas obsoletas (la tienda
 ## cambió entre el arrastre y la llegada del comando).
 
@@ -34,6 +35,9 @@ func validate(processor: CommandProcessor) -> String:
 		return Reason.make("Tienda no disponible")
 	if card_id == &"" or draft.get_offer_card_id(player_id, offer_index) != card_id:
 		return Reason.make("La carta ya no está en la tienda")
+	var block_left: float = draft.get_block_left(player_id, offer_index)
+	if block_left > 0.0:
+		return Reason.make("Esa carta está bloqueada (%d s)", [ceili(block_left)])
 	var card: CardData = processor.get_database().get_card(card_id)
 	if card == null:
 		return Reason.make("Carta desconocida")
@@ -59,6 +63,8 @@ func validate(processor: CommandProcessor) -> String:
 			return ""
 		CardData.CardType.GLOBAL_BUFF:
 			return "" if card.buff != null else Reason.make("Mejora sin datos")
+		CardData.CardType.SABOTAGE:
+			return Sabotage.can_apply(card, player_id, draft)
 	return Reason.make("Tipo de carta desconocido")
 
 
@@ -90,4 +96,6 @@ func _apply_effect(processor: CommandProcessor, card: CardData, cost: int) -> bo
 			if processor.get_lane() != null:
 				processor.get_lane().refresh_team_stats(player_id)
 			return true
+		CardData.CardType.SABOTAGE:
+			return Sabotage.apply(card, player_id, processor.get_draft())
 	return false

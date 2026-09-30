@@ -88,6 +88,11 @@ func _apply_player(data: Dictionary) -> void:
 	if race_id != player_state.race_id:
 		player_state.race_id = race_id
 	player_state.mod_building = StringName(str(data.get("mod", player_state.mod_building)))
+	if data.has("frozen"):
+		var frozen: Dictionary[int, float] = {}
+		for slot_key: Variant in data["frozen"]:
+			frozen[int(str(slot_key))] = float(data["frozen"][slot_key])
+		player_state.frozen_slots = frozen
 	var gold: int = int(data.get("gold", player_state.gold))
 	if gold != player_state.gold:
 		player_state.gold = gold
@@ -150,6 +155,10 @@ func _apply_shop(player_id: int, player_state: PlayerState, shop_dict: Dictionar
 			if card != null:
 				cards.append(card)
 		EventBus.draft_ofrecido.emit(player_id, cards)
+	var blocked: Array[float] = []
+	for until: Variant in shop_dict.get("blocked", []):
+		blocked.append(float(until))
+	player_state.shop.blocked_until = blocked
 	var reroll_cost: int = int(shop_dict.get("reroll_cost", player_state.shop.reroll_cost))
 	if reroll_cost != player_state.shop.reroll_cost:
 		player_state.shop.reroll_cost = reroll_cost

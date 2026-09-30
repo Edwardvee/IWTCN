@@ -24,6 +24,7 @@ func _ready() -> void:
 	EventBus.estructura_vendida.connect(_on_estructura_vendida)
 	EventBus.plot_desbloqueado.connect(_on_plot_desbloqueado)
 	EventBus.carta_elegida.connect(_on_carta_elegida)
+	EventBus.sabotaje_aplicado.connect(_on_sabotaje_aplicado)
 	_error_style = _toast.get_theme_stylebox("normal")
 	_success_style = (_error_style as StyleBoxFlat).duplicate() as StyleBoxFlat
 	_success_style.bg_color = SUCCESS_TOAST_COLOR
@@ -118,6 +119,40 @@ func _on_carta_elegida(player_id: int, carta: CardData) -> void:
 			show_toast(tr("Desplegado: %d × %s") % [carta.get_unit_count_for(player_id), tr(carta.display_name)], true)
 		CardData.CardType.GLOBAL_BUFF:
 			show_toast(tr("Mejora activada · %s") % tr(carta.display_name), true)
+
+
+## Aviso rojo a quien sufre el sabotaje y verde a quien lo lanza (solo lo ve el jugador local).
+func _on_sabotaje_aplicado(atacante_id: int, objetivo_id: int, kind: int, detail: String) -> void:
+	var text: String = ""
+	var victim: bool = _is_local_event(objetivo_id)
+	if victim:
+		match kind:
+			CardData.SabotageKind.FREEZE_STRUCTURE:
+				text = tr("¡Sabotaje! %s congelada") % tr(detail)
+			CardData.SabotageKind.BLOCK_SHOP_SLOT:
+				text = tr("¡Sabotaje! Una carta de tu tienda quedó bloqueada")
+			CardData.SabotageKind.FORCE_REROLL:
+				text = tr("¡Sabotaje! Tu tienda fue renovada")
+			CardData.SabotageKind.STEAL_GOLD:
+				text = tr("¡Sabotaje! Te robaron %d de oro") % int(detail)
+			CardData.SabotageKind.SILENCE_SPELLS:
+				text = tr("¡Sabotaje! Tus hechizos quedaron silenciados")
+	elif _is_local_event(atacante_id):
+		match kind:
+			CardData.SabotageKind.FREEZE_STRUCTURE:
+				text = tr("Rival: %s congelada") % tr(detail)
+			CardData.SabotageKind.BLOCK_SHOP_SLOT:
+				text = tr("Rival: una carta de su tienda bloqueada")
+			CardData.SabotageKind.FORCE_REROLL:
+				text = tr("Rival: su tienda fue renovada")
+			CardData.SabotageKind.STEAL_GOLD:
+				text = tr("Rival: le robaste %d de oro") % int(detail)
+			CardData.SabotageKind.SILENCE_SPELLS:
+				text = tr("Rival: sus hechizos quedaron silenciados")
+	if text == "":
+		return
+	show_toast(text, not victim)
+	Sfx.play(&"thunder" if victim else &"laugh")
 
 
 func _on_partida_iniciada(_modo: int, _semilla: int) -> void:

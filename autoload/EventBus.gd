@@ -57,5 +57,7 @@ signal emote_mostrado(player_id: int, emote_id: StringName)
 signal proyectil_disparado(position: Vector2, team: int)
 ## Un jugador lanzó una habilidad de castillo (position = donde cae el efecto).
 signal hechizo_lanzado(player_id: int, spell_id: StringName, position: Vector2)
+## Un sabotaje surtió efecto. kind = CardData.SabotageKind; detail = estructura congelada u oro robado.
+signal sabotaje_aplicado(atacante_id: int, objetivo_id: int, kind: int, detail: String)
 
 @warning_ignore_restore("unused_signal")

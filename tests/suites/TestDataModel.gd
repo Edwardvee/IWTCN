@@ -18,7 +18,7 @@ func test_database_loads_and_validates() -> void:
 	assert_eq(db.units.size(), 8, "número de unidades (4 base + 3 especiales + milicia)")
 	assert_eq(db.structures.size(), 5, "número de estructuras")
 	assert_eq(db.buffs.size(), 6, "número de buffs")
-	assert_eq(db.cards.size(), 17, "número de cartas")
+	assert_eq(db.cards.size(), 22, "número de cartas")
 
 
 func test_lookup_by_id() -> void:

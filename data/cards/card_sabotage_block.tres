@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="CardData" format=3]
+
+[ext_resource type="Script" path="res://resources/CardData.gd" id="1_card"]
+[ext_resource type="Texture2D" path="res://assets/cards/sabotage_block.svg" id="2_icon"]
+
+[resource]
+script = ExtResource("1_card")
+id = &"card_sabotage_block"
+display_name = "Bloqueo de tienda"
+description = "Bloquea una carta de la tienda rival durante 5 s."
+card_type = 3
+cost = 40
+shop_weight = 4
+sabotage_kind = 1
+sabotage_value = 5
+color = Color(0.94, 0.33, 0.31, 1)
+icon = ExtResource("2_icon")

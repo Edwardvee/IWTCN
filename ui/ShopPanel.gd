@@ -153,6 +153,19 @@ func _create_drag_preview() -> void:
 	add_child(_drag_preview)
 
 
+## Los huecos que un sabotaje rival ha bloqueado se cubren con un candado y una cuenta atrás.
+func _process(_delta: float) -> void:
+	var player_state: PlayerState = GameManager.get_player_state(GameManager.local_player_id)
+	if player_state == null or GameManager.match_state == null:
+		return
+	var now: float = GameManager.match_state.match_time
+	for view: CardView in _card_views:
+		var left: float = 0.0
+		if player_state.shop.is_blocked(view.offer_index, now):
+			left = player_state.shop.blocked_until[view.offer_index] - now
+		view.set_blocked(left)
+
+
 func _refresh_affordability() -> void:
 	var gold: int = EconomyManager.get_gold(GameManager.local_player_id)
 	for view: CardView in _card_views:

@@ -27,6 +27,8 @@ var race_income_multiplier: float = 1.0
 ## segundos acumulados hacia su próximo efecto periódico (Nigromante).
 var mod_building: StringName = &""
 var mod_timer: float = 0.0
+## Estructuras congeladas por un sabotaje: slot → match_time en que se descongelan.
+var frozen_slots: Dictionary[int, float] = {}
 ## Fracción de oro de ingresos aún no entregada (evita perder decimales).
 var income_remainder: float = 0.0
 ## Último emote mostrado, cuántos lleva (los clientes lo detectan por el contador)
@@ -75,6 +77,7 @@ func to_dict() -> Dictionary:
 		"buffs": buffs.duplicate(),
 		"race": race_id,
 		"mod": mod_building,
+		"frozen": _frozen_to_dict(),
 		"emote": emote_id,
 		"emote_seq": emote_seq,
 		"spells": _spell_ready_to_dict(),
@@ -82,6 +85,17 @@ func to_dict() -> Dictionary:
 		"spell_pos": spell_position,
 		"spell_seq": spell_seq,
 	}
+
+
+func is_slot_frozen(slot_index: int, now: float) -> bool:
+	return frozen_slots.get(slot_index, 0.0) > now
+
+
+func _frozen_to_dict() -> Dictionary:
+	var result: Dictionary = {}
+	for slot_index: int in frozen_slots:
+		result[str(slot_index)] = frozen_slots[slot_index]
+	return result
 
 
 func _spell_ready_to_dict() -> Dictionary:

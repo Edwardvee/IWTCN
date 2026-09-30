@@ -11,6 +11,8 @@ extends Node2D
 ## ciclo de disparo. Un intervalo de 0 significa "sin ciclo".
 
 const PROGRESS_BAR_HEIGHT: float = 9.0
+## Tinte de una estructura congelada.
+const FROZEN_TINT: Color = Color(0.72, 0.88, 1.0)
 ## Ancho del arte de referencia (px de mundo) que ocupa el hueco del slot.
 const ART_REFERENCE_WIDTH: float = 126.0
 ## Los SVG se rasterizan a 2x.
@@ -39,8 +41,10 @@ var _sprite: AnimatedSprite2D = null
 var _art: Sprite2D = null
 var _team_layer: Sprite2D = null
 var _drawn_progress: float = -1.0
-## Capa por encima del arte donde se dibuja la barra de producción.
+## Capa por encima del arte donde se dibuja la barra de producción (y el hielo).
 var _bar_layer: Node2D = null
+## Congelada por un sabotaje: no produce ni dispara y se ve cubierta de hielo.
+var frozen: bool = false
 ## Posición y escala de reposo del arte (el rebote las anima y siempre vuelve a ellas).
 var _art_rest_scale: Vector2 = Vector2.ONE
 var _art_rest_position: Vector2 = Vector2.ZERO
@@ -204,7 +208,7 @@ func _create_visuals() -> void:
 	add_child(_label)
 	_bar_layer = Node2D.new()
 	_bar_layer.z_index = 1
-	_bar_layer.draw.connect(_draw_progress_bar)
+	_bar_layer.draw.connect(_draw_overlay)
 	add_child(_bar_layer)
 	ViewOrientation.orient(_label)
 	_update_label()
@@ -276,8 +280,44 @@ func _draw() -> void:
 		draw_rect(rect, MatchTypes.team_color(owner_id), false, 6.0)
 
 
+## Congela o descongela la estructura (solo presentación: la autoridad ya no la simula).
+func set_frozen(value: bool) -> void:
+	if frozen == value:
+		return
+	frozen = value
+	modulate = FROZEN_TINT if frozen else Color.WHITE
+	if _bar_layer != null:
+		_bar_layer.queue_redraw()
+
+
+func _draw_overlay() -> void:
+	if data == null:
+		return
+	if frozen:
+		_draw_frost()
+	_draw_progress_bar()
+
+
+## Capa de hielo: velo azulado, esquirlas en las esquinas y un copo de nieve en el centro.
+func _draw_frost() -> void:
+	var rect: Rect2 = Rect2(-body_size * 0.5, body_size)
+	_bar_layer.draw_rect(rect.grow(-2.0), Color(0.62, 0.86, 1.0, 0.38))
+	_bar_layer.draw_rect(rect.grow(-2.0), Color(0.85, 0.96, 1.0, 0.9), false, 5.0)
+	for corner: Vector2 in [rect.position, Vector2(rect.end.x, rect.position.y), Vector2(rect.position.x, rect.end.y), rect.end]:
+		var inward: Vector2 = (Vector2.ZERO - corner).normalized()
+		var side: Vector2 = Vector2(-inward.y, inward.x)
+		_bar_layer.draw_colored_polygon(PackedVector2Array([corner, corner + inward * 34.0 + side * 12.0, corner + inward * 20.0 - side * 22.0]), Color(0.9, 0.98, 1.0, 0.85))
+	for angle: float in [0.0, PI / 3.0, 2.0 * PI / 3.0]:
+		var arm: Vector2 = Vector2.RIGHT.rotated(angle) * 26.0
+		_bar_layer.draw_line(-arm, arm, Color(1.0, 1.0, 1.0, 0.95), 5.0)
+		for tip: Vector2 in [arm, -arm]:
+			var out: Vector2 = tip.normalized()
+			_bar_layer.draw_line(tip, tip - out * 9.0 + out.orthogonal() * 7.0, Color(1.0, 1.0, 1.0, 0.95), 4.0)
+			_bar_layer.draw_line(tip, tip - out * 9.0 - out.orthogonal() * 7.0, Color(1.0, 1.0, 1.0, 0.95), 4.0)
+
+
 func _draw_progress_bar() -> void:
-	if data == null or get_production_interval() <= 0.0:
+	if get_production_interval() <= 0.0:
 		return
 	var rect: Rect2 = Rect2(-body_size * 0.5, body_size)
 	var bar: Rect2 = Rect2(rect.position.x + 14.0, rect.end.y - PROGRESS_BAR_HEIGHT - 4.0, rect.size.x - 28.0, PROGRESS_BAR_HEIGHT)

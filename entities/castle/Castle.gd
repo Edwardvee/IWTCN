@@ -15,6 +15,10 @@ const PLAQUE_TOP: float = 34.0
 const BAR_HEIGHT: float = 8.0
 ## El arte sube un poco para dejar sitio a la placa entre castillo y plots.
 const ART_LIFT: float = 8.0
+## Derrumbe: sacudidas, amplitud (px), cuánto se hunde y en cuánto se aplasta.
+const COLLAPSE_SHAKES: int = 10
+const COLLAPSE_SHAKE: float = 14.0
+const COLLAPSE_SINK: float = 22.0
 
 @export var owner_id: int = MatchTypes.PLAYER_BOTTOM
 @export var body_size: Vector2 = Vector2(360.0, 120.0)
@@ -26,6 +30,9 @@ var _art: Sprite2D = null
 var _team_layer: Sprite2D = null
 var _plaque_style: StyleBoxFlat = null
 var _dirty: bool = false
+## El derrumbe ya se ha reproducido en esta partida.
+var _collapsed: bool = false
+var _collapse_tween: Tween = null
 
 
 func _ready() -> void:
@@ -114,6 +121,8 @@ func _draw() -> void:
 
 func _on_castillo_danado(player_id: int, vida_actual: float, vida_maxima: float) -> void:
 	if player_id == owner_id:
+		if vida_actual <= 0.0:
+			_play_collapse()
 		# Se guarda el último valor y se dibuja una vez por fotograma.
 		_hp = vida_actual
 		_max_hp = maxf(vida_maxima, 1.0)
@@ -127,8 +136,84 @@ func _process(_delta: float) -> void:
 
 
 func _on_partida_iniciada(_modo: int, _semilla: int) -> void:
+	_reset_collapse()
 	_apply_race_art()
 	_refresh_from_state()
+
+
+## Derrumbe: el castillo se sacude, se hunde un poco y suelta polvo y escombros. Con la
+## cámara lenta de Main.gd dura unos segundos en pantalla.
+func _play_collapse() -> void:
+	if _collapsed or GameManager.suppress_effects or not is_inside_tree():
+		return
+	_collapsed = true
+	Sfx.play(&"thunder", 0.0)
+	var flipped: bool = ViewOrientation.is_flipped()
+	var rest: Vector2 = _art.position
+	var sink: float = -COLLAPSE_SINK if flipped else COLLAPSE_SINK
+	_collapse_tween = create_tween()
+	for step: int in COLLAPSE_SHAKES:
+		var amount: float = COLLAPSE_SHAKE * (1.0 - float(step) / float(COLLAPSE_SHAKES))
+		_collapse_tween.tween_property(_art, "position", rest + Vector2(amount if step % 2 == 0 else -amount, 0.0), 0.06)
+	_collapse_tween.tween_property(_art, "position", rest + Vector2(0.0, sink), 0.35).set_trans(Tween.TRANS_BOUNCE).set_ease(Tween.EASE_OUT)
+	_collapse_tween.parallel().tween_property(_art, "scale", Vector2(ART_SCALE * 1.05, ART_SCALE * 0.84), 0.35)
+	var up: Vector2 = Vector2.DOWN if flipped else Vector2.UP
+	add_child(_make_debris(up))
+	add_child(_make_dust(up))
+
+
+func _reset_collapse() -> void:
+	_collapsed = false
+	if _collapse_tween != null and _collapse_tween.is_valid():
+		_collapse_tween.kill()
+	for child: Node in get_children():
+		if child is CPUParticles2D:
+			child.queue_free()
+	if _art != null:
+		_art.scale = Vector2.ONE * ART_SCALE
+
+
+func _make_debris(up: Vector2) -> CPUParticles2D:
+	var debris: CPUParticles2D = CPUParticles2D.new()
+	debris.one_shot = true
+	debris.explosiveness = 0.95
+	debris.amount = 46
+	debris.lifetime = 1.6
+	debris.direction = up
+	debris.spread = 65.0
+	debris.initial_velocity_min = 180.0
+	debris.initial_velocity_max = 420.0
+	debris.gravity = -up * 620.0
+	debris.scale_amount_min = 5.0
+	debris.scale_amount_max = 13.0
+	debris.color = Color(0.62, 0.58, 0.52)
+	debris.z_index = 6
+	debris.position = Vector2(0.0, -20.0 if up == Vector2.UP else 20.0)
+	debris.emitting = true
+	return debris
+
+
+func _make_dust(up: Vector2) -> CPUParticles2D:
+	var dust: CPUParticles2D = CPUParticles2D.new()
+	dust.one_shot = true
+	dust.explosiveness = 0.6
+	dust.amount = 28
+	dust.lifetime = 2.4
+	dust.direction = up
+	dust.spread = 80.0
+	dust.initial_velocity_min = 40.0
+	dust.initial_velocity_max = 140.0
+	dust.gravity = up * 30.0
+	dust.scale_amount_min = 26.0
+	dust.scale_amount_max = 54.0
+	dust.color = Color(0.82, 0.78, 0.7, 0.55)
+	var fade: Gradient = Gradient.new()
+	fade.set_color(0, Color(1.0, 1.0, 1.0, 0.65))
+	fade.set_color(1, Color(1.0, 1.0, 1.0, 0.0))
+	dust.color_ramp = fade
+	dust.z_index = 6
+	dust.emitting = true
+	return dust
 
 
 ## El castillo usa el arte de la raza del dueño (data/races) si lo define.

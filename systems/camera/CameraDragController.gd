@@ -41,6 +41,15 @@ func focus_side(bottom: bool) -> void:
 	_clamp_position()
 
 
+## Desplaza suavemente la cámara hasta centrar `world_y` (p. ej. el castillo que cae). El giro
+## no importa: la posición es del mundo. Ignora la escala de tiempo para que el ralentizado
+## no la haga eterna.
+func pan_to(world_y: float, duration: float) -> void:
+	var target: float = clampf(world_y, _get_min_center_y(), _get_max_center_y())
+	var tween: Tween = create_tween().set_ignore_time_scale(true)
+	tween.tween_property(self, "position:y", target, duration).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+
+
 func _unhandled_input(event: InputEvent) -> void:
 	if not input_enabled:
 		return

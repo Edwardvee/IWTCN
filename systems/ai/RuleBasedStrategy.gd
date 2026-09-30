@@ -59,6 +59,8 @@ var score_jitter: int = SCORE_JITTER
 var play_threshold: int = PLAY_THRESHOLD
 var allow_reroll: bool = true
 var buff_army_score: int = 40
+## Puntuación de una carta de sabotaje que puede lanzarse ahora (menos que construir lo básico).
+var sabotage_score: int = 45
 var tower_buff_score: int = 35
 var buff_production_score: int = 45
 
@@ -189,6 +191,8 @@ func score_card(ai: AIController, card: CardData) -> int:
 			if card.unit.max_hp > 600.0:
 				return maxi(50, unit_idle_score)
 			return unit_surplus_score if ai.get_gold() >= SURPLUS_GOLD else unit_idle_score
+		CardData.CardType.SABOTAGE:
+			return sabotage_score if Sabotage.can_apply(card, ai.player_id, ai.draft) == "" else 0
 		CardData.CardType.GLOBAL_BUFF:
 			if card.buff.stat == BuffData.Stat.TOWER_FIRE_RATE:
 				return tower_buff_score if ai.count_structures(&"tower") >= 1 else 0

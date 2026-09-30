@@ -116,6 +116,10 @@ Tras elegir raza, cada jugador elige 1 de 3 edificios al azar (`ui/BuildingSelec
 
 Los edificios se dibujan en el mundo junto a cada castillo (`entities/ModBuildingView.gd`, posición en `MOD_BUILDING_OFFSET` de `scenes/Main.gd`); tocarlos muestra su efecto.
 
+### Cartas de sabotaje y cámara lenta
+
+5 cartas rojas (`data/cards/card_sabotage_*.tres`, `CardType.SABOTAGE`; efectos en `systems/sabotage/Sabotage.gd`): Congelación (una estructura rival al azar, 5 s), Bloqueo de tienda (un hueco de su tienda, 5 s; sobrevive a los rerolls), Reroll forzado (renueva su tienda gratis), Saqueo (roba 25 de oro) y Silencio (sus hechizos no se lanzan 8 s). `sabotage_kind` y `sabotage_value` (segundos u oro) se editan en cada .tres. Al caer un castillo, `Main._on_match_ended` frena el tiempo a x0,25 durante `SLOWMO_SECONDS`, la cámara se acerca al castillo (que se derrumba en `Castle.gd`) y el panel de fin espera ese rato.
+
 ### Muerte súbita y límite de tropas
 
 - `GameRules` grupo *Sudden Death*: pasados `sudden_death_start` (420 s) los dos castillos pierden `castle_max_hp × sudden_death_damage_fraction` por segundo, y el daño se suma otra vez cada `sudden_death_ramp_interval` s. Evita las partidas eternas; el reloj se pone rojo.

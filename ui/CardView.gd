@@ -22,12 +22,15 @@ const TYPE_NAMES: Dictionary[int, String] = {
 	CardData.CardType.STRUCTURE: "ESTRUCTURA",
 	CardData.CardType.DIRECT_UNIT: "UNIDADES",
 	CardData.CardType.GLOBAL_BUFF: "MEJORA",
+	CardData.CardType.SABOTAGE: "SABOTAJE",
 }
 const TYPE_COLORS: Dictionary[int, Color] = {
 	CardData.CardType.STRUCTURE: Color("f5c231"),
 	CardData.CardType.DIRECT_UNIT: Color("4c8dff"),
 	CardData.CardType.GLOBAL_BUFF: Color("a768ff"),
+	CardData.CardType.SABOTAGE: Color("ef5350"),
 }
+const PADLOCK: Texture2D = preload("res://assets/ui/padlock.svg")
 const NAME_FONT_SIZE: int = 30
 const NAME_MIN_FONT_SIZE: int = 20
 const COIN: Texture2D = preload("res://assets/ui/coin.svg")
@@ -51,6 +54,9 @@ var _pressed: bool = false
 var _dragging: bool = false
 var _press_position: Vector2 = Vector2.ZERO
 var _press_tween: Tween = null
+## Cubierta con candado cuando un sabotaje rival bloquea este hueco de la tienda.
+var _block_cover: Panel = null
+var _block_label: Label = null
 
 
 static func type_color(card_type: int) -> Color:
@@ -152,7 +158,50 @@ func _ready() -> void:
 	_missing_label = _make_label(18, cost_row)
 	_missing_label.add_theme_color_override("font_color", Color(1.0, 0.55, 0.5))
 	_missing_label.visible = false
+	_build_block_cover()
 	set_card(-1, null)
+
+
+## Cubierta oscura con un candado y los segundos que faltan para poder usar la carta.
+func _build_block_cover() -> void:
+	_block_cover = Panel.new()
+	_block_cover.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_block_cover.visible = false
+	var cover_style: StyleBoxFlat = StyleBoxFlat.new()
+	cover_style.bg_color = Color(0.03, 0.05, 0.12, 0.88)
+	cover_style.set_corner_radius_all(20)
+	cover_style.set_border_width_all(6)
+	cover_style.border_color = Color(0.55, 0.8, 1.0)
+	_block_cover.add_theme_stylebox_override("panel", cover_style)
+	add_child(_block_cover)
+	var column: VBoxContainer = VBoxContainer.new()
+	column.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	column.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	column.alignment = BoxContainer.ALIGNMENT_CENTER
+	_block_cover.add_child(column)
+	var lock: TextureRect = _make_icon()
+	lock.texture = PADLOCK
+	lock.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	lock.custom_minimum_size = Vector2(0.0, 96.0)
+	column.add_child(lock)
+	_block_label = _make_label(44, column)
+	_block_label.add_theme_color_override("font_outline_color", OUTLINE)
+	_block_label.add_theme_constant_override("outline_size", 10)
+
+
+## Segundos que le quedan de bloqueo (0 = libre).
+func set_blocked(seconds_left: float) -> void:
+	if _block_cover == null:
+		return
+	var blocked: bool = seconds_left > 0.0 and card != null
+	_block_cover.visible = blocked
+	if blocked:
+		_block_label.text = "%d" % ceili(seconds_left)
+		_cancel_gesture()
+
+
+func is_blocked() -> bool:
+	return _block_cover != null and _block_cover.visible
 
 
 func set_card(p_offer_index: int, p_card: CardData) -> void:
@@ -230,6 +279,9 @@ func play_reject() -> void:
 
 func _gui_input(event: InputEvent) -> void:
 	if card == null:
+		return
+	if is_blocked():
+		accept_event()
 		return
 	if event is InputEventMouseButton:
 		var button: InputEventMouseButton = event as InputEventMouseButton
