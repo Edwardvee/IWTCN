@@ -233,7 +233,7 @@ func _get_local_grid() -> GridManager:
 
 ## El grid propio siempre; el rival solo en builds de depuración.
 func _can_interact(player_id: int) -> bool:
-	return player_id == GameManager.local_player_id or OS.is_debug_build()
+	return player_id == GameManager.local_player_id
 
 
 func _source_for(player_id: int) -> GameCommand.Source:

@@ -39,6 +39,8 @@ var _sprite: AnimatedSprite2D = null
 var _art: Sprite2D = null
 var _team_layer: Sprite2D = null
 var _drawn_progress: float = -1.0
+## Capa por encima del arte donde se dibuja la barra de producción.
+var _bar_layer: Node2D = null
 ## Posición y escala de reposo del arte (el rebote las anima y siempre vuelve a ellas).
 var _art_rest_scale: Vector2 = Vector2.ONE
 var _art_rest_position: Vector2 = Vector2.ZERO
@@ -170,6 +172,8 @@ func _refresh_progress(progress: float) -> void:
 	if absf(progress - _drawn_progress) >= PROGRESS_REDRAW_STEP or progress < _drawn_progress:
 		_drawn_progress = progress
 		queue_redraw()
+		if _bar_layer != null:
+			_bar_layer.queue_redraw()
 
 
 func _create_visuals() -> void:
@@ -198,6 +202,10 @@ func _create_visuals() -> void:
 		_label.add_theme_constant_override("outline_size", 8)
 		_label.add_theme_color_override("font_outline_color", Color.BLACK)
 	add_child(_label)
+	_bar_layer = Node2D.new()
+	_bar_layer.z_index = 1
+	_bar_layer.draw.connect(_draw_progress_bar)
+	add_child(_bar_layer)
 	ViewOrientation.orient(_label)
 	_update_label()
 	queue_redraw()
@@ -266,10 +274,15 @@ func _draw() -> void:
 		if _sprite == null:
 			draw_rect(rect, data.color)
 		draw_rect(rect, MatchTypes.team_color(owner_id), false, 6.0)
-	if get_production_interval() > 0.0:
-		var bar: Rect2 = Rect2(rect.position.x + 14.0, rect.end.y - PROGRESS_BAR_HEIGHT - 4.0, rect.size.x - 28.0, PROGRESS_BAR_HEIGHT)
-		draw_rect(bar.grow(2.0), Color(0.09, 0.07, 0.12, 0.85))
-		var fill: float = bar.size.x * get_progress()
-		if fill > 0.5:
-			draw_rect(Rect2(bar.position, Vector2(fill, bar.size.y)), Color(0.98, 0.8, 0.3))
-			draw_rect(Rect2(bar.position, Vector2(fill, 3.0)), Color(1.0, 1.0, 1.0, 0.35))
+
+
+func _draw_progress_bar() -> void:
+	if data == null or get_production_interval() <= 0.0:
+		return
+	var rect: Rect2 = Rect2(-body_size * 0.5, body_size)
+	var bar: Rect2 = Rect2(rect.position.x + 14.0, rect.end.y - PROGRESS_BAR_HEIGHT - 4.0, rect.size.x - 28.0, PROGRESS_BAR_HEIGHT)
+	_bar_layer.draw_rect(bar.grow(2.0), Color(0.09, 0.07, 0.12, 0.85))
+	var fill: float = bar.size.x * get_progress()
+	if fill > 0.5:
+		_bar_layer.draw_rect(Rect2(bar.position, Vector2(fill, bar.size.y)), Color(0.98, 0.8, 0.3))
+		_bar_layer.draw_rect(Rect2(bar.position, Vector2(fill, 3.0)), Color(1.0, 1.0, 1.0, 0.35))
